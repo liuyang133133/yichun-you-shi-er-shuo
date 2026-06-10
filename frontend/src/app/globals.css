@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 主色调：伊春森林绿（绿松石） + 暖橙（点缀）*/
+    --background: 0 0% 100%;
+    --foreground: 158 35% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 158 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 158 35% 12%;
+
+    /* 主色：森林绿（淘宝/小红书风格但独特）*/
+    --primary: 158 64% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* 强调色：暖橙（用于价格、CTA）*/
+    --accent-orange: 24 95% 53%;
+    --accent-amber: 38 92% 50%;
+
+    --secondary: 158 30% 95%;
+    --secondary-foreground: 158 64% 25%;
+
+    --muted: 158 15% 96%;
+    --muted-foreground: 158 12% 45%;
+
+    --accent: 158 30% 95%;
+    --accent-foreground: 158 64% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 158 15% 90%;
+    --input: 158 15% 90%;
+    --ring: 158 64% 35%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 158 35% 8%;
+    --foreground: 158 10% 95%;
+    --card: 158 30% 11%;
+    --card-foreground: 158 10% 95%;
+    --popover: 158 30% 11%;
+    --popover-foreground: 158 10% 95%;
+    --primary: 158 64% 50%;
+    --primary-foreground: 158 35% 8%;
+    --secondary: 158 25% 18%;
+    --secondary-foreground: 158 10% 95%;
+    --muted: 158 25% 15%;
+    --muted-foreground: 158 10% 65%;
+    --accent: 158 25% 18%;
+    --accent-foreground: 158 10% 95%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 158 25% 22%;
+    --input: 158 25% 22%;
+    --ring: 158 64% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-feature-settings: "ss01", "ss02";
+  }
+  /* 标题字体（编辑杂志感） */
+  h1, h2, h3, .font-display {
+    font-family: "Noto Serif SC", "Noto Sans SC", serif;
+    letter-spacing: -0.01em;
+  }
+  /* 平滑滚动 + 更好的 focus */
+  html { scroll-behavior: smooth; }
+  *:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; border-radius: 4px; }
+}
+
+@layer components {
+  /* 渐变文字（Hero 标题用） */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(158 64% 35%) 0%, hsl(158 80% 25%) 50%, hsl(24 95% 53%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* 玻璃卡片 */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  /* 阴影（柔和 + 立体感） */
+  .shadow-soft { box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 4px 16px -4px rgba(0, 0, 0, 0.04); }
+  .shadow-hover { box-shadow: 0 8px 24px -6px rgba(15, 118, 110, 0.15), 0 4px 12px -4px rgba(0, 0, 0, 0.06); }
+  /* 微妙入场动画 */
+  .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+  .animate-slide-up { animation: slideUp 0.5s ease-out both; }
+  .animate-float { animation: float 6s ease-in-out infinite; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* 行数限制 */
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

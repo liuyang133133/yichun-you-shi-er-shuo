@@ -1,0 +1,132 @@
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { Prisma } from '@prisma/client';
+
+@Injectable()
+export class CompanyService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * 创建公司（当前用户为创建者）
+   * POST /api/v1/companies
+   */
+  async create(userId: bigint, dto: CreateCompanyDto) {
+    // 检查同名公司（同一创建者下）
+    const existing = await this.prisma.company.findFirst({
+      where: { creatorUserId: userId, name: dto.name },
+    });
+    if (existing) {
+      throw new ConflictException(`你已创建过同名公司「${dto.name}」`);
+    }
+
+    return this.prisma.company.create({
+      data: {
+        creatorUserId: userId,
+        name: dto.name,
+        logo: dto.logo,
+        industry: dto.industry,
+        scale: dto.scale,
+        nature: dto.nature,
+        address: dto.address,
+        description: dto.description,
+      },
+    });
+  }
+
+  /**
+   * 公司详情
+   * GET /api/v1/companies/:id
+   */
+  async findOne(id: bigint) {
+    const c = await this.prisma.company.findUnique({
+      where: { id },
+      include: {
+        creator: { select: { id: true, nickname: true, avatar: true } },
+        _count: { select: { jobs: true } },
+      },
+    });
+    if (!c) throw new NotFoundException(`公司 ID ${id} 不存在`);
+    return c;
+  }
+
+  /**
+   * 编辑公司（仅创建者可改）
+   * PATCH /api/v1/companies/:id
+   */
+  async update(userId: bigint, id: bigint, dto: Partial<CreateCompanyDto>) {
+    const c = await this.prisma.company.findUnique({ where: { id }, select: { creatorUserId: true } });
+    if (!c) throw new NotFoundException(`公司 ID ${id} 不存在`);
+    if (c.creatorUserId !== userId) throw new ForbiddenException('只能修改自己创建的公司');
+
+    const data: Prisma.CompanyUpdateInput = { ...dto };
+    return this.prisma.company.update({ where: { id }, data });
+  }
+
+  /**
+   * 删除公司（仅创建者可删）
+   * DELETE /api/v1/companies/:id
+   */
+  async remove(userId: bigint, id: bigint) {
+    const c = await this.prisma.company.findUnique({
+      where: { id },
+      include: { _count: { select: { jobs: true } } },
+    });
+    if (!c) throw new NotFoundException(`公司 ID ${id} 不存在`);
+    if (c.creatorUserId !== userId) throw new ForbiddenException('只能删除自己创建的公司');
+    if (c._count.jobs > 0) {
+      throw new ConflictException(`公司下还有 ${c._count.jobs} 个在招职位，无法删除`);
+    }
+    await this.prisma.company.delete({ where: { id } });
+    return { id: id.toString(), deleted: true };
+  }
+
+  /**
+   * 公司列表（公开）
+   * GET /api/v1/companies
+   */
+  async findAll(query: { keyword?: string; industry?: string; page?: number; pageSize?: number } = {}) {
+    const { keyword, industry, page = 1, pageSize = 20 } = query;
+    const where: Prisma.CompanyWhereInput = {};
+    if (keyword) {
+      where.OR = [
+        { name: { contains: keyword } },
+        { description: { contains: keyword } },
+      ];
+    }
+    if (industry) where.industry = industry;
+
+    const skip = (page - 1) * pageSize;
+    const [list, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: { select: { jobs: true } },
+        },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+    return { list, total, page, pageSize };
+  }
+
+  /**
+   * 公司在招职位
+   * GET /api/v1/companies/:id/jobs
+   */
+  async findJobs(id: bigint) {
+    return this.prisma.postJob.findMany({
+      where: { companyId: id },
+      include: {
+        post: {
+          include: {
+            area: { select: { id: true, name: true, level: true } },
+          },
+        },
+      },
+      orderBy: { id: 'desc' },
+    });
+  }
+}

@@ -1,0 +1,412 @@
+// =====================================================
+// 伊春有事儿说 - Prisma Schema
+// Database: MySQL 8
+// Generator: Prisma Client
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// 用户表
+// =====================================================
+model User {
+  id          BigInt    @id @default(autoincrement())
+  phone       String    @unique @db.VarChar(20)
+  password    String?   @db.VarChar(100) @map("password")
+  nickname    String    @default("") @db.VarChar(50)
+  avatar      String?   @db.VarChar(255)
+  gender      Int       @default(0) @db.TinyInt
+  bio         String?   @db.VarChar(255)
+  status      Int       @default(0) @db.TinyInt
+  role        String    @default("user") @db.VarChar(20)
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  posts        Post[]
+  favorites    Favorite[]
+  comments     Comment[]
+  reportsMade  Report[] @relation("ReportByUser")
+  reportsHandled Report[] @relation("ReportHandledBy")
+  companiesCreated Company[] @relation("CompanyCreator")
+  resume         Resume?
+  applications   JobApplication[] @relation("ApplicationUser")
+
+  @@index([status, createdAt])
+  @@map("users")
+}
+
+// =====================================================
+// 分类表（树形）
+// =====================================================
+model Category {
+  id        BigInt   @id @default(autoincrement())
+  parentId  BigInt?  @map("parent_id")
+  code      String   @db.VarChar(30) @map("code")
+  name      String   @db.VarChar(50)
+  icon      String?  @db.VarChar(255)
+  sortOrder Int      @default(0) @map("sort_order")
+  status    Int      @default(1) @db.TinyInt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 自关联
+  parent   Category?  @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Category[] @relation("CategoryToParent")
+
+  // 关联
+  posts Post[]
+
+  @@index([parentId, sortOrder])
+  @@index([code])
+  @@map("categories")
+}
+
+// =====================================================
+// 信息主表（4 大模块共用）
+// =====================================================
+model Post {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  categoryId    BigInt   @map("category_id")
+  areaId        BigInt?  @map("area_id")
+  type          String   @db.VarChar(20)
+  title         String   @db.VarChar(100)
+  description   String   @db.Text
+  price         Decimal  @default(0) @db.Decimal(10, 2)
+  priceUnit     String?  @map("price_unit") @db.VarChar(20)
+  contactName   String?  @map("contact_name") @db.VarChar(50)
+  contactPhone  String?  @map("contact_phone") @db.VarChar(20)
+  contactWechat String?  @map("contact_wechat") @db.VarChar(50)
+  status        String   @default("draft") @db.VarChar(20)
+  auditStatus   String   @default("pending") @map("audit_status") @db.VarChar(20)
+  auditReason   String?  @map("audit_reason") @db.VarChar(255)
+  viewCount     Int      @default(0) @map("view_count")
+  favoriteCount Int      @default(0) @map("favorite_count")
+  commentCount  Int      @default(0) @map("comment_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  area     Area?    @relation(fields: [areaId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  images   PostImage[]
+  favoritedBy Favorite[]
+  comments    Comment[]
+  reports     Report[] @relation("ReportForPost")
+  house       PostHouse?
+  secondhand  PostSecondhand?
+  lifebiz     PostLifebiz?
+  job         PostJob?
+
+  @@index([userId])
+  @@index([categoryId, status, createdAt])
+  @@index([areaId, status, createdAt])
+  @@index([type, status, createdAt])
+  @@index([auditStatus, createdAt])
+  @@index([title])
+  // 全文索引（MySQL FULLTEXT，V1 简化版用空格分词；中文支持有限，V1.1 接 ES）
+  // 注：FULLTEXT 索引需要在迁移后用 SQL 单独添加（Prisma 不支持原生 FULLTEXT）
+  @@map("posts")
+}
+
+// =====================================================
+// 区域表（树形：市 → 区县 → 街道）
+// =====================================================
+model Area {
+  id        BigInt   @id @default(autoincrement())
+  parentId  BigInt?  @map("parent_id")
+  name      String   @db.VarChar(50)
+  level     Int      @default(1) @db.TinyInt
+  adCode    String?  @map("ad_code") @db.VarChar(20)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 自关联
+  parent   Area?  @relation("AreaToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Area[] @relation("AreaToParent")
+
+  // 反向关联
+  posts Post[]
+
+  @@index([parentId, sortOrder])
+  @@index([adCode])
+  @@map("areas")
+}
+
+// =====================================================
+// 信息图片（V1 预留，1:N）
+// V1.3 阶段把上传功能完整接入 post 发布流程
+// =====================================================
+model PostImage {
+  id        BigInt   @id @default(autoincrement())
+  postId    BigInt   @map("post_id")
+  url       String   @db.VarChar(500)
+  width     Int?
+  height    Int?
+  size      Int?     @db.Int
+  mimeType  String?  @map("mime_type") @db.VarChar(50)
+  sortOrder Int      @default(0) @map("sort_order")
+  isCover   Int      @default(0) @map("is_cover") @db.TinyInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, sortOrder])
+  @@map("post_images")
+}
+
+// =====================================================
+// 收藏（用户 ↔ 信息）
+// =====================================================
+model Favorite {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  postId    BigInt   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+  @@map("favorites")
+}
+
+// =====================================================
+// 留言/评论（自关联：顶级留言 + 回复）
+// =====================================================
+model Comment {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  postId    BigInt   @map("post_id")
+  parentId  BigInt?  @map("parent_id")
+  content   String   @db.VarChar(500)
+  status    Int      @default(0) @db.TinyInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Comment[] @relation("CommentToParent")
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@map("comments")
+}
+
+// =====================================================
+// 举报（用户对信息）
+// =====================================================
+model Report {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  postId      BigInt   @map("post_id")
+  reason      String   @db.VarChar(50)
+  description String?  @db.VarChar(500)
+  status      String   @default("pending") @db.VarChar(20)
+  handledBy   BigInt?  @map("handled_by")
+  handledAt   DateTime? @map("handled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user    User @relation("ReportByUser", fields: [userId], references: [id], onDelete: Cascade)
+  post    Post @relation("ReportForPost", fields: [postId], references: [id], onDelete: Cascade)
+  handler User? @relation("ReportHandledBy", fields: [handledBy], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([postId])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("reports")
+}
+
+// =====================================================
+// 房屋详情（1:1 关联 posts）
+// =====================================================
+model PostHouse {
+  id            BigInt   @id @default(autoincrement())
+  postId        BigInt   @unique @map("post_id")
+  rentalType    String   @map("rental_type") @db.VarChar(20)
+  propertyType  String   @map("property_type") @db.VarChar(20)
+  decoration    String?  @db.VarChar(20)
+  areaSqm       Decimal? @map("area_sqm") @db.Decimal(8, 2)
+  rooms         Int?     @db.TinyInt
+  livingRooms   Int?     @map("living_rooms") @db.TinyInt
+  bathrooms     Int?     @db.TinyInt
+  floorInfo     String?  @map("floor_info") @db.VarChar(50)
+  orientation   String?  @db.VarChar(50)
+  buildingYear  Int?     @map("building_year")
+  communityName String?  @map("community_name") @db.VarChar(100)
+  address       String?  @db.VarChar(255)
+  longitude     Decimal? @db.Decimal(10, 6)
+  latitude      Decimal? @db.Decimal(10, 6)
+  facilities    Json?
+
+  // 关联
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([rentalType])
+  @@index([propertyType])
+  @@index([areaSqm])
+  @@map("post_houses")
+}
+
+// =====================================================
+// 二手详情（1:1 关联 posts）
+// =====================================================
+model PostSecondhand {
+  id            BigInt   @id @default(autoincrement())
+  postId        BigInt   @unique @map("post_id")
+  categoryName  String   @map("category_name") @db.VarChar(50)
+  condition     String   @db.VarChar(20)
+  originalPrice Decimal? @map("original_price") @db.Decimal(10, 2)
+  tradeMethod   String?  @map("trade_method") @db.VarChar(30)
+  usageDuration String?  @map("usage_duration") @db.VarChar(50)
+
+  // 关联
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([categoryName])
+  @@index([condition])
+  @@map("post_secondhands")
+}
+
+// =====================================================
+// 便民详情（1:1 关联 posts）
+// =====================================================
+model PostLifebiz {
+  id              BigInt    @id @default(autoincrement())
+  postId          BigInt    @unique @map("post_id")
+  subCategory     String    @map("sub_category") @db.VarChar(50)
+  serviceType     String    @map("service_type") @db.VarChar(20)
+  price           Decimal?  @db.Decimal(10, 2)
+  priceText       String?   @map("price_text") @db.VarChar(50)
+  validityPeriod  String?   @map("validity_period") @db.VarChar(20)
+  expireAt        DateTime? @map("expire_at")
+
+  // 关联
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([subCategory])
+  @@index([serviceType])
+  @@index([expireAt])
+  @@map("post_lifebizs")
+}
+
+// =====================================================
+// 公司表（独立于 posts）
+// =====================================================
+model Company {
+  id            BigInt   @id @default(autoincrement())
+  creatorUserId BigInt   @map("creator_user_id")
+  name          String   @db.VarChar(100)
+  logo          String?  @db.VarChar(255)
+  industry      String?  @db.VarChar(50)
+  scale         String?  @db.VarChar(30)
+  nature        String?  @db.VarChar(30)
+  address       String?  @db.VarChar(255)
+  description  String?  @db.Text
+  verified      Int      @default(0) @db.TinyInt
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  creator User      @relation("CompanyCreator", fields: [creatorUserId], references: [id], onDelete: Cascade)
+  jobs    PostJob[]
+
+  @@index([creatorUserId])
+  @@index([name])
+  @@map("companies")
+}
+
+// =====================================================
+// 招聘详情（1:1 关联 posts + N:1 关联 companies）
+// =====================================================
+model PostJob {
+  id           BigInt   @id @default(autoincrement())
+  postId       BigInt   @unique @map("post_id")
+  companyId    BigInt   @map("company_id")
+  jobType      String   @map("job_type") @db.VarChar(20)
+  salaryMin    Decimal? @map("salary_min") @db.Decimal(10, 2)
+  salaryMax    Decimal? @map("salary_max") @db.Decimal(10, 2)
+  salaryUnit   String?  @map("salary_unit") @db.VarChar(20)
+  education    String?  @db.VarChar(20)
+  experience   String?  @db.VarChar(20)
+  industry     String?  @db.VarChar(50)
+  welfare      Json?
+  recruitCount Int      @default(1) @map("recruit_count")
+  workCity     String?  @map("work_city") @db.VarChar(50)
+  workAddress  String?  @map("work_address") @db.VarChar(255)
+
+  // 关联
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  applications JobApplication[]
+
+  @@index([companyId])
+  @@index([salaryMin, salaryMax])
+  @@map("post_jobs")
+}
+
+// =====================================================
+// 简历（1:1 关联 user）
+// =====================================================
+model Resume {
+  id               BigInt   @id @default(autoincrement())
+  userId           BigInt   @unique @map("user_id")
+  name             String   @db.VarChar(50)
+  gender           Int      @default(0) @db.TinyInt
+  age              Int?
+  phone            String?  @db.VarChar(20)
+  email            String?  @db.VarChar(100)
+  education        String?  @db.VarChar(20)
+  experience       String?  @db.VarChar(20)
+  expectedPosition String?  @map("expected_position") @db.VarChar(100)
+  expectedSalary   Decimal? @map("expected_salary") @db.Decimal(10, 2)
+  expectedCity     String?  @map("expected_city") @db.VarChar(50)
+  selfIntro        String?  @map("self_intro") @db.Text
+  isPublic         Int      @default(0) @map("is_public") @db.TinyInt
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@map("resumes")
+}
+
+// =====================================================
+// 投递记录
+// =====================================================
+model JobApplication {
+  id          BigInt   @id @default(autoincrement())
+  postJobId   BigInt   @map("post_job_id")
+  resumeId    BigInt   @map("resume_id")
+  userId      BigInt   @map("user_id")
+  coverLetter String?  @db.VarChar(500)
+  status      String   @default("已投递") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  postJob PostJob @relation(fields: [postJobId], references: [id], onDelete: Cascade)
+  resume  Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  user    User    @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postJobId, resumeId])
+  @@index([userId, createdAt])
+  @@map("job_applications")
+}

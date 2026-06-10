@@ -1,0 +1,70 @@
+import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+
+/**
+ * 全局 Redis 客户端
+ * 用于：短信验证码、登录限频、Token 黑名单、热门列表缓存等
+ *
+ * 直接用 ioredis 而非 @nestjs/cache-manager，
+ * 是因为我们要用 setnx/expire/incr 等原子操作
+ */
+@Injectable()
+export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RedisService.name);
+  private client!: Redis;
+
+  constructor(private readonly config: ConfigService) {}
+
+  onModuleInit() {
+    const url = this.config.get<string>('REDIS_URL', 'redis://localhost:6379');
+    this.client = new Redis(url, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: false,
+    });
+    this.client.on('connect', () => this.logger.log(`✅ Redis 已连接: ${url}`));
+    this.client.on('error', (err) => this.logger.error('Redis error', err));
+  }
+
+  async onModuleDestroy() {
+    if (this.client) {
+      await this.client.quit();
+    }
+  }
+
+  getClient(): Redis {
+    return this.client;
+  }
+
+  // ===== 常用方法封装 =====
+
+  /** 设置值 + 过期时间（秒） */
+  async setEx(key: string, value: string, ttlSeconds: number): Promise<void> {
+    await this.client.set(key, value, 'EX', ttlSeconds);
+  }
+
+  /** 获取值 */
+  async get(key: string): Promise<string | null> {
+    return this.client.get(key);
+  }
+
+  /** 删除 */
+  async del(key: string): Promise<number> {
+    return this.client.del(key);
+  }
+
+  /** 自增（用于限频计数） */
+  async incr(key: string): Promise<number> {
+    return this.client.incr(key);
+  }
+
+  /** 设置过期（如果 key 存在） */
+  async expire(key: string, ttlSeconds: number): Promise<void> {
+    await this.client.expire(key, ttlSeconds);
+  }
+
+  /** TTL（剩余秒数，-1=无过期，-2=key 不存在） */
+  async ttl(key: string): Promise<number> {
+    return this.client.ttl(key);
+  }
+}

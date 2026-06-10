@@ -55,3 +55,6 @@ backend/src/generated/
 # Next.js
 frontend/.next/
 admin/.next/
+
+# Git worktrees (isolation)
+.worktrees/
