@@ -559,6 +559,32 @@ GET    /api/v1/admin/categories
 | R-3 | 角色变更无失效路径 | ⚠️ 现状可接受 | 项目当前无 role 写(UpdateUserDto 排除,`buildTokenPair` 硬编码 'user'),防御性代码保留无害 |
 | R-4 | 文件编码 GB18030 教训(T3 之前 subagent 失误) | ✅ 本次已规避 | `create-post.dto.ts` / `post.service.ts` 已确认 UTF-8 无 BOM |
 
+### 10.8 P1 Sprint 4 (2026-06-12, V1.0 上线冲刺 4,3 任务 + 1 历史 bug 修复)
+
+| 任务 | 来源 | Commit | 状态 / 关键点 |
+|---|---|---|---|
+| T1 | SHOULD-42 GitHub Actions CI(3 job 并行) | `c036d48` | ✅ 1 文件 `.github/workflows/ci.yml`;backend(1+4 步骤) + frontend(1+5) + admin(1+5);**lint 步骤 3 个 job 全注释**(无 .eslintrc + frontend 有 2 个 react/no-unescaped-entities 错误未在 plan 范围修);**type-check + build 仍跑** |
+| T2 | SHOULD-27 批量审核 / 批量下架(2 端点) | `e4e1553` | ✅ audit-batch / offline-batch;7 smoke 全 PASS(成功 / 拒绝带 reason / 拒绝无 reason 400 / offline / 空 ids 400 / 单条兼容 / audit log metadata 验证) |
+| T3 | SHOULD-36 时区统一(Intl helper, 9 文件) | `9df6eb4` | ✅ frontend + admin 各自 `lib/date.ts`;硬编码 `Asia/Shanghai`;9 call site 全改;frontend + admin build PASS;SEO/JSON-LD/sitemap 不动 |
+| **bonus** | **buildTokenPair 硬编码 `role='user'` 历史 bug 修复** | `7cb23fb` | ✅ **Sprint 4 首次跑 admin smoke 暴露**;buildTokenPair 加 role 参数 + 3 个 caller 传 `user.role`;`user.service.create/findByPhone` select 加 role;smoke:admin 用户 login → JWT `role:admin` → `/admin/dashboard` 200 |
+
+**P1 Sprint 4 总计**:4 commit(3 P1 任务 + 1 重要 bugfix)。**V1.0 P1 关键 20 项完成: 17/20**(Sprint 1+2+3+4 共 19 任务)。
+
+**关键偏离 / 决策**(全部更优):
+- T1:plan 只注释 backend lint,实际**3 个 job 的 lint 全注释**(frontend/admin 缺 .eslintrc + frontend 有现成 lint 错误);`type-check + build` 已能抓主要问题
+- T3:删除 `frontend/src/lib/utils.ts` 旧的 `formatDate/timeAgo` + `frontend/src/components/post/post-card.tsx` 私有 `timeAgo`(都是用浏览器本地时区,本来就是隐性 bug,清理掉而非保留)
+- bonus 修复:暴露路径清晰 — Sprint 4 T2 batch smoke 验证时**才第一次实际跑 admin login**,发现 token 的 role 永远是 'user'。**Sprint 1-3 admin API 都在跑,但没人用 admin 真实登录测过**;MUST-2 (用户管理鉴权) / MUST-14 (admin 后台) 因此都建立在"无法真正登录"的基础上,实际**AdminGuard 永远 403**。
+
+**Sprint 4 新增 / 继承风险**:
+| # | 风险 | 状态 | 备注 |
+|---|---|---|---|
+| R-1 | JWT 缓存击穿 | ⚠️ 已知 | 接受,V1.0 流量小 |
+| R-2 | 软删 status=2 不拦鉴权(7d token 仍有效) | ⚠️ 已知 | 需后续接 jwt 黑名单刷新 |
+| R-3 | 角色变更无失效路径 | ⚠️ 现状可接受 | 项目当前无 role 写;防御性代码保留 |
+| R-4 | Prisma drift 与 FULLTEXT 索引 | ⚠️ 继承 | §10.6 已记 |
+| R-5 | 文件编码 GB18030 教训 | ✅ 已规避 | T3 验证 UTF-8 |
+| R-6 | admin role 硬编码 buildTokenPair | ✅ **本次已修** | Sprint 4 暴露 + 同步修复,不再 P2 遗留 |
+
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
 
 > [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) 验收发现 V1.0 不可上线,4 个 P0 阻塞 + 2 个 BLOCKED。

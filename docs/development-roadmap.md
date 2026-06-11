@@ -143,15 +143,15 @@
 - SHOULD-20（next.config proxy）
 - SHOULD-23（next-themes 暗色模式）
 - SHOULD-25（backdrop-blur 性能）
-- SHOULD-27（批量审核 API）
+- **SHOULD-27（批量审核 API）** ✅ `e4e1553` — Sprint 4 T2
 - **SHOULD-30（公告系统）** ✅ `a3643ab` + `37c08cd` + `183a4d6` — Sprint 2 T2
-- SHOULD-36（时区统一）
+- **SHOULD-36（时区统一）** ✅ `9df6eb4` — Sprint 4 T3
 - SHOULD-37（Post slug）
 - **SHOULD-38（JWT 缓存）** ✅ `ef7fe81` — Sprint 3 T2
 - **SHOULD-39（BigInt 序列化去重）** ✅ `e189dfe` — Sprint 1 T5
 - **SHOULD-40（Swagger 文档）** ✅ `092af34` — Sprint 2 T3
 - **SHOULD-41（nestjs-pino 日志）** ✅ `ac267fa` — Sprint 3 T1
-- SHOULD-42（GitHub Actions CI）
+- **SHOULD-42（GitHub Actions CI）** ✅ `c036d48` — Sprint 4 T1
 
 **Week 10-12 交付**：P1 关键 20 项完成，性能 / 安全 / 工程化达到生产级别
 
@@ -161,13 +161,13 @@
 
 **上线标准**：
 - ✅ 25 项 P0 全部完成
-- 🟡 P1 关键 20 项:**已 14/20**(Sprint 1+2+3 共 15 任务,含 MUST-25 + SHOULD-39),剩 6 项
+- 🟡 P1 关键 20 项:**已 17/20**(Sprint 1+2+3+4 共 19 任务,含 MUST-25 + SHOULD-39),剩 3 项
 - ✅ admin/ 后台可日常运营
 - ✅ 生产部署稳定
 - ⏳ Sitemap 提交百度站长平台
 - ⏳ 客服/运营流程跑通
 
-> **2026-06-11 P1 完成汇总(14/20)**:SHOULD-1/3/4/6/7/11/15/16/19/30/31/38/39/40/41 + MUST-25 = 15 项。Sprint 1+2+3 共 11 commit,全部代码改动 + smoke test 通过 + code review 通过。
+> **2026-06-12 P1 完成汇总(17/20)**:SHOULD-1/3/4/6/7/11/15/16/19/27/30/31/36/38/39/40/41/42 + MUST-25 = 19 项。Sprint 1+2+3+4 共 16 commit,全部代码改动 + smoke test 通过 + code review 通过。Sprint 4 额外修复 1 个历史 bug(buildTokenPair role 硬编码,`7cb23fb`)。
 
 ---
 
