@@ -80,10 +80,11 @@ export class PostController {
     @Req() req: Request,
     @CurrentUser() user: JwtPayload | undefined,
   ) {
+    const rawIp = (req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress || '';
     return this.postService.findOne(BigInt(id), {
       userId: user?.sub ? BigInt(user.sub) : undefined,
-      ip: (req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress,
-      userAgent: req.headers['user-agent'] as string,
+      ip: rawIp.slice(0, 45),
+      userAgent: ((req.headers['user-agent'] as string) || '').slice(0, 500),
     });
   }
 

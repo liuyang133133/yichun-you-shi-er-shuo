@@ -43,6 +43,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.set(key, value, 'EX', ttlSeconds);
   }
 
+  /** 原子设置（仅在 key 不存在时）+ 过期时间（秒）。返回 true 表示本次设置成功（即此前不存在） */
+  async setNxEx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+    return result === 'OK';
+  }
+
   /** 获取值 */
   async get(key: string): Promise<string | null> {
     return this.client.get(key);

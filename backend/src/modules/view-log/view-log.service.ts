@@ -19,7 +19,10 @@ export class ViewLogService {
   ) {}
 
   /**
-   * 记录一次浏览(去重 + 写日志 + 增 viewCount)
+   * 记录一次浏览
+   * - 原子 SET NX 去重:任一 userId/IP 1 小时内首次 -> 计数
+   * - 写 ViewLog(留底,供 UV 统计);userAgent 限 500 字符
+   * - 异常降级:Redis/Prisma 失败不阻塞 findOne
    * @returns true 表示本次应当计入 viewCount
    */
   async recordView(
@@ -27,34 +30,42 @@ export class ViewLogService {
     viewer: { userId?: bigint; ip?: string; userAgent?: string },
   ): Promise<boolean> {
     const dedupKeys: string[] = [];
-    if (viewer.userId) dedupKeys.push(`views:user:${viewer.userId}:post:${postId}`);
+    if (viewer.userId != null) dedupKeys.push(`views:user:${viewer.userId}:post:${postId}`);
     if (viewer.ip) dedupKeys.push(`views:ip:${viewer.ip}:post:${postId}`);
 
     let isFirstView = false;
-    for (const key of dedupKeys) {
-      const exists = await this.redis.get(key);
-      if (!exists) {
+
+    if (dedupKeys.length === 0) {
+      // 匿名 + 无 IP:无法去重,直接计数(misconfigured proxy chain 不会重复)
+      isFirstView = true;
+    } else {
+      // 原子 SET NX:任一 key 是新的 -> 算首次浏览
+      try {
+        const results = await Promise.all(
+          dedupKeys.map((k) => this.redis.setNxEx(k, '1', ViewLogService.DEDUP_TTL)),
+        );
+        isFirstView = results.some((r) => r === true);
+      } catch (e) {
+        // Redis 异常:降级为首次浏览(不阻塞主请求)
+        this.logger.warn(`dedup setNxEx failed: ${(e as Error).message}`);
         isFirstView = true;
-        break;
       }
     }
 
     if (isFirstView) {
+      // 写 ViewLog + 增 viewCount,均异步,失败不阻塞
+      const safeUserAgent = (viewer.userAgent ?? '').slice(0, 500);
+      const safeIp = (viewer.ip ?? '').slice(0, 45);
       this.prisma.viewLog
         .create({
           data: {
             postId,
             userId: viewer.userId ?? null,
-            ip: viewer.ip ?? null,
-            userAgent: viewer.userAgent ?? null,
+            ip: safeIp || null,
+            userAgent: safeUserAgent || null,
           },
         })
         .catch((e) => this.logger.warn(`ViewLog write failed: ${(e as Error).message}`));
-
-      const pipeline = dedupKeys.map((k) =>
-        this.redis.setEx(k, '1', ViewLogService.DEDUP_TTL),
-      );
-      await Promise.all(pipeline).catch(() => {});
 
       this.prisma.post
         .update({

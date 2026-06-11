@@ -111,7 +111,7 @@ export class PostService {
 
   /**
    * 详情（含 user/category/area + 4 大模块专属详情）
-   * SHOULD-3 浏览量防刷 + ViewLog 写入：同 userId/ip/userAgent 1 小时内只 +1
+   * SHOULD-3: 浏览量防刷 — userId/ip 1 小时内只 +1
    */
   async findOne(
     id: bigint,
