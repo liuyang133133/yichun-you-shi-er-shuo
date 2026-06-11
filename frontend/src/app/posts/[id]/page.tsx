@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { postApi } from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { postApi, favoriteApi, commentApi, reportApi } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth';
 import {
   MapPin, Eye, Heart, MessageCircle, User as UserIcon,
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
-  Sparkles, BadgeCheck,
+  Sparkles, BadgeCheck, X,
 } from 'lucide-react';
 
 const TYPE_META: Record<string, { label: string; gradient: string; emoji: string }> = {
@@ -37,6 +39,17 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 互动状态
+  const [favorited, setFavorited] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState('spam');
+  const [reportDesc, setReportDesc] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -45,6 +58,109 @@ export default function PostDetailPage() {
       .catch((e) => setError(e?.message || '加载失败'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // 加载评论
+  useEffect(() => {
+    if (!id) return;
+    fetch(`http://localhost:3001/api/v1/posts/${id}/comments`)
+      .then(r => r.json())
+      .then(r => setComments(r?.data || []))
+      .catch(() => {});
+  }, [id]);
+
+  // 加载收藏状态
+  useEffect(() => {
+    if (!id || !getAccessToken()) return;
+    favoriteApi.list()
+      .then((r: any) => {
+        const list = r?.data || r || [];
+        setFavorited(list.some((f: any) => String(f.postId ?? f.post?.id) === String(id)));
+      })
+      .catch(() => {});
+  }, [id]);
+
+  // 操作 handlers
+  const handleFavorite = async () => {
+    if (!getAccessToken()) {
+      alert('请先登录');
+      return;
+    }
+    setFavLoading(true);
+    try {
+      if (favorited) {
+        await favoriteApi.remove(String(id));
+        setFavorited(false);
+      } else {
+        await favoriteApi.add({ postId: id });
+        setFavorited(true);
+      }
+    } catch {
+      alert('操作失败，请稍后再试');
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = { title: post.title, text: post.title, url: window.location.href };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('链接已复制到剪贴板');
+      }
+    } catch {
+      // 用户取消
+    }
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!getAccessToken()) {
+      alert('请先登录');
+      return;
+    }
+    const text = commentText.trim();
+    if (!text) return;
+    setCommentSubmitting(true);
+    try {
+      await commentApi.create(String(id), { content: text });
+      setCommentText('');
+      // 重新加载评论
+      const r = await fetch(`http://localhost:3001/api/v1/posts/${id}/comments`).then(r => r.json());
+      setComments(r?.data || []);
+    } catch {
+      alert('发表失败');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const handleReportSubmit = async () => {
+    if (!getAccessToken()) {
+      alert('请先登录');
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      await reportApi.create({ postId: id, reason: reportReason, description: reportDesc });
+      alert('举报已提交，感谢反馈');
+      setShowReport(false);
+      setReportDesc('');
+    } catch {
+      alert('提交失败');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
+  const handlePhone = () => {
+    if (post.contactPhone) {
+      window.location.href = `tel:${post.contactPhone}`;
+    } else {
+      alert('该信息未公开电话，请通过留言联系');
+    }
+  };
 
   if (loading) {
     return (
@@ -312,22 +428,44 @@ export default function PostDetailPage() {
 
               {/* 主操作按钮 */}
               <div className="mt-4 space-y-2">
-                <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-primary to-emerald-600 shadow-md hover:shadow-lg">
+                <Button
+                  onClick={handlePhone}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-primary to-emerald-600 shadow-md hover:shadow-lg"
+                >
                   <Phone className="mr-2 h-4 w-4" />
                   拨打电话
                 </Button>
                 <div className="grid grid-cols-3 gap-2">
-                  <Button variant="outline" className="rounded-xl">
-                    <Heart className="h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    className={`rounded-xl ${favorited ? 'text-red-500 border-red-200 bg-red-50' : ''}`}
+                    onClick={handleFavorite}
+                    disabled={favLoading}
+                    title={favorited ? '已收藏' : '收藏'}
+                  >
+                    <Heart className={`h-4 w-4 ${favorited ? 'fill-current' : ''}`} />
                   </Button>
-                  <Button variant="outline" className="rounded-xl">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => document.getElementById('comment-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    title="留言"
+                  >
                     <MessageCircle className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" className="rounded-xl">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={handleShare}
+                    title="分享"
+                  >
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <button className="w-full text-xs text-muted-foreground hover:text-foreground py-2 flex items-center justify-center gap-1">
+                <button
+                  onClick={() => setShowReport(true)}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground py-2 flex items-center justify-center gap-1"
+                >
                   <Flag className="h-3 w-3" /> 举报此信息
                 </button>
               </div>
@@ -341,6 +479,101 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 留言区 */}
+      <section id="comment-section" className="mt-8 max-w-3xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
+        <h2 className="font-display text-xl font-bold mb-4">
+          留言（{comments.length}）
+        </h2>
+        <div className="flex gap-2 mb-6">
+          <Input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder={getAccessToken() ? '发表你的留言…' : '登录后即可留言'}
+            maxLength={500}
+            disabled={!getAccessToken() || commentSubmitting}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCommentSubmit();
+              }
+            }}
+          />
+          <Button onClick={handleCommentSubmit} disabled={commentSubmitting || !commentText.trim()}>
+            {commentSubmitting ? '发表中…' : '发表'}
+          </Button>
+        </div>
+        {comments.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            暂无留言，来抢沙发吧
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {comments.map((c: any) => (
+              <div key={c.id} className="p-3 rounded-xl bg-secondary/50">
+                <div className="text-xs text-muted-foreground mb-1">
+                  {c.user?.nickname || c.userNickname || '匿名用户'}
+                  <span className="ml-2">
+                    {c.createdAt ? new Date(c.createdAt).toLocaleString('zh-CN') : ''}
+                  </span>
+                </div>
+                <div className="text-sm leading-relaxed">{c.content}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 举报弹窗 */}
+      {showReport && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold">举报信息</h3>
+              <button onClick={() => setShowReport(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">举报原因</label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="spam">垃圾广告</option>
+                  <option value="fake">虚假信息</option>
+                  <option value="illegal">违法违规</option>
+                  <option value="duplicate">重复发布</option>
+                  <option value="other">其他</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">补充说明（可选）</label>
+                <textarea
+                  value={reportDesc}
+                  onChange={(e) => setReportDesc(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="请描述具体情况…"
+                  maxLength={500}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowReport(false)}>取消</Button>
+                <Button
+                  onClick={handleReportSubmit}
+                  disabled={reportSubmitting}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  {reportSubmitting ? '提交中…' : '提交举报'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

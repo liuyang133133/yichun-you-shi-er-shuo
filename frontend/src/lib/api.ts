@@ -213,3 +213,24 @@ export const authApi = {
   /** 当前用户 */
   me: () => api.get<{ sub: string; phone: string; role: string }>('/auth/me'),
 };
+
+// 收藏
+export const favoriteApi = {
+  list: () => api.get<any[]>('/favorites'),
+  add: (data: { postId: string | number }) => api.post<any>('/favorites', data),
+  remove: (postId: string | number) => api.delete<any>(`/favorites/${postId}`),
+};
+
+// 评论
+export const commentApi = {
+  list: (postId: string | number) => api.get<any[]>(`/posts/${postId}/comments`),
+  create: (postId: string | number, data: { content: string; parentId?: string | number }) =>
+    api.post<any>(`/posts/${postId}/comments`, data),
+  remove: (commentId: string | number) => api.delete<any>(`/comments/${commentId}`),
+};
+
+// 举报
+export const reportApi = {
+  create: (data: { postId: string | number; reason: string; description?: string }) =>
+    api.post<any>('/reports', data),
+};
