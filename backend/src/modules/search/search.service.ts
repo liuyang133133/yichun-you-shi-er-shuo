@@ -140,16 +140,34 @@ export class SearchService {
     const catMap = new Map(categories.map((c) => [c.id.toString(), c]));
     const areaMap = new Map(areas.map((a) => [a.id.toString(), a]));
 
-    const list = rows.map((r) => ({
-      ...r,
-      id: r.id.toString(),
-      userId: r.user_id.toString(),
-      categoryId: r.category_id.toString(),
-      areaId: r.area_id?.toString(),
-      user: userMap.get(r.user_id.toString()) || null,
-      category: catMap.get(r.category_id.toString()) || null,
-      area: r.area_id ? areaMap.get(r.area_id.toString()) || null : null,
-    }));
+    const list = rows.map((r) => {
+      // 显式列出字段 + 转换所有 BigInt,避免 ...r spread 保留原始 BigInt 字段
+      // 触发 JSON.stringify("Do not know how to serialize a BigInt")
+      return {
+        id: r.id.toString(),
+        userId: r.user_id.toString(),
+        categoryId: r.category_id.toString(),
+        areaId: r.area_id != null ? r.area_id.toString() : null,
+        type: r.type,
+        title: r.title,
+        description: r.description,
+        price: r.price,
+        priceUnit: r.price_unit,
+        contactName: r.contact_name,
+        status: r.status,
+        auditStatus: r.audit_status,
+        viewCount: r.view_count,
+        favoriteCount: r.favorite_count,
+        commentCount: r.comment_count,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        // _score 在某些 MySQL 配置下会被 Prisma 推断为 BigInt,加 Number() 防御
+        _score: Number(r._score),
+        user: userMap.get(r.user_id.toString()) || null,
+        category: catMap.get(r.category_id.toString()) || null,
+        area: r.area_id ? areaMap.get(r.area_id.toString()) || null : null,
+      };
+    });
 
     return { list, total, page, pageSize, query: q };
   }
