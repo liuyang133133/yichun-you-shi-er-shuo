@@ -83,6 +83,7 @@ export class PostController {
     return this.postService.findOne(BigInt(id), {
       userId: user?.sub ? BigInt(user.sub) : undefined,
       ip: (req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress,
+      userAgent: req.headers['user-agent'] as string,
     });
   }
 

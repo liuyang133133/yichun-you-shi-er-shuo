@@ -4,6 +4,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostQueryDto } from './dto/list-post.dto';
 import { RedisService } from '../../redis/redis.service';
+import { ViewLogService } from '../view-log/view-log.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    private readonly viewLog: ViewLogService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -109,9 +111,12 @@ export class PostService {
 
   /**
    * 详情（含 user/category/area + 4 大模块专属详情）
-   * T10.3 浏览量防刷：同 userId/ip 1 小时内只 +1
+   * SHOULD-3 浏览量防刷 + ViewLog 写入：同 userId/ip/userAgent 1 小时内只 +1
    */
-  async findOne(id: bigint, viewer?: { userId?: bigint; ip?: string }) {
+  async findOne(
+    id: bigint,
+    viewer?: { userId?: bigint; ip?: string; userAgent?: string },
+  ) {
     const post = await this.prisma.post.findUnique({
       where: { id },
       include: {
@@ -128,28 +133,15 @@ export class PostService {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
     }
 
-    // ===== T10.3 浏览量防刷 =====
-    const dedupKeys: string[] = [];
-    if (viewer?.userId) dedupKeys.push(`views:user:${viewer.userId}:post:${id}`);
-    if (viewer?.ip) dedupKeys.push(`views:ip:${viewer.ip}:post:${id}`);
-
-    let shouldIncrement = false;
-    for (const key of dedupKeys) {
-      const exists = await this.redis.get(key);
-      if (!exists) {
-        shouldIncrement = true;
-        break;
-      }
-    }
-    if (shouldIncrement) {
-      // 设 1 小时 TTL
-      const pipeline = dedupKeys.map((k) => this.redis.setEx(k, '1', 3600));
-      await Promise.all(pipeline).catch(() => {});
-      this.prisma.post
-        .update({ where: { id }, data: { viewCount: { increment: 1 } } })
-        .catch(() => {});
-    }
-    // ===== 防刷 end =====
+    // ===== SHOULD-3 浏览量防刷 + ViewLog 写入 =====
+    this.viewLog
+      .recordView(id, {
+        userId: viewer?.userId,
+        ip: viewer?.ip,
+        userAgent: viewer?.userAgent,
+      })
+      .catch(() => {});
+    // ===== end =====
 
     return post;
   }
