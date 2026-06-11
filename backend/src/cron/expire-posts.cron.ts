@@ -39,12 +39,17 @@ export class ExpirePostsCron {
       // 2. 30 天前软删的 post 真正硬清（释放 uploads/ 空间）
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 30);
-      const oldDeleted = await this.prisma.post.count({
+      const oldDeleted = await this.prisma.post.findMany({
         where: { status: 'deleted', updatedAt: { lt: cutoff } },
+        select: { id: true, userId: true },
       });
-      // V1 仅统计，不硬删（避免误操作）；admin 后台可手动触发
-      if (oldDeleted > 0) {
-        this.logger.log(`[Cron] 待清理 30 天前软删 post: ${oldDeleted} 条 (admin 后台可清理)`);
+      if (oldDeleted.length > 0) {
+        const ids = oldDeleted.map((p) => p.id);
+        // 注: PostImage/Favorite/Comment 等关联表已设 Cascade,会一起删
+        const r = await this.prisma.post.deleteMany({
+          where: { id: { in: ids } },
+        });
+        this.logger.log(`[Cron] 30 天前软删硬清 ${r.count} 条 post (${Date.now() - t0}ms)`);
       }
     } catch (e) {
       this.logger.error(`[Cron] 过期任务失败: ${(e as Error).message}`);

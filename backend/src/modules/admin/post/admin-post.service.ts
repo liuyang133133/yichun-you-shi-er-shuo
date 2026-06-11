@@ -139,4 +139,43 @@ export class AdminPostService {
 
     return this.prisma.post.findUnique({ where: { id: postId } });
   }
+
+  /**
+   * 硬清 30 天前软删的 post（SHOULD-15）
+   * POST /api/v1/admin/posts/purge
+   * body: { daysOld?: number } 默认 30
+   * 返回：{ deleted: N }
+   */
+  async purgeOldDeleted(adminId: bigint, daysOld = 30) {
+    if (daysOld < 7) {
+      throw new BadRequestException('daysOld 至少 7 天(避免误操作)');
+    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysOld);
+
+    const targets = await this.prisma.post.findMany({
+      where: { status: 'deleted', updatedAt: { lt: cutoff } },
+      select: { id: true },
+    });
+    if (targets.length === 0) {
+      return { deleted: 0, scanned: 0, cutoff };
+    }
+
+    const ids = targets.map((p) => p.id);
+    const [result] = await this.prisma.$transaction([
+      this.prisma.post.deleteMany({ where: { id: { in: ids } } }),
+      this.prisma.auditLog.create({
+        data: {
+          adminUserId: adminId,
+          module: 'post',
+          action: 'purge_old_deleted',
+          targetType: 'post',
+          targetId: null,
+          reason: `硬清 ${daysOld} 天前软删 ${ids.length} 条 post`,
+          metadata: { count: ids.length, daysOld, cutoff: cutoff.toISOString() },
+        },
+      }),
+    ]);
+    return { deleted: result.count, scanned: targets.length, cutoff };
+  }
 }

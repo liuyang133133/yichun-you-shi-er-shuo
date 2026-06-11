@@ -70,4 +70,17 @@ export class AdminPostController {
   ) {
     return this.adminPostService.offline(BigInt(user.sub), BigInt(id), body.reason);
   }
+
+  /**
+   * POST /api/v1/admin/posts/purge
+   * 硬清 N 天前软删的 post(body: { daysOld?: number })
+   */
+  @Post('purge')
+  @ApiOperation({ summary: '硬清 30 天前软删的 post' })
+  purge(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { daysOld?: number } = {},
+  ) {
+    return this.adminPostService.purgeOldDeleted(BigInt(user.sub), body.daysOld ?? 30);
+  }
 }
