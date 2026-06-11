@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import compression from 'compression';
 import { webcrypto } from 'crypto';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -52,12 +53,24 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  // 4. 全局前缀（排除静态资源）
+  // 4. 响应压缩 (SHOULD-6): 列表响应 200KB+ 节省 80% 带宽
+  app.use(
+    compression({
+      threshold: 1024, // 仅压缩 > 1KB
+      level: 6,        // 平衡 CPU 与压缩率
+      filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+      },
+    }),
+  );
+
+  // 5. 全局前缀（排除静态资源）
   app.setGlobalPrefix('api/v1', {
     exclude: ['uploads/(.*)'],
   });
 
-  // 5. CORS 白名单（MUST-4）
+  // 6. CORS 白名单（MUST-4）
   // F-5 修复:空配置应拒绝跨域,而不是放行所有 origin
   const origins = (config.get<string>('CORS_ORIGINS') || '')
     .split(',')
@@ -85,7 +98,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  // 6. 全局验证管道
+  // 7. 全局验证管道
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -97,10 +110,10 @@ async function bootstrap() {
     }),
   );
 
-  // 7. 全局异常过滤器
+  // 8. 全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // 8. 全局响应拦截器
+  // 9. 全局响应拦截器
   app.useGlobalInterceptors(new TransformInterceptor());
 
   await app.listen(port);
