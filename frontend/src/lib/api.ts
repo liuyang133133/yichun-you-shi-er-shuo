@@ -234,3 +234,45 @@ export const reportApi = {
   create: (data: { postId: string | number; reason: string; description?: string }) =>
     api.post<any>('/reports', data),
 };
+
+// ===== Announcements =====
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  status: 0 | 1;
+  priority: 0 | 1;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAnnouncementInput {
+  title: string;
+  content: string;
+  status?: 0 | 1;
+  priority?: 0 | 1;
+  startsAt?: string;
+  endsAt?: string;
+}
+
+export type UpdateAnnouncementInput = Partial<CreateAnnouncementInput>;
+
+export const announcementApi = {
+  /** 公开:获取当前生效公告 */
+  active: () => api.get<Announcement[]>('/announcements/active'),
+  /** admin:分页列表 */
+  list: (params?: { status?: 0 | 1; page?: number; pageSize?: number }) =>
+    api.get<{ list: Announcement[]; total: number; page: number; pageSize: number }>(
+      '/admin/announcements',
+      params,
+    ),
+  create: (data: CreateAnnouncementInput) =>
+    api.post<Announcement>('/admin/announcements', data),
+  update: (id: string, data: UpdateAnnouncementInput) =>
+    api.patch<Announcement>(`/admin/announcements/${id}`, data),
+  remove: (id: string) => api.delete<{ id: string; deleted: boolean }>(`/admin/announcements/${id}`),
+};
