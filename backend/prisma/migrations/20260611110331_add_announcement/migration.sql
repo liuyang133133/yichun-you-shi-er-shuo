@@ -1,6 +1,3 @@
--- DropIndex
-DROP INDEX `ft_title_description` ON `posts`;
-
 -- CreateTable
 CREATE TABLE `announcements` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
