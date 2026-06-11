@@ -17,24 +17,6 @@ export class PostService {
   private static readonly LIST_CACHE_TTL = 300;
 
   /**
-   * 把对象里所有 BigInt 转 string（缓存需要 JSON.stringify）
-   * 不递归循环引用（Prisma 结果无循环）
-   */
-  private bigIntToString(obj: unknown): unknown {
-    if (typeof obj === 'bigint') return obj.toString();
-    if (obj instanceof Date) return obj.toISOString();
-    if (Array.isArray(obj)) return obj.map((v) => this.bigIntToString(v));
-    if (obj !== null && typeof obj === 'object') {
-      const out: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(obj)) {
-        out[k] = this.bigIntToString(v);
-      }
-      return out;
-    }
-    return obj;
-  }
-
-  /**
    * 列表查询（统一入口，type 必填）
    * 支持：分类/区域/关键词/价格区间/排序/分页
    */
@@ -112,9 +94,14 @@ export class PostService {
     ]);
 
     const result = { list, total, page, pageSize };
-    // 写缓存（异步，不阻塞返回）— BigInt → String
+    // 写缓存（异步，不阻塞返回）— 响应侧由 TransformInterceptor 把 BigInt → string；
+    // 缓存侧用 replacer 同步处理，保证 JSON.stringify 不抛错
     this.redis
-      .setEx(cacheKey, JSON.stringify(this.bigIntToString(result)), PostService.LIST_CACHE_TTL)
+      .setEx(
+        cacheKey,
+        JSON.stringify(result, (_, v) => (typeof v === 'bigint' ? v.toString() : v)),
+        PostService.LIST_CACHE_TTL,
+      )
       .catch(() => {});
 
     return result;
