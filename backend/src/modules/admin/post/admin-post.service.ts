@@ -141,6 +141,115 @@ export class AdminPostService {
   }
 
   /**
+   * 批量审核（SHOULD-27）
+   * POST /api/v1/admin/posts/audit-batch
+   * body: { ids: string[]; action: 'pass' | 'reject'; reason?: string }
+   * 只对 auditStatus=pending 生效；事务: updateMany + 单条 audit_log (metadata.ids)
+   */
+  async auditBatch(
+    adminId: bigint,
+    ids: bigint[],
+    action: 'pass' | 'reject',
+    reason?: string,
+  ) {
+    if (ids.length === 0) {
+      throw new BadRequestException('ids 不能为空');
+    }
+    if (ids.length > 200) {
+      throw new BadRequestException('单次最多 200 条');
+    }
+    if (action === 'reject' && (!reason || !reason.trim())) {
+      throw new BadRequestException('批量拒绝时必须填写理由');
+    }
+
+    // 预查:只对 auditStatus=pending 的生效
+    const targets = await this.prisma.post.findMany({
+      where: { id: { in: ids }, auditStatus: 'pending' },
+      select: { id: true },
+    });
+    if (targets.length === 0) {
+      throw new BadRequestException('没有可审核的帖子(可能已审核或不存在)');
+    }
+    const targetIds = targets.map((t) => t.id);
+
+    const op = action === 'pass'
+      ? { auditStatus: 'passed', status: 'active', auditReason: reason ? `[batch pass] ${reason}` : null }
+      : { auditStatus: 'rejected', status: 'rejected', auditReason: reason! };
+
+    const updateOp = this.prisma.post.updateMany({
+      where: { id: { in: targetIds } },
+      data: op,
+    });
+
+    const logOp = this.prisma.auditLog.create({
+      data: {
+        adminUserId: adminId,
+        module: 'post',
+        action: action === 'pass' ? 'audit_pass_batch' : 'audit_reject_batch',
+        targetType: 'post',
+        targetId: null,
+        reason: reason || null,
+        metadata: { ids: targetIds.map(String), count: targetIds.length },
+      },
+    });
+
+    await this.prisma.$transaction([updateOp, logOp]);
+    return { success: targetIds.length };
+  }
+
+  /**
+   * 批量下架（SHOULD-27）
+   * POST /api/v1/admin/posts/offline-batch
+   * body: { ids: string[]; reason: string }
+   * 不限状态,强制下架;事务: updateMany + 单条 audit_log (metadata.ids)
+   */
+  async offlineBatch(adminId: bigint, ids: bigint[], reason: string) {
+    if (ids.length === 0) {
+      throw new BadRequestException('ids 不能为空');
+    }
+    if (ids.length > 200) {
+      throw new BadRequestException('单次最多 200 条');
+    }
+    if (!reason || !reason.trim()) {
+      throw new BadRequestException('必须填写下架理由');
+    }
+
+    // 强制下架:不限制状态
+    const targets = await this.prisma.post.findMany({
+      where: { id: { in: ids } },
+      select: { id: true },
+    });
+    if (targets.length === 0) {
+      throw new BadRequestException('没有可下架的帖子');
+    }
+    const targetIds = targets.map((t) => t.id);
+
+    const updateOp = this.prisma.post.updateMany({
+      where: { id: { in: targetIds } },
+      data: {
+        status: 'rejected',
+        auditStatus: 'rejected',
+        auditReason: `[强制下架] ${reason}`,
+      },
+    });
+
+    const logOp = this.prisma.auditLog.create({
+      data: {
+        adminUserId: adminId,
+        module: 'post',
+        action: 'offline_batch',
+        targetType: 'post',
+        targetId: null,
+        reason,
+        metadata: { ids: targetIds.map(String), count: targetIds.length },
+      },
+    });
+
+    await this.prisma.$transaction([updateOp, logOp]);
+    return { success: targetIds.length };
+  }
+
+  /**
    * 硬清 30 天前软删的 post（SHOULD-15）
    * POST /api/v1/admin/posts/purge
    * body: { daysOld?: number } 默认 30

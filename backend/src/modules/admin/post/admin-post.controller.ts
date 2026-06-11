@@ -72,6 +72,41 @@ export class AdminPostController {
   }
 
   /**
+   * POST /api/v1/admin/posts/audit-batch
+   * 批量审核通过/拒绝
+   * body: { ids: string[]; action: 'pass' | 'reject'; reason?: string }
+   */
+  @Post('audit-batch')
+  @ApiOperation({ summary: '批量审核帖子(pass/reject)' })
+  auditBatch(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { ids: string[]; action: 'pass' | 'reject'; reason?: string },
+  ) {
+    const ids = body.ids.map((s) => BigInt(s));
+    return this.adminPostService.auditBatch(
+      BigInt(user.sub),
+      ids,
+      body.action,
+      body.reason,
+    );
+  }
+
+  /**
+   * POST /api/v1/admin/posts/offline-batch
+   * 批量强制下架
+   * body: { ids: string[]; reason: string }
+   */
+  @Post('offline-batch')
+  @ApiOperation({ summary: '批量强制下架帖子' })
+  offlineBatch(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: { ids: string[]; reason: string },
+  ) {
+    const ids = body.ids.map((s) => BigInt(s));
+    return this.adminPostService.offlineBatch(BigInt(user.sub), ids, body.reason);
+  }
+
+  /**
    * POST /api/v1/admin/posts/purge
    * 硬清 N 天前软删的 post(body: { daysOld?: number })
    */
