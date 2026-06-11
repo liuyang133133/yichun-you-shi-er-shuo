@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import { Check, X, Eye, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -136,7 +137,7 @@ export default function AdminPostsPage() {
                       <span>👤 {p.user?.nickname || p.user?.phone || '匿名'}</span>
                       <span>📍 {p.area?.name || '-'}</span>
                       <span>👁 {p.viewCount || 0}</span>
-                      <span>⏰ {new Date(p.createdAt).toLocaleString('zh-CN')}</span>
+                      <span>⏰ {formatDateTime(p.createdAt)}</span>
                     </div>
                     {p.auditReason && (
                       <div className="mt-2 text-xs px-2 py-1 rounded bg-amber-50 text-amber-800">

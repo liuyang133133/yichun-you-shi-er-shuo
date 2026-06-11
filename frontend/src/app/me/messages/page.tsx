@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { authApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
+import { formatDateTime } from '@/lib/date';
 import { ArrowLeft, Mail, Inbox, Send, CheckCheck, MessageSquare } from 'lucide-react';
 
 interface Message {
@@ -236,7 +237,7 @@ function MyMessagesContent() {
                       {tab === 'inbox' ? m.sender?.nickname : `→ ${m.receiver?.nickname}`}
                     </div>
                     <div className="text-xs text-muted-foreground flex-shrink-0">
-                      {new Date(m.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {formatDateTime(m.createdAt)}
                     </div>
                   </div>
                   <div className="mt-1 text-sm text-foreground/90 leading-relaxed break-words whitespace-pre-wrap">

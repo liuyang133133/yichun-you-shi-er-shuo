@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import { Search, Shield, ShieldOff, Ban } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -113,7 +114,7 @@ export default function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(u.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {formatDateTime(u.createdAt)}
                     </td>
                     <td className="px-4 py-3">
                       {u.role !== 'admin' && (

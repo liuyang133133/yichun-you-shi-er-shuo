@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
+import { formatDate } from '@/lib/date';
 
 export default function AdminCompaniesPage() {
   const [list, setList] = useState<any[]>([]);
@@ -45,7 +46,7 @@ export default function AdminCompaniesPage() {
                 {c.address && <div className="text-xs text-muted-foreground">{c.address}</div>}
                 {c.description && <p className="text-sm line-clamp-2">{c.description}</p>}
                 <div className="text-xs text-muted-foreground pt-2 border-t">
-                  创建：{new Date(c.createdAt).toLocaleDateString('zh-CN')}
+                  创建：{formatDate(c.createdAt)}
                 </div>
               </CardContent>
             </Card>

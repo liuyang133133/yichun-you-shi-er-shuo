@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { postApi, favoriteApi, commentApi, reportApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
+import { formatDateTime, formatDate } from '@/lib/date';
 import {
   MapPin, Eye, Heart, MessageCircle, User as UserIcon,
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
@@ -239,7 +240,7 @@ function PostDetailContent() {
               )}
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                {new Date(post.createdAt).toLocaleString('zh-CN')}
+                {formatDateTime(post.createdAt)}
               </span>
               <span className="flex items-center gap-1">
                 <Eye className="h-3.5 w-3.5" /> {post.viewCount} 浏览
@@ -385,7 +386,7 @@ function PostDetailContent() {
                     <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(post.createdAt).toLocaleDateString('zh-CN')} 发布
+                    {formatDate(post.createdAt)} 发布
                   </div>
                 </div>
               </div>
@@ -514,7 +515,7 @@ function PostDetailContent() {
                 <div className="text-xs text-muted-foreground mb-1">
                   {c.user?.nickname || c.userNickname || '匿名用户'}
                   <span className="ml-2">
-                    {c.createdAt ? new Date(c.createdAt).toLocaleString('zh-CN') : ''}
+                    {c.createdAt ? formatDateTime(c.createdAt) : ''}
                   </span>
                 </div>
                 <div className="text-sm leading-relaxed">{c.content}</div>

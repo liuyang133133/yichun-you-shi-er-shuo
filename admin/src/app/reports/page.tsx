@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import { Check, X, Eye } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -105,7 +106,7 @@ export default function AdminReportsPage() {
                     )}
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>👤 举报人：{r.user?.nickname || r.user?.phone || '-'}</span>
-                      <span>⏰ {new Date(r.createdAt).toLocaleString('zh-CN')}</span>
+                      <span>⏰ {formatDateTime(r.createdAt)}</span>
                       {r.postId && (
                         <a
                           href={`http://localhost:3000/posts/${r.postId}`}

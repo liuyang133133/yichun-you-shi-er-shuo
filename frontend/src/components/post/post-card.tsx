@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { MapPin, Eye, Heart, MessageCircle, Clock, Sparkles } from 'lucide-react';
+import { formatRelative } from '@/lib/date';
 
 export interface PostCardData {
   id: string;
@@ -24,17 +25,6 @@ const TYPE_META: Record<string, { label: string; gradient: string; emoji: string
   job:         { label: '招聘',   gradient: 'from-emerald-500 via-teal-600 to-cyan-700',  emoji: '💼', tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
   lifebiz:     { label: '便民',   gradient: 'from-amber-500 via-orange-600 to-red-600',     emoji: '📌', tone: 'bg-amber-50 text-orange-700 ring-amber-200' },
 };
-
-/** 时间相对化（"3 分钟前"） */
-function timeAgo(iso: string): string {
-  const t = new Date(iso).getTime();
-  const diff = Math.floor((Date.now() - t) / 1000);
-  if (diff < 60) return '刚刚';
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)} 天前`;
-  return new Date(iso).toLocaleDateString('zh-CN');
-}
 
 /**
  * PostCard - 列表卡片（精致版）
@@ -121,7 +111,7 @@ export function PostCard({ post, index = 0 }: { post: PostCardData; index?: numb
 
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
             <Clock className="h-2.5 w-2.5" />
-            {timeAgo(post.createdAt)}
+            {formatRelative(post.createdAt)}
           </div>
         </div>
       </article>
