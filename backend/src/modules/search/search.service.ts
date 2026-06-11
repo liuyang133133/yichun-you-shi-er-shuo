@@ -7,8 +7,7 @@ export type SearchType = 'house' | 'secondhand' | 'job' | 'lifebiz';
 /**
  * 全文搜索服务
  *
- * V1 简化版：LIKE 搜索（中文友好）
- * 数据库层用 FULLTEXT 索引（迁移后用 SQL 加）
+ * V1.0: 用 MySQL FULLTEXT 索引（ngram parser，支持中文 2 字以上）+ LIKE 兜底
  * V1.1 计划：换 Meilisearch / Elasticsearch
  *
  * API: GET /api/v1/search?q=xxx&type=house&page=1&pageSize=20
@@ -34,37 +33,123 @@ export class SearchService {
       throw new BadRequestException('搜索关键词过长（限 100 字符）');
     }
 
-    const where: Prisma.PostWhereInput = {
-      status: 'active',
-      OR: [
-        { title: { contains: q } },
-        { description: { contains: q } },
-        // 房屋 + 二手 + lifebiz 详情的特殊字段
-        { house: { OR: [{ communityName: { contains: q } }, { address: { contains: q } }] } },
-        { secondhand: { OR: [{ categoryName: { contains: q } }, { usageDuration: { contains: q } }] } },
-        { job: { OR: [{ jobType: { contains: q } }, { industry: { contains: q } }, { workAddress: { contains: q } }] } },
-        { lifebiz: { subCategory: { contains: q } } },
-      ],
-    };
-    if (type) where.type = type;
-    if (areaId) where.areaId = BigInt(areaId);
-    if (categoryId) where.categoryId = BigInt(categoryId);
+    // 过滤条件
+    const extraWhere: string[] = ['p.status = \'active\''];
+    const params2: any[] = [];
+    if (type) {
+      extraWhere.push('p.type = ?');
+      params2.push(type);
+    }
+    if (areaId) {
+      extraWhere.push('p.area_id = ?');
+      params2.push(BigInt(areaId));
+    }
+    if (categoryId) {
+      extraWhere.push('p.category_id = ?');
+      params2.push(BigInt(categoryId));
+    }
+    const whereSql = extraWhere.join(' AND ');
 
+    // 使用 FULLTEXT 搜索主表 title + description
+    // 用 BOOLEAN MODE 支持中文短语（ngram parser 自动分词）
     const skip = (page - 1) * pageSize;
-    const [list, total] = await Promise.all([
-      this.prisma.post.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { id: true, nickname: true, avatar: true } },
-          category: { select: { id: true, name: true, code: true } },
-          area: { select: { id: true, name: true, level: true } },
-        },
-      }),
-      this.prisma.post.count({ where }),
+    const ftQuery = `+${q.trim().split(/\s+/).join('* +')}*`; // 通配符模式
+
+    // 主搜索：FULLTEXT 匹配 + 子详情 LIKE 兜底（社区/地址/职位等）
+    const sql = `
+      SELECT DISTINCT p.id, p.user_id, p.category_id, p.area_id, p.type, p.title, p.description,
+             p.price, p.price_unit, p.contact_name, p.status, p.audit_status, p.view_count,
+             p.favorite_count, p.comment_count, p.created_at, p.updated_at,
+             MATCH(p.title, p.description) AGAINST (? IN BOOLEAN MODE) AS _score
+      FROM posts p
+      LEFT JOIN post_houses h ON h.post_id = p.id
+      LEFT JOIN post_secondhands sh ON sh.post_id = p.id
+      LEFT JOIN post_jobs j ON j.post_id = p.id
+      LEFT JOIN post_lifebizs lb ON lb.post_id = p.id
+      WHERE ${whereSql}
+        AND (
+          MATCH(p.title, p.description) AGAINST (? IN BOOLEAN MODE)
+          OR h.community_name LIKE ?
+          OR h.address LIKE ?
+          OR sh.category_name LIKE ?
+          OR sh.usage_duration LIKE ?
+          OR j.industry LIKE ?
+          OR j.work_address LIKE ?
+          OR lb.sub_category LIKE ?
+        )
+      ORDER BY _score DESC, p.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const like = `%${q}%`;
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      sql,
+      ftQuery, ftQuery, like, like, like, like, like, like, like,
+      Number(pageSize), skip,
+    );
+
+    // 总数（同 WHERE 但去 LIMIT）
+    const countSql = `
+      SELECT COUNT(DISTINCT p.id) AS total
+      FROM posts p
+      LEFT JOIN post_houses h ON h.post_id = p.id
+      LEFT JOIN post_secondhands sh ON sh.post_id = p.id
+      LEFT JOIN post_jobs j ON j.post_id = p.id
+      LEFT JOIN post_lifebizs lb ON lb.post_id = p.id
+      WHERE ${whereSql}
+        AND (
+          MATCH(p.title, p.description) AGAINST (? IN BOOLEAN MODE)
+          OR h.community_name LIKE ?
+          OR h.address LIKE ?
+          OR sh.category_name LIKE ?
+          OR sh.usage_duration LIKE ?
+          OR j.industry LIKE ?
+          OR j.work_address LIKE ?
+          OR lb.sub_category LIKE ?
+        )
+    `;
+    const countResult = await this.prisma.$queryRawUnsafe<Array<{ total: bigint }>>(
+      countSql,
+      ftQuery, ftQuery, like, like, like, like, like, like, like,
+    );
+    const total = Number(countResult[0]?.total || 0);
+
+    // 关联 user / category / area
+    const ids = rows.map((r) => r.id);
+    const [users, categories, areas] = await Promise.all([
+      ids.length
+        ? this.prisma.user.findMany({
+            where: { id: { in: rows.map((r) => r.user_id) } },
+            select: { id: true, nickname: true, avatar: true },
+          })
+        : [],
+      ids.length
+        ? this.prisma.category.findMany({
+            where: { id: { in: rows.map((r) => r.category_id) } },
+            select: { id: true, name: true, code: true },
+          })
+        : [],
+      ids.length
+        ? this.prisma.area.findMany({
+            where: { id: { in: rows.map((r) => r.area_id).filter(Boolean) } },
+            select: { id: true, name: true, level: true },
+          })
+        : [],
     ]);
+
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+    const catMap = new Map(categories.map((c) => [c.id.toString(), c]));
+    const areaMap = new Map(areas.map((a) => [a.id.toString(), a]));
+
+    const list = rows.map((r) => ({
+      ...r,
+      id: r.id.toString(),
+      userId: r.user_id.toString(),
+      categoryId: r.category_id.toString(),
+      areaId: r.area_id?.toString(),
+      user: userMap.get(r.user_id.toString()) || null,
+      category: catMap.get(r.category_id.toString()) || null,
+      area: r.area_id ? areaMap.get(r.area_id.toString()) || null : null,
+    }));
 
     return { list, total, page, pageSize, query: q };
   }
@@ -74,7 +159,8 @@ export class SearchService {
    * 真实场景应放 Redis ZSET
    */
   async hotKeywords(limit = 10) {
-    // V1 占位：从已存在的 title 提取最常出现的词
+    const clampedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    // 使用 $queryRaw tag（参数化绑定安全）
     const result = await this.prisma.$queryRaw<Array<{ word: string; count: bigint }>>`
       SELECT word, COUNT(*) as count
       FROM (
@@ -86,7 +172,7 @@ export class SearchService {
       WHERE CHAR_LENGTH(word) >= 2
       GROUP BY word
       ORDER BY count DESC
-      LIMIT ${limit}
+      LIMIT ${clampedLimit}
     `;
     return result.map((r) => ({ keyword: r.word, count: Number(r.count) }));
   }
