@@ -21,6 +21,7 @@ import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SearchModule } from './modules/search/search.module';
 import { MessageModule } from './modules/message/message.module';
+import { HealthModule } from './modules/health/health.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CronModule } from './cron/cron.module';
 
@@ -53,6 +54,7 @@ import { CronModule } from './cron/cron.module';
     SmsModule,
     AuthModule,
     MessageModule,
+    HealthModule,
     CronModule,
   ],
   providers: [
