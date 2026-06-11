@@ -9,7 +9,6 @@ export class AdminPostService {
   /**
    * 帖子列表（带审核状态过滤）
    * GET /api/v1/admin/posts
-   * 公开：用 auditStatus=pending/active/rejected/draft
    */
   async findAll(query: {
     auditStatus?: string;
@@ -40,7 +39,7 @@ export class AdminPostService {
   }
 
   /**
-   * 审核通过
+   * 审核通过（MUST-25 修复：合并为单事务 + 写 AuditLog）
    * POST /api/v1/admin/posts/:id/audit
    * body: { action: 'pass', reason?: '' }
    */
@@ -51,26 +50,35 @@ export class AdminPostService {
       throw new BadRequestException(`当前状态 ${post.auditStatus}，无需重复审核`);
     }
 
+    const reasonText = reason ? `[pass] ${reason}` : null;
+
+    // 合并为一个事务：post 更新 + audit_log 写入
     await this.prisma.$transaction([
       this.prisma.post.update({
         where: { id: postId },
-        data: { auditStatus: 'passed', status: 'active' },
+        data: {
+          auditStatus: 'passed',
+          status: 'active',
+          auditReason: reasonText,
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          adminUserId: adminId,
+          module: 'post',
+          action: 'audit_pass',
+          targetType: 'post',
+          targetId: postId,
+          reason: reason || null,
+        },
       }),
     ]);
-
-    // V1 暂未建 audit_logs 表，审核历史通过 post.auditReason 字段记录
-    if (reason) {
-      await this.prisma.post.update({
-        where: { id: postId },
-        data: { auditReason: `[pass] ${reason}` },
-      });
-    }
 
     return this.prisma.post.findUnique({ where: { id: postId } });
   }
 
   /**
-   * 审核拒绝
+   * 审核拒绝（MUST-25 修复：单事务 + AuditLog）
    */
   async reject(adminId: bigint, postId: bigint, reason: string) {
     if (!reason || reason.trim().length === 0) {
@@ -82,22 +90,53 @@ export class AdminPostService {
       throw new BadRequestException(`当前状态 ${post.auditStatus}，无需重复审核`);
     }
 
-    return this.prisma.post.update({
-      where: { id: postId },
-      data: { auditStatus: 'rejected', status: 'rejected', auditReason: reason },
-    });
+    await this.prisma.$transaction([
+      this.prisma.post.update({
+        where: { id: postId },
+        data: { auditStatus: 'rejected', status: 'rejected', auditReason: reason },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          adminUserId: adminId,
+          module: 'post',
+          action: 'audit_reject',
+          targetType: 'post',
+          targetId: postId,
+          reason,
+        },
+      }),
+    ]);
+
+    return this.prisma.post.findUnique({ where: { id: postId } });
   }
 
   /**
-   * 直接下架（不通过审核流，紧急情况用）
+   * 强制下架（MUST-25 修复：单事务 + AuditLog）
    */
   async offline(adminId: bigint, postId: bigint, reason: string) {
     if (!reason) throw new BadRequestException('下架时必须填写理由');
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
-    return this.prisma.post.update({
-      where: { id: postId },
-      data: { status: 'rejected', auditStatus: 'rejected', auditReason: `[强制下架] ${reason}` },
-    });
+
+    const reasonText = `[强制下架] ${reason}`;
+
+    await this.prisma.$transaction([
+      this.prisma.post.update({
+        where: { id: postId },
+        data: { status: 'rejected', auditStatus: 'rejected', auditReason: reasonText },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          adminUserId: adminId,
+          module: 'post',
+          action: 'offline',
+          targetType: 'post',
+          targetId: postId,
+          reason: reasonText,
+        },
+      }),
+    ]);
+
+    return this.prisma.post.findUnique({ where: { id: postId } });
   }
 }
