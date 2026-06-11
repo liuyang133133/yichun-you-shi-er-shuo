@@ -6,13 +6,21 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  /** JWT 鉴权缓存 key 模板，与 JwtStrategy 保持一致 */
+  private static readonly AUTH_CACHE_KEY = (id: bigint | string) =>
+    `auth:user:${id}`;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   /**
    * 创建用户
@@ -173,7 +181,7 @@ export class UserService {
    */
   async update(id: bigint, dto: UpdateUserDto) {
     await this.findOne(id); // 检查存在
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: dto,
       select: {
@@ -187,6 +195,9 @@ export class UserService {
         updatedAt: true,
       },
     });
+    // SHOULD-38: 失效 JWT 鉴权缓存（nickname/avatar/bio/status 改了都会影响鉴权返回的 request.user）
+    await this.invalidateAuthCache(id);
+    return updated;
   }
 
   /**
@@ -219,6 +230,9 @@ export class UserService {
       data: { status: 2, updatedAt: new Date() },
     });
 
+    // SHOULD-38: 软删后失效鉴权缓存（status=2 视作已删除，缓存必须清）
+    await this.invalidateAuthCache(id);
+
     // 备注：access token 7d 内仍有效，需等自然过期或后续接入 jwt 黑名单刷新
     return { id: id.toString(), status: 2, softDeleted: true };
   }
@@ -228,5 +242,17 @@ export class UserService {
    */
   async count() {
     return this.prisma.user.count();
+  }
+
+  /**
+   * SHOULD-38: 失效指定用户的 JWT 鉴权缓存。
+   * 失败时 swallow 异常：缓存失效不该阻塞业务写入。
+   */
+  private async invalidateAuthCache(id: bigint | string): Promise<void> {
+    try {
+      await this.redis.del(UserService.AUTH_CACHE_KEY(id));
+    } catch {
+      // ignore — best-effort
+    }
   }
 }

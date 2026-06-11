@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserService } from '../../user/user.service';
 import { AuthService } from '../auth.service';
+import { RedisService } from '../../../redis/redis.service';
 import { JwtPayload } from '../../../common/decorators/current-user.decorator';
 
 /**
@@ -12,16 +13,19 @@ import { JwtPayload } from '../../../common/decorators/current-user.decorator';
  * - 从 Authorization: Bearer xxx 提取 token
  * - 用 JWT_SECRET 验签
  * - 拒绝 type=refresh 的 token（refresh 走专用端点）
- * - 拒绝黑名单中的 token
- * - 查 DB 拿用户最新状态（status=0 才算正常）
+ * - 拒绝黑名单中的 token（**必须在缓存查找之前**，安全路径不能被缓存绕过）
+ * - 查 Redis 缓存拿用户最新状态（status=0 才算正常），缓存未命中再查 DB 并写回（5min TTL）
  * - 把用户信息挂到 request.user 上，供 @CurrentUser 装饰器使用
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private static readonly USER_CACHE_TTL_SEC = 300; // 5 分钟
+
   constructor(
     config: ConfigService,
     private readonly userService: UserService,
     private readonly authService: AuthService,
+    private readonly redis: RedisService,
   ) {
     const secret = config.get<string>('JWT_SECRET');
     if (!secret) {
@@ -46,7 +50,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (payload.type === 'refresh') {
       throw new UnauthorizedException('refresh token 不能用于业务请求');
     }
-    // 黑名单检查（登出后的 token）
+    // 黑名单检查（登出后的 token）—— 必须在 cache lookup 之前
     if (payload.jti) {
       const blacklisted = await this.authService.isTokenBlacklisted(payload.jti);
       if (blacklisted) {
@@ -54,10 +58,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
     }
 
-    const user = await this.userService.findOne(BigInt(payload.sub));
-    if (!user) {
-      throw new UnauthorizedException('用户不存在');
-    }
+    const user = await this.loadUserCached(BigInt(payload.sub));
     if (user.status === 1) {
       throw new UnauthorizedException('账号已被封禁');
     }
@@ -69,5 +70,49 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jti: payload.jti,
       type: 'access',
     } satisfies JwtPayload;
+  }
+
+  /**
+   * 带 Redis 缓存的用户加载（SHOULD-38）：
+   * - 命中缓存：直接反序列化返回（避免每请求查 DB）
+   * - 未命中：查 DB 写回缓存（5min TTL），返回
+   * - Redis 不可用：catch 后 fall through 到 DB，保证鉴权可用性
+   *
+   * BigInt 字段 id 经 JSON 序列化后变 string，下游 `user.id.toString()` 与
+   * `user.status === 1` 比较不受影响。
+   */
+  private async loadUserCached(id: bigint) {
+    const cacheKey = `auth:user:${id}`;
+    let userJson: string | null = null;
+    try {
+      userJson = await this.redis.get(cacheKey);
+    } catch (e) {
+      // Redis 挂了：直接走 DB，鉴权不中断
+      userJson = null;
+    }
+
+    if (userJson) {
+      return JSON.parse(userJson);
+    }
+
+    const user = await this.userService.findOne(id);
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // BigInt -> string（replacer 把所有 bigint 字段安全序列化）
+    const serialized = JSON.stringify(user, (_, v) =>
+      typeof v === 'bigint' ? v.toString() : v,
+    );
+    try {
+      await this.redis.setEx(
+        cacheKey,
+        serialized,
+        JwtStrategy.USER_CACHE_TTL_SEC,
+      );
+    } catch {
+      // 写入失败也无所谓，下次请求重试
+    }
+    return user;
   }
 }
