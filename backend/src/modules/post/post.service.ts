@@ -217,6 +217,9 @@ export class PostService {
       },
     });
 
+    // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
+    this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+
     return post;
   }
 
@@ -251,6 +254,10 @@ export class PostService {
         category: { select: { id: true, name: true, code: true } },
         area: { select: { id: true, name: true, level: true } },
       },
+    }).then((post) => {
+      // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
+      this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+      return post;
     });
   }
 
@@ -269,6 +276,8 @@ export class PostService {
       where: { id },
       data: { status: 'deleted' },
     });
+    // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
+    this.redis.invalidatePattern('cache:posts:*').catch(() => {});
     return { id: id.toString(), deleted: true };
   }
 
@@ -286,6 +295,10 @@ export class PostService {
     return this.prisma.post.update({
       where: { id },
       data: { status: newStatus },
+    }).then((post) => {
+      // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
+      this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+      return post;
     });
   }
 

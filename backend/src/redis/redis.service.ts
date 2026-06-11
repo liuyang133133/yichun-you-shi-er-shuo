@@ -67,4 +67,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async ttl(key: string): Promise<number> {
     return this.client.ttl(key);
   }
+
+  /**
+   * 删除匹配 pattern 的所有 key（SCAN + DEL，生产安全）
+   * 用途：列表缓存写操作时清旧缓存
+   */
+  async invalidatePattern(pattern: string): Promise<number> {
+    const client = this.getClient();
+    let cursor = '0';
+    let deleted = 0;
+    do {
+      const [next, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = next;
+      if (keys.length > 0) {
+        deleted += await client.del(...keys);
+      }
+    } while (cursor !== '0');
+    return deleted;
+  }
 }
