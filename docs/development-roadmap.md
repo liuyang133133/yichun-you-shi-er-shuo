@@ -119,14 +119,16 @@
 | # | 任务 | 工时 | 状态 | Commit |
 |---|---|---|---|---|
 | MUST-15 | 生产 docker-compose + nginx + SSL | 2h | ✅ | `73be0ca` |
-| SHOULD-15 | Cron 清理 30 天前软删的 post + images | 0.5h | ⏳ | 无 |
+| **SHOULD-15** | **Cron 30 天硬清软删 post** | **0.5h** | **✅** | **`1d1d073`** |
 | **SHOULD-16** | **删除用户改软删 status=2** | **0.5h** | **✅** | **`25cc83a`** |
 | **SHOULD-31** | **/api/health 真正检查后端健康** | **0.5h** | **✅** | **`5385601`** |
-| MUST-25 | Admin 审核事务修复 | 1h | ⏳ | MUST-16 |
+| MUST-25 | Admin 审核事务修复 | 1h | ✅ (c77894f, Phase 2) | — |
 
 > **2026-06-11 P1 Sprint 1 同步:** 7 任务完成 (SHOULD-6/7/11/16/31/39 + 索引核验),共 6 commit。详见 [project-memory.md §10.5](./project-memory.md) 与 `docs/superpowers/plans/2026-06-11-p1-sprint1.md`。
+>
+> **2026-06-11 P1 Sprint 2 同步:** 5 任务完成 (SHOULD-3/15/19/30/40),共 8 commit。详见 [project-memory.md §10.6](./project-memory.md) 与 `docs/superpowers/plans/2026-06-11-p1-sprint2.md`。
 
-**Week 9 交付**：生产环境可部署，SSL/HTTPS/反向代理完整
+**Week 9 交付**：生产环境可部署，SSL/HTTPS/反向代理完整,30 天硬清到位
 
 ---
 
@@ -134,20 +136,20 @@
 
 按优先级修复 P1 中的关键 20 项（详见 audit-report §第二部分）：
 - SHOULD-1（Post 创建事务联动）
-- SHOULD-3（viewCount Redis INCR）
-- SHOULD-4（缓存 invalidation）
+- **SHOULD-3（viewCount Redis INCR）** ✅ `a3222bc` + `0703b83` — Sprint 2 T1
+- SHOULD-4（缓存 invalidation）✅ `d5778f2` — Sprint 1 T3
 - SHOULD-9（CAPTCHA）
-- SHOULD-19（Middleware SSR 401 跳转）
+- **SHOULD-19（Middleware SSR 401 跳转）** ✅ `15fc870` — Sprint 2 T5
 - SHOULD-20（next.config proxy）
 - SHOULD-23（next-themes 暗色模式）
 - SHOULD-25（backdrop-blur 性能）
 - SHOULD-27（批量审核 API）
-- SHOULD-30（公告系统）
+- **SHOULD-30（公告系统）** ✅ `a3643ab` + `37c08cd` + `183a4d6` — Sprint 2 T2
 - SHOULD-36（时区统一）
 - SHOULD-37（Post slug）
 - SHOULD-38（JWT 缓存）
-- SHOULD-39（BigInt 序列化去重）
-- SHOULD-40（Swagger 文档）
+- **SHOULD-39（BigInt 序列化去重）** ✅ `e189dfe` — Sprint 1 T5
+- **SHOULD-40（Swagger 文档）** ✅ `092af34` — Sprint 2 T3
 - SHOULD-41（nestjs-pino 日志）
 - SHOULD-42（GitHub Actions CI）
 
@@ -159,11 +161,13 @@
 
 **上线标准**：
 - ✅ 25 项 P0 全部完成
-- ✅ P1 关键 20 项完成（其余 22 项可延后到 V1.1）
+- 🟡 P1 关键 20 项:**已 11/20**(Sprint 1+2 共 12 任务,含 MUST-25 + SHOULD-39),剩 9 项
 - ✅ admin/ 后台可日常运营
 - ✅ 生产部署稳定
-- ✅ Sitemap 提交百度站长平台
-- ✅ 客服/运营流程跑通
+- ⏳ Sitemap 提交百度站长平台
+- ⏳ 客服/运营流程跑通
+
+> **2026-06-11 P1 完成汇总(11/20)**:SHOULD-3/4/6/7/11/15/16/19/30/31/39/40 + MUST-25 = 12 项。Sprint 1+2 共 8 commit,全部代码改动 + smoke test 通过 + code review 通过。
 
 ---
 

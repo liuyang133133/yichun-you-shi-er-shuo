@@ -522,7 +522,20 @@ GET    /api/v1/admin/categories
 
 **审计 outdated 修正**:SHOULD-32~35 报告称 4 个索引缺失,实际 schema.prisma 早已含 `users_role_status_idx`(左前缀 role)、`post_houses_rental_type_property_type_area_sqm_idx`、`companies_verified_idx`、`post_lifebizs_expire_at_idx`,DB SHOW INDEX 全部存在;`expireAt` 字段实际在 `PostLifebiz` 而非 `Post`(cron 目标表就是 PostLifebiz,索引位置正确)。
 
----
+### 10.6 P1 Sprint 2 (2026-06-11, V1.0 上线冲刺 2,5 任务全部完成)
+
+| 任务 | 来源 | Commit | 状态 |
+|---|---|---|---|
+| T1 | SHOULD-3 viewCount 防刷 + ViewLog 写入 | `a3222bc` + `0703b83` | ✅ + 修 2 critical (TOCTOU→SET NX, anon handling) + 1 important (UA cap) |
+| T2 | SHOULD-30 公告系统(Announcement module + admin CRUD + public active + 前端 banner) | `a3643ab` + `37c08cd` + `183a4d6` | ✅ + 修 1 critical (migration 误删 FULLTEXT 索引,已恢复) |
+| T3 | SHOULD-40 Swagger `/api/docs` 73 paths × 12 tags | `092af34` | ✅ `@nestjs/swagger@7` + JWT bearer auth |
+| T4 | SHOULD-15 30 天硬清 cron + admin `/admin/posts/purge` | `1d1d073` | ✅ 6/6 冒烟 PASS(含 400 边界、0 target 早返、audit log) |
+| T5 | SHOULD-19 Middleware SSR 401 跳 `/me/*` | `15fc870` | ✅ 4/4 冒烟 PASS(/me→307, /me/posts→307, /→200, 带 cookie→200) |
+
+**P1 Sprint 2 总计**:8 commit,5 P1 任务全部完成,V1.0 上线最后冲刺完成。
+
+**已知遗留风险**:
+- ⚠️ Prisma drift 与 FULLTEXT 索引冲突 — schema.prisma 注释说明 Prisma 不支持原生 FULLTEXT,所以 `prisma migrate dev` 会自动 drop 未在 schema 中声明的 FULLTEXT 索引。建议:今后加 FULLTEXT 索引时,放在 prisma 生成的 migration 之后用独立 raw SQL 文件追加,且不跑 `migrate dev`(只 `migrate deploy`)。
 
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
 
