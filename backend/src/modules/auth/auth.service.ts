@@ -80,7 +80,7 @@ export class AuthService {
       throw new UnauthorizedException('账号已被封禁');
     }
 
-    return this.buildTokenPair(user.id, user.phone);
+    return this.buildTokenPair(user.id, user.phone, user.role);
   }
 
   /**
@@ -102,7 +102,7 @@ export class AuthService {
       throw new UnauthorizedException('账号已被封禁');
     }
 
-    return this.buildTokenPair(user.id, user.phone);
+    return this.buildTokenPair(user.id, user.phone, user.role);
   }
 
   /**
@@ -124,7 +124,7 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在或已被封禁');
     }
 
-    return this.buildTokenPair(user.id, user.phone);
+    return this.buildTokenPair(user.id, user.phone, user.role);
   }
 
   /**
@@ -160,18 +160,19 @@ export class AuthService {
 
   // ============= 内部 =============
 
-  private buildTokenPair(userId: bigint, phone: string): TokenPair {
+  private buildTokenPair(userId: bigint, phone: string, role?: string): TokenPair {
+    const roleClaim = role || 'user';
     const accessPayload: JwtPayload = {
       sub: userId.toString(),
       phone,
-      role: 'user',
+      role: roleClaim,
       type: 'access',
       jti: this.genJti(),
     };
     const refreshPayload: JwtPayload = {
       sub: userId.toString(),
       phone,
-      role: 'user',
+      role: roleClaim,
       type: 'refresh',
       jti: this.genJti(),
     };

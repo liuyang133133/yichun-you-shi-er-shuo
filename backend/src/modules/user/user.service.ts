@@ -58,6 +58,7 @@ export class UserService {
         gender: true,
         bio: true,
         status: true,
+        role: true,
         lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
@@ -169,10 +170,18 @@ export class UserService {
 
   /**
    * 根据手机号查询（内部用）
+   * 显式 select 包含 role 与 password,供 auth 流程使用
    */
   async findByPhone(phone: string) {
     return this.prisma.user.findUnique({
       where: { phone },
+      select: {
+        id: true,
+        phone: true,
+        status: true,
+        role: true,
+        password: true,
+      },
     });
   }
 
