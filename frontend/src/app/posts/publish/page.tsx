@@ -60,6 +60,33 @@ function PublishContent() {
   const [communityName, setCommunityName] = useState('');
   const [facilities, setFacilities] = useState<string[]>(['空调', '洗衣机', '冰箱']);
 
+  // 二手字段
+  const [shCategory, setShCategory] = useState('数码电器');
+  const [shCondition, setShCondition] = useState('9成新');
+  const [shOriginalPrice, setShOriginalPrice] = useState('');
+  const [shTradeMethod, setShTradeMethod] = useState('同城自提');
+  const [shUsageDuration, setShUsageDuration] = useState('');
+
+  // 招聘字段
+  const [jobCompanyId, setJobCompanyId] = useState('');
+  const [jobType, setJobType] = useState('全职');
+  const [jobSalaryMin, setJobSalaryMin] = useState('');
+  const [jobSalaryMax, setJobSalaryMax] = useState('');
+  const [jobSalaryUnit, setJobSalaryUnit] = useState('元/月');
+  const [jobEducation, setJobEducation] = useState('不限');
+  const [jobExperience, setJobExperience] = useState('不限');
+  const [jobIndustry, setJobIndustry] = useState('');
+  const [jobWelfare, setJobWelfare] = useState('');
+  const [jobRecruitCount, setJobRecruitCount] = useState('1');
+  const [jobWorkCity, setJobWorkCity] = useState('伊春');
+  const [jobWorkAddress, setJobWorkAddress] = useState('');
+
+  // 便民字段
+  const [lbSubCategory, setLbSubCategory] = useState('顺风车');
+  const [lbServiceType, setLbServiceType] = useState('提供');
+  const [lbPriceText, setLbPriceText] = useState('');
+  const [lbValidityPeriod, setLbValidityPeriod] = useState('一周');
+
   const [step, setStep] = useState(1); // 1=基本信息 2=详细参数 3=联系发布
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +167,19 @@ function PublishContent() {
         contactPhone: contactPhone || undefined,
       };
       const post = await postApi.create(payload);
+      const token = getAccessToken();
+      const subEndpoint = (sub: string) =>
+        fetch(`http://localhost:3001/api/v1/posts/${post.id}/${sub}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({}),
+        });
+
       if (type === 'house') {
+        await subEndpoint('house');
         await fetch(`http://localhost:3001/api/v1/posts/${post.id}/house`, {
           method: 'POST',
           headers: {
@@ -154,6 +193,70 @@ function PublishContent() {
             floorInfo: floorInfo || undefined,
             communityName: communityName || undefined,
             facilities: facilities.length > 0 ? facilities : undefined,
+          }),
+        });
+      } else if (type === 'secondhand') {
+        await fetch(`http://localhost:3001/api/v1/posts/${post.id}/secondhand`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: JSON.stringify({
+            categoryName: shCategory,
+            condition: shCondition,
+            originalPrice: shOriginalPrice ? Number(shOriginalPrice) : undefined,
+            tradeMethod: shTradeMethod,
+            usageDuration: shUsageDuration || undefined,
+          }),
+        });
+      } else if (type === 'job') {
+        await fetch(`http://localhost:3001/api/v1/posts/${post.id}/job`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: JSON.stringify({
+            companyId: Number(jobCompanyId || 1), // V1 默认 1（占位）
+            jobType,
+            salaryMin: jobSalaryMin ? Number(jobSalaryMin) : undefined,
+            salaryMax: jobSalaryMax ? Number(jobSalaryMax) : undefined,
+            salaryUnit: jobSalaryUnit,
+            education: jobEducation,
+            experience: jobExperience,
+            industry: jobIndustry || undefined,
+            welfare: jobWelfare ? jobWelfare.split(/[,，;；\s]+/).filter(Boolean) : undefined,
+            recruitCount: jobRecruitCount ? Number(jobRecruitCount) : undefined,
+            workCity: jobWorkCity || undefined,
+            workAddress: jobWorkAddress || undefined,
+          }),
+        });
+      } else if (type === 'lifebiz') {
+        // 根据 validityPeriod 计算 expireAt
+        const now = new Date();
+        const periodMap: Record<string, number | null> = {
+          '一天': 1,
+          '一周': 7,
+          '一个月': 30,
+          '长期': null,
+        };
+        const days = periodMap[lbValidityPeriod];
+        const expireAt = days === null ? undefined : new Date(now.getTime() + days * 86400000).toISOString();
+
+        await fetch(`http://localhost:3001/api/v1/posts/${post.id}/lifebiz`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: JSON.stringify({
+            subCategory: lbSubCategory,
+            serviceType: lbServiceType,
+            price: price ? Number(price) : undefined,
+            priceText: lbPriceText || undefined,
+            validityPeriod: lbValidityPeriod,
+            expireAt,
           }),
         });
       }
@@ -364,6 +467,136 @@ function PublishContent() {
                           {facilities.includes(f) ? '✓ ' : ''}{f}
                         </button>
                       ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 二手专属字段 */}
+              {type === 'secondhand' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                    <ShoppingBag className="h-4 w-4" /> 二手详情
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">物品分类</Label>
+                      <select value={shCategory} onChange={(e) => setShCategory(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['数码电器','家居日用','服饰鞋包','图书音像','母婴玩具','运动户外','美妆护肤','其他'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">新旧程度</Label>
+                      <select value={shCondition} onChange={(e) => setShCondition(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['全新','9成新','8成新','7成新','6成新','5成新及以下'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">原价（元，可选）</Label>
+                      <Input type="number" value={shOriginalPrice} onChange={(e) => setShOriginalPrice(e.target.value)} placeholder="购入价" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">交易方式</Label>
+                      <select value={shTradeMethod} onChange={(e) => setShTradeMethod(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['同城自提','包邮','均可'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs">使用时长</Label>
+                      <Input value={shUsageDuration} onChange={(e) => setShUsageDuration(e.target.value)} placeholder="如 半年 / 一年" className="h-10" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 招聘专属字段 */}
+              {type === 'job' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                    <Briefcase className="h-4 w-4" /> 招聘详情
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">工作类型</Label>
+                      <select value={jobType} onChange={(e) => setJobType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['全职','兼职','实习'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">招聘人数</Label>
+                      <Input type="number" value={jobRecruitCount} onChange={(e) => setJobRecruitCount(e.target.value)} min={1} className="h-10" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs">薪资范围</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input type="number" value={jobSalaryMin} onChange={(e) => setJobSalaryMin(e.target.value)} placeholder="最低" className="h-10" />
+                        <span className="text-muted-foreground">-</span>
+                        <Input type="number" value={jobSalaryMax} onChange={(e) => setJobSalaryMax(e.target.value)} placeholder="最高" className="h-10" />
+                        <select value={jobSalaryUnit} onChange={(e) => setJobSalaryUnit(e.target.value)} className="h-10 rounded-md border border-input bg-background px-2 text-sm">
+                          {['元/月','元/天','元/时'].map((x) => <option key={x} value={x}>{x}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">学历要求</Label>
+                      <select value={jobEducation} onChange={(e) => setJobEducation(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['不限','高中','大专','本科','硕士','博士'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">经验要求</Label>
+                      <select value={jobExperience} onChange={(e) => setJobExperience(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['不限','1年以下','1-3年','3-5年','5-10年','10年以上'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">工作城市</Label>
+                      <Input value={jobWorkCity} onChange={(e) => setJobWorkCity(e.target.value)} placeholder="如 伊春" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">工作地点</Label>
+                      <Input value={jobWorkAddress} onChange={(e) => setJobWorkAddress(e.target.value)} placeholder="详细地址" className="h-10" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs">行业</Label>
+                      <Input value={jobIndustry} onChange={(e) => setJobIndustry(e.target.value)} placeholder="如 餐饮、互联网、销售" className="h-10" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs">福利（逗号分隔）</Label>
+                      <Input value={jobWelfare} onChange={(e) => setJobWelfare(e.target.value)} placeholder="如 五险一金,包吃,周末双休" className="h-10" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 便民专属字段 */}
+              {type === 'lifebiz' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                    <Megaphone className="h-4 w-4" /> 便民详情
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">子分类</Label>
+                      <select value={lbSubCategory} onChange={(e) => setLbSubCategory(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['顺风车','打听事','寻人寻物','家政服务','装修维修','宠物','婚恋交友','教育','二手回收','其他'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">服务类型</Label>
+                      <select value={lbServiceType} onChange={(e) => setLbServiceType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['提供','需求'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">价格说明</Label>
+                      <Input value={lbPriceText} onChange={(e) => setLbPriceText(e.target.value)} placeholder="如 50元/小时起 / 面议" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">有效期</Label>
+                      <select value={lbValidityPeriod} onChange={(e) => setLbValidityPeriod(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        {['一天','一周','一个月','长期'].map((x) => <option key={x} value={x}>{x}</option>)}
+                      </select>
                     </div>
                   </div>
                 </div>
