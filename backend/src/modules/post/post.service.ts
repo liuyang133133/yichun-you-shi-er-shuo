@@ -148,22 +148,23 @@ export class PostService {
 
   /**
    * 创建信息（userId 从 JWT 拿，不接受客户端传参）
+   * SHOULD-1：dto.detail 存在时，主表 + 子表一次 $transaction 原子写入，
+   * 消除两次 HTTP 之间失败导致的"孤儿 post"风险。
+   * dto.detail 不传时保持旧行为（只写主表），前端可继续用两次 HTTP 路径。
    */
   async create(userId: bigint, dto: CreatePostDto) {
-    // 校验分类是否存在
+    // ===== 预校验（事务外，避免无谓占连接） =====
     const category = await this.prisma.category.findUnique({
       where: { id: BigInt(dto.categoryId) },
     });
     if (!category) {
       throw new BadRequestException(`分类 ID ${dto.categoryId} 不存在`);
     }
-    // 校验分类 code 与 type 一致
     if (category.code !== dto.type) {
       throw new BadRequestException(
         `分类 code (${category.code}) 与 type (${dto.type}) 不一致`,
       );
     }
-    // 校验区域（可选）
     if (dto.areaId) {
       const area = await this.prisma.area.findUnique({
         where: { id: BigInt(dto.areaId) },
@@ -173,22 +174,160 @@ export class PostService {
       }
     }
 
-    const post = await this.prisma.post.create({
-      data: {
-        userId,
-        categoryId: BigInt(dto.categoryId),
-        areaId: dto.areaId ? BigInt(dto.areaId) : null,
-        type: dto.type,
-        title: dto.title,
-        description: dto.description,
-        price: dto.price !== undefined ? new Prisma.Decimal(dto.price) : new Prisma.Decimal(0),
-        priceUnit: dto.priceUnit,
-        contactName: dto.contactName,
-        contactPhone: dto.contactPhone,
-        contactWechat: dto.contactWechat,
-        status: 'pending', // 进入审核流
-        auditStatus: 'pending',
-      },
+    // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
+    if (dto.detail && dto.type === 'job' && dto.detail.companyId) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: BigInt(dto.detail.companyId) },
+      });
+      if (!company || company.creatorUserId !== userId) {
+        throw new BadRequestException('公司不存在或不属于当前用户');
+      }
+    }
+
+    // ===== 事务：主表 + 4 type 之一子表 =====
+    const { detail } = dto;
+    const post = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.post.create({
+        data: {
+          userId,
+          categoryId: BigInt(dto.categoryId),
+          areaId: dto.areaId ? BigInt(dto.areaId) : null,
+          type: dto.type,
+          title: dto.title,
+          description: dto.description,
+          price: dto.price !== undefined ? new Prisma.Decimal(dto.price) : new Prisma.Decimal(0),
+          priceUnit: dto.priceUnit,
+          contactName: dto.contactName,
+          contactPhone: dto.contactPhone,
+          contactWechat: dto.contactWechat,
+          status: 'pending',
+          auditStatus: 'pending',
+        },
+      });
+
+      if (detail) {
+        switch (dto.type) {
+          case 'house': {
+            // 必填校验
+            if (!detail.rentalType) {
+              throw new BadRequestException('house.detail 缺少必填字段 rentalType');
+            }
+            if (!detail.propertyType) {
+              throw new BadRequestException('house.detail 缺少必填字段 propertyType');
+            }
+            await tx.postHouse.create({
+              data: {
+                postId: created.id,
+                rentalType: detail.rentalType,
+                propertyType: detail.propertyType,
+                decoration: detail.decoration,
+                areaSqm:
+                  detail.areaSqm !== undefined ? new Prisma.Decimal(detail.areaSqm) : null,
+                rooms: detail.rooms,
+                livingRooms: detail.livingRooms,
+                bathrooms: detail.bathrooms,
+                floorInfo: detail.floorInfo,
+                orientation: detail.orientation,
+                buildingYear: detail.buildingYear,
+                communityName: detail.communityName,
+                address: detail.address,
+                longitude:
+                  detail.longitude !== undefined ? new Prisma.Decimal(detail.longitude) : null,
+                latitude:
+                  detail.latitude !== undefined ? new Prisma.Decimal(detail.latitude) : null,
+                facilities: detail.facilities ? (detail.facilities as any) : Prisma.DbNull,
+              },
+            });
+            break;
+          }
+          case 'secondhand': {
+            if (!detail.categoryName) {
+              throw new BadRequestException('secondhand.detail 缺少必填字段 categoryName');
+            }
+            if (!detail.condition) {
+              throw new BadRequestException('secondhand.detail 缺少必填字段 condition');
+            }
+            await tx.postSecondhand.create({
+              data: {
+                postId: created.id,
+                categoryName: detail.categoryName,
+                condition: detail.condition,
+                originalPrice:
+                  detail.originalPrice !== undefined
+                    ? new Prisma.Decimal(detail.originalPrice)
+                    : null,
+                tradeMethod: detail.tradeMethod,
+                usageDuration: detail.usageDuration,
+              },
+            });
+            break;
+          }
+          case 'job': {
+            // job.companyId 已在事务外预校验；事务内不再重复 select
+            if (!detail.companyId) {
+              throw new BadRequestException('job.detail 缺少必填字段 companyId');
+            }
+            if (!detail.jobType) {
+              throw new BadRequestException('job.detail 缺少必填字段 jobType');
+            }
+            await tx.postJob.create({
+              data: {
+                postId: created.id,
+                companyId: BigInt(detail.companyId),
+                jobType: detail.jobType,
+                salaryMin:
+                  detail.salaryMin !== undefined ? new Prisma.Decimal(detail.salaryMin) : null,
+                salaryMax:
+                  detail.salaryMax !== undefined ? new Prisma.Decimal(detail.salaryMax) : null,
+                salaryUnit: detail.salaryUnit,
+                education: detail.education,
+                experience: detail.experience,
+                industry: detail.industry,
+                welfare: detail.welfare ? (detail.welfare as any) : Prisma.DbNull,
+                recruitCount: detail.recruitCount ?? 1,
+                workCity: detail.workCity,
+                workAddress: detail.workAddress,
+              },
+            });
+            break;
+          }
+          case 'lifebiz': {
+            if (!detail.subCategory) {
+              throw new BadRequestException('lifebiz.detail 缺少必填字段 subCategory');
+            }
+            if (!detail.serviceType) {
+              throw new BadRequestException('lifebiz.detail 缺少必填字段 serviceType');
+            }
+            // expireAt：客户端显式传优先；否则按 validityPeriod 计算；都没有则 null
+            const expireAt = detail.expireAt
+              ? new Date(detail.expireAt)
+              : detail.validityPeriod
+                ? this.computeLifebizExpireAt(detail.validityPeriod)
+                : null;
+            await tx.postLifebiz.create({
+              data: {
+                postId: created.id,
+                subCategory: detail.subCategory,
+                serviceType: detail.serviceType,
+                price: detail.price !== undefined ? new Prisma.Decimal(detail.price) : null,
+                priceText: detail.priceText,
+                validityPeriod: detail.validityPeriod,
+                expireAt,
+              },
+            });
+            break;
+          }
+          default:
+            throw new BadRequestException(`不支持的 post.type: ${dto.type}`);
+        }
+      }
+
+      return created;
+    });
+
+    // 重新 include 关联返回（不把 include 放事务里以减少事务持有时间）
+    const result = await this.prisma.post.findUnique({
+      where: { id: post.id },
       include: {
         user: { select: { id: true, nickname: true, avatar: true } },
         category: { select: { id: true, name: true, code: true } },
@@ -199,7 +338,24 @@ export class PostService {
     // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
     this.redis.invalidatePattern('cache:posts:*').catch(() => {});
 
-    return post;
+    return result;
+  }
+
+  /** lifebiz.validityPeriod → expireAt（同步自 LifebizService 行为） */
+  private computeLifebizExpireAt(period: string): Date | null {
+    const now = Date.now();
+    switch (period) {
+      case '一天':
+        return new Date(now + 1 * 86400 * 1000);
+      case '一周':
+        return new Date(now + 7 * 86400 * 1000);
+      case '一个月':
+        return new Date(now + 30 * 86400 * 1000);
+      case '长期':
+        return null;
+      default:
+        return null;
+    }
   }
 
   /**
