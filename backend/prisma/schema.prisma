@@ -497,3 +497,23 @@ model ViewLog {
   @@index([ip, createdAt])
   @@map("view_logs")
 }
+
+// =====================================================
+// 公告系统（SHOULD-30）
+// =====================================================
+model Announcement {
+  id        BigInt   @id @default(autoincrement())
+  title     String   @db.VarChar(100)
+  content   String   @db.Text
+  status    Int      @default(1) @db.TinyInt
+  priority  Int      @default(0) @db.TinyInt
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdBy BigInt   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, priority, createdAt])
+  @@index([startsAt, endsAt])
+  @@map("announcements")
+}

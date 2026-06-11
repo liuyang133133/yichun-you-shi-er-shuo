@@ -25,6 +25,7 @@ import { HealthModule } from './modules/health/health.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CronModule } from './cron/cron.module';
 import { ViewLogModule } from './modules/view-log/view-log.module';
+import { AnnouncementModule } from './modules/announcement/announcement.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ViewLogModule } from './modules/view-log/view-log.module';
     HealthModule,
     CronModule,
     ViewLogModule,
+    AnnouncementModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
