@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { randomBytes } from 'crypto';
-import { fileTypeFromBuffer } from 'file-type';
+import { fromBuffer as fileTypeFromBuffer } from 'file-type';
 import sharp from 'sharp';
 
 /**
@@ -60,7 +60,7 @@ export class UploadService {
       throw new BadRequestException('Not an image file');
     }
     // 3. 显式拒绝 svg（即使 mimetype 伪装）
-    if (type.ext === 'svg' || type.mime.includes('svg')) {
+    if ((type.ext as string) === 'svg' || type.mime.includes('svg')) {
       throw new BadRequestException('SVG files are not allowed (XSS risk)');
     }
 
