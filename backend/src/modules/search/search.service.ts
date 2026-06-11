@@ -83,6 +83,9 @@ export class SearchService {
     const like = `%${q}%`;
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
       sql,
+      // 顺序:whereSql 占位(type/areaId/categoryId) → MATCH(SELECT) → MATCH(OR) → 7 LIKE → LIMIT/OFFSET
+      // F-3 附带修复:预存 bug — params2 构建后从未 spread,带 type/areaId/categoryId 过滤时 500
+      ...params2,
       ftQuery, ftQuery, like, like, like, like, like, like, like,
       Number(pageSize), skip,
     );
@@ -109,7 +112,9 @@ export class SearchService {
     `;
     const countResult = await this.prisma.$queryRawUnsafe<Array<{ total: bigint }>>(
       countSql,
-      ftQuery, ftQuery, like, like, like, like, like, like, like,
+      // 顺序:whereSql 占位 → MATCH(OR) → 7 LIKE(无 SELECT 中的 MATCH,无 LIMIT/OFFSET)
+      ...params2,
+      ftQuery, like, like, like, like, like, like, like,
     );
     const total = Number(countResult[0]?.total || 0);
 
