@@ -20,6 +20,7 @@ import { ResumeModule } from './modules/resume/resume.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SearchModule } from './modules/search/search.module';
+import { MessageModule } from './modules/message/message.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CronModule } from './cron/cron.module';
 
@@ -51,6 +52,7 @@ import { CronModule } from './cron/cron.module';
     SearchModule,
     SmsModule,
     AuthModule,
+    MessageModule,
     CronModule,
   ],
   providers: [
