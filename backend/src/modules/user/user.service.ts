@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -184,12 +190,37 @@ export class UserService {
   }
 
   /**
-   * 删除用户
+   * SHOULD-16: 删除用户改软删（status=2），保留数据可恢复
+   * 物理硬删会破坏帖子/评论/收藏/站内信关联
+   * @param id 用户 ID
+   * @param currentUser 操作者（sub, role）
    */
-  async remove(id: bigint) {
-    await this.findOne(id);
-    await this.prisma.user.delete({ where: { id } });
-    return { id: id.toString(), deleted: true };
+  async remove(id: bigint, currentUser?: { sub: string; role?: string }) {
+    // 鉴权：仅 admin 可删，且不能删自己
+    if (currentUser) {
+      if (currentUser.role !== 'admin') {
+        throw new ForbiddenException('只有管理员能删除用户');
+      }
+      if (String(currentUser.sub) === String(id)) {
+        throw new BadRequestException('不能删除自己，请联系其他管理员');
+      }
+    }
+
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('用户不存在');
+    }
+    if (existing.status === 2) {
+      return { id: id.toString(), status: 2, alreadyDeleted: true };
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { status: 2, updatedAt: new Date() },
+    });
+
+    // 备注：access token 7d 内仍有效，需等自然过期或后续接入 jwt 黑名单刷新
+    return { id: id.toString(), status: 2, softDeleted: true };
   }
 
   /**

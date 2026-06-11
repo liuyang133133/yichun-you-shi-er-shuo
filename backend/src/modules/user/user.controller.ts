@@ -88,12 +88,17 @@ export class UserController {
 
   /**
    * 删除用户（必须 admin）
-   * - 生产建议改软删（status=2），此处保留硬删作为 admin 强操作
+   * SHOULD-16: 改软删（status=2），保留数据可恢复
+   * - 不能删除自己
+   * - 已删除的用户再删返回 alreadyDeleted: true（幂等）
    */
   @UseGuards(AdminGuard)
   @Roles('admin')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(BigInt(id));
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.userService.remove(BigInt(id), user);
   }
 }
