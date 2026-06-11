@@ -8,11 +8,14 @@ import {
   Query,
   HttpCode,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('comments')
+@ApiBearerAuth('JWT')
 @Controller()
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
@@ -23,6 +26,7 @@ export class CommentController {
    */
   @Public()
   @Get('posts/:postId/comments')
+  @ApiOperation({ summary: '帖子留言列表（公开）' })
   findByPost(
     @Param('postId') postId: string,
     @Query('page') page?: string,
@@ -40,6 +44,7 @@ export class CommentController {
    */
   @HttpCode(201)
   @Post('posts/:postId/comments')
+  @ApiOperation({ summary: '发留言' })
   create(
     @CurrentUser() user: JwtPayload,
     @Param('postId') postId: string,
@@ -58,6 +63,7 @@ export class CommentController {
    * 删留言（自己/帖子作者）
    */
   @Delete('comments/:id')
+  @ApiOperation({ summary: '删留言（自己/帖子作者）' })
   remove(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,

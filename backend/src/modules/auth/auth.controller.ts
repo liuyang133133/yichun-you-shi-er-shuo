@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -10,6 +11,7 @@ import {
   SmsCodeDto,
 } from './dto/auth.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -21,6 +23,7 @@ export class AuthController {
    */
   @Public()
   @Post('sms-code')
+  @ApiOperation({ summary: '发送短信验证码' })
   async smsCode(@Body() dto: SmsCodeDto, @Req() req: Request) {
     const ip = this.getClientIp(req);
     return this.authService.sendSmsCode(dto.phone, ip);
@@ -32,6 +35,7 @@ export class AuthController {
    */
   @Public()
   @Post('login-sms')
+  @ApiOperation({ summary: '短信验证码登录（自动注册）' })
   async loginBySms(@Body() dto: LoginBySmsDto) {
     const tokens = await this.authService.loginBySms(dto.phone, dto.code);
     return { ...tokens, user: { phone: dto.phone } };
@@ -43,6 +47,7 @@ export class AuthController {
    */
   @Public()
   @Post('login-password')
+  @ApiOperation({ summary: '密码登录' })
   async loginByPassword(@Body() dto: LoginByPasswordDto) {
     const tokens = await this.authService.loginByPassword(dto.phone, dto.password);
     return { ...tokens, user: { phone: dto.phone } };
@@ -54,6 +59,7 @@ export class AuthController {
    */
   @Public()
   @Post('refresh')
+  @ApiOperation({ summary: '刷新 access token' })
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refreshToken);
   }
@@ -63,8 +69,10 @@ export class AuthController {
    * 把当前 access token 加入 Redis 黑名单（剩余有效期内）
    * 需要登录
    */
+  @ApiBearerAuth('JWT')
   @HttpCode(200)
   @Post('logout')
+  @ApiOperation({ summary: '退出登录（token 加入黑名单）' })
   async logout(
     @CurrentUser() _user: JwtPayload,
     @Headers('authorization') authorization: string,
@@ -78,7 +86,9 @@ export class AuthController {
    * 返回当前登录用户信息
    * 需要登录
    */
+  @ApiBearerAuth('JWT')
   @Get('me')
+  @ApiOperation({ summary: '当前登录用户信息' })
   async me(@CurrentUser() user: JwtPayload) {
     return user;
   }

@@ -1,7 +1,9 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AreaService } from './area.service';
 import { Public } from '../../common/decorators/public.decorator';
 
+@ApiTags('areas')
 @Controller('areas')
 export class AreaController {
   constructor(private readonly areaService: AreaService) {}
@@ -18,6 +20,7 @@ export class AreaController {
    */
   @Public()
   @Get()
+  @ApiOperation({ summary: '区域列表/树（支持 level/parentId/tree 过滤）' })
   async list(
     @Query('tree') tree?: string,
     @Query('level') level?: string,
@@ -41,6 +44,7 @@ export class AreaController {
    */
   @Public()
   @Get('count')
+  @ApiOperation({ summary: '区域总数' })
   async count() {
     return this.areaService.count();
   }
@@ -50,6 +54,7 @@ export class AreaController {
    */
   @Public()
   @Get(':id')
+  @ApiOperation({ summary: '区域详情' })
   async one(@Param('id') id: string) {
     return this.areaService.findOne(BigInt(id));
   }

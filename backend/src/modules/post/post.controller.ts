@@ -9,6 +9,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -17,6 +18,8 @@ import { ListPostQueryDto, ChangeStatusDto } from './dto/list-post.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('posts')
+@ApiBearerAuth('JWT')
 @Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -26,6 +29,7 @@ export class PostController {
    * 创建信息（需登录）
    */
   @Post()
+  @ApiOperation({ summary: '发布信息' })
   create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreatePostDto,
@@ -39,6 +43,7 @@ export class PostController {
    */
   @Public()
   @Get()
+  @ApiOperation({ summary: '信息列表（公开）' })
   findAll(@Query() query: ListPostQueryDto) {
     return this.postService.findAll(query);
   }
@@ -48,6 +53,7 @@ export class PostController {
    */
   @Public()
   @Get('count')
+  @ApiOperation({ summary: '信息总数' })
   count(@Query('type') type?: string) {
     return this.postService.count(type);
   }
@@ -57,6 +63,7 @@ export class PostController {
    * 我的发布（需登录）
    */
   @Get('me')
+  @ApiOperation({ summary: '我的发布列表' })
   findMyPosts(
     @CurrentUser() user: JwtPayload,
     @Query('status') status?: string,
@@ -75,6 +82,7 @@ export class PostController {
    */
   @Public()
   @Get(':id')
+  @ApiOperation({ summary: '信息详情（自动 +1 浏览）' })
   findOne(
     @Param('id') id: string,
     @Req() req: Request,
@@ -93,6 +101,7 @@ export class PostController {
    * 编辑（需登录 + 是作者）
    */
   @Patch(':id')
+  @ApiOperation({ summary: '编辑信息' })
   update(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -106,6 +115,7 @@ export class PostController {
    * 切换状态（在售/已售/过期），需登录 + 是作者
    */
   @Post(':id/status')
+  @ApiOperation({ summary: '切换信息状态' })
   changeStatus(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -119,6 +129,7 @@ export class PostController {
    * 软删除（需登录 + 是作者）
    */
   @Delete(':id')
+  @ApiOperation({ summary: '删除信息（软删）' })
   remove(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,

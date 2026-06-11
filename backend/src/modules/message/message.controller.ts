@@ -1,8 +1,11 @@
 import { Controller, Get, Post, Body, Param, Query, ParseIntPipe, DefaultValuePipe, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MessageService } from './message.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('messages')
+@ApiBearerAuth('JWT')
 @Controller('messages')
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
@@ -12,6 +15,7 @@ export class MessageController {
    * POST /api/v1/messages
    */
   @Post()
+  @ApiOperation({ summary: '发送站内信' })
   send(@CurrentUser() user: JwtPayload, @Body() dto: SendMessageDto) {
     return this.messageService.send(BigInt(user.sub), dto);
   }
@@ -21,6 +25,7 @@ export class MessageController {
    * GET /api/v1/messages/inbox
    */
   @Get('inbox')
+  @ApiOperation({ summary: '收件箱' })
   inbox(
     @CurrentUser() user: JwtPayload,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -34,6 +39,7 @@ export class MessageController {
    * GET /api/v1/messages/outbox
    */
   @Get('outbox')
+  @ApiOperation({ summary: '发件箱' })
   outbox(
     @CurrentUser() user: JwtPayload,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -47,6 +53,7 @@ export class MessageController {
    * GET /api/v1/messages/with/:userId
    */
   @Get('with/:userId')
+  @ApiOperation({ summary: '与某人的对话' })
   conversation(
     @CurrentUser() user: JwtPayload,
     @Param('userId') otherId: string,
@@ -61,6 +68,7 @@ export class MessageController {
    * GET /api/v1/messages/unread-count
    */
   @Get('unread-count')
+  @ApiOperation({ summary: '未读消息数' })
   unread(@CurrentUser() user: JwtPayload) {
     return this.messageService.unreadCount(BigInt(user.sub));
   }
@@ -71,6 +79,7 @@ export class MessageController {
    */
   @HttpCode(200)
   @Post('read-all')
+  @ApiOperation({ summary: '全部标记已读' })
   markAllRead(@CurrentUser() user: JwtPayload) {
     return this.messageService.markAllRead(BigInt(user.sub));
   }
@@ -81,6 +90,7 @@ export class MessageController {
    */
   @HttpCode(200)
   @Post(':id/read')
+  @ApiOperation({ summary: '标记单条已读' })
   markRead(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.messageService.markRead(BigInt(user.sub), BigInt(id));
   }

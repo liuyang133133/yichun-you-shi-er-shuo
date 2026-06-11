@@ -12,6 +12,7 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -20,6 +21,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { AdminGuard } from '../admin/guards/admin-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('users')
+@ApiBearerAuth('JWT')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -33,6 +36,7 @@ export class UserController {
   @UseGuards(AdminGuard)
   @Roles('admin')
   @Post()
+  @ApiOperation({ summary: '创建用户（admin）' })
   create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
   }
@@ -42,6 +46,7 @@ export class UserController {
    */
   @Public()
   @Get()
+  @ApiOperation({ summary: '公开用户列表（脱敏手机号）' })
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
@@ -51,6 +56,7 @@ export class UserController {
 
   @Public()
   @Get('count')
+  @ApiOperation({ summary: '用户总数' })
   count() {
     return this.userService.count();
   }
@@ -60,6 +66,7 @@ export class UserController {
    */
   @Public()
   @Get(':id')
+  @ApiOperation({ summary: '用户详情（脱敏）' })
   findOne(@Param('id') id: string) {
     return this.userService.findOnePublic(BigInt(id));
   }
@@ -71,6 +78,7 @@ export class UserController {
    * - 即使是普通用户,也无法提权 / 改密
    */
   @Patch(':id')
+  @ApiOperation({ summary: '修改用户资料' })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -95,6 +103,7 @@ export class UserController {
   @UseGuards(AdminGuard)
   @Roles('admin')
   @Delete(':id')
+  @ApiOperation({ summary: '删除用户（软删，admin）' })
   remove(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,

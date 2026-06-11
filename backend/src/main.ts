@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import compression from 'compression';
 import { webcrypto } from 'crypto';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -116,11 +117,39 @@ async function bootstrap() {
   // 9. 全局响应拦截器
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  // 10. Swagger 文档 (SHOULD-40)
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('伊春有事儿说 API')
+    .setDescription('V1.0 分类信息平台后端 API')
+    .setVersion('0.1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'JWT',
+    )
+    .addTag('auth', '认证')
+    .addTag('posts', '信息')
+    .addTag('users', '用户')
+    .addTag('categories', '分类')
+    .addTag('areas', '区域')
+    .addTag('favorites', '收藏')
+    .addTag('comments', '留言')
+    .addTag('reports', '举报')
+    .addTag('messages', '站内信')
+    .addTag('announcements', '公告')
+    .addTag('admin', '管理后台')
+    .addTag('health', '健康检查')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
+
   await app.listen(port);
 
   const logger = new Logger('Bootstrap');
   logger.log(`🚀 后端服务运行在: http://localhost:${port}/api/v1`);
   logger.log(`📁 静态资源: http://localhost:${port}/uploads/`);
+  logger.log(`📚 Swagger 文档: http://localhost:${port}/api/docs`);
   logger.log(`🔒 CORS 白名单: ${origins.join(', ') || '(空,仅同源)'}`);
 }
 

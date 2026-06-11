@@ -7,10 +7,13 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FavoriteService } from './favorite.service';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('favorites')
+@ApiBearerAuth('JWT')
 @Controller('favorites')
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
@@ -21,6 +24,7 @@ export class FavoriteController {
    * query: type=house|secondhand|job|lifebiz, page, pageSize
    */
   @Get()
+  @ApiOperation({ summary: '我的收藏列表' })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query('type') type?: string,
@@ -39,6 +43,7 @@ export class FavoriteController {
    * 我的收藏总数（首页红点用）
    */
   @Get('count')
+  @ApiOperation({ summary: '我的收藏总数' })
   async count(@CurrentUser() user: JwtPayload) {
     return this.favoriteService.countMyFavorites(BigInt(user.sub));
   }
@@ -49,6 +54,7 @@ export class FavoriteController {
    * body: { postId: 123 }
    */
   @Post()
+  @ApiOperation({ summary: '添加收藏' })
   add(@CurrentUser() user: JwtPayload, @Body() dto: CreateFavoriteDto) {
     return this.favoriteService.add(BigInt(user.sub), BigInt(dto.postId));
   }
@@ -58,6 +64,7 @@ export class FavoriteController {
    * 取消收藏
    */
   @Delete(':postId')
+  @ApiOperation({ summary: '取消收藏' })
   remove(@CurrentUser() user: JwtPayload, @Param('postId') postId: string) {
     return this.favoriteService.remove(BigInt(user.sub), BigInt(postId));
   }

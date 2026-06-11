@@ -7,11 +7,14 @@ import {
   Query,
   HttpCode,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('reports')
+@ApiBearerAuth('JWT')
 @Controller('reports')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}
@@ -22,6 +25,7 @@ export class ReportController {
    */
   @HttpCode(201)
   @Post()
+  @ApiOperation({ summary: '提交举报' })
   create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateReportDto,
@@ -39,6 +43,7 @@ export class ReportController {
    * 我的举报记录（需登录）
    */
   @Get()
+  @ApiOperation({ summary: '我的举报记录' })
   findMine(
     @CurrentUser() user: JwtPayload,
     @Query('page') page?: string,
@@ -56,6 +61,7 @@ export class ReportController {
    */
   @Public()
   @Get('reasons')
+  @ApiOperation({ summary: '举报理由选项（公开）' })
   getReasons() {
     return this.reportService.getReasons();
   }
@@ -65,6 +71,7 @@ export class ReportController {
    * 查看自己的某条举报
    */
   @Get(':id')
+  @ApiOperation({ summary: '查看我的某条举报' })
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,

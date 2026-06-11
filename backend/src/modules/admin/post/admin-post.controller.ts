@@ -1,11 +1,14 @@
 import {
   Controller, Get, Post, Body, Param, Query, UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminPostService } from './admin-post.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user.decorator';
 import { AdminGuard } from '../guards/admin-auth.guard';
 
+@ApiTags('admin')
+@ApiBearerAuth('JWT')
 @Controller('admin/posts')
 @UseGuards(AdminGuard)
 @Roles('admin')
@@ -18,6 +21,7 @@ export class AdminPostController {
    *  query: auditStatus, type, page, pageSize
    */
   @Get()
+  @ApiOperation({ summary: '管理后台-帖子列表' })
   findAll(
     @Query('auditStatus') auditStatus?: string,
     @Query('type') type?: string,
@@ -38,6 +42,7 @@ export class AdminPostController {
    * body: { reason?: string }
    */
   @Post(':id/audit')
+  @ApiOperation({ summary: '审核通过/拒绝帖子' })
   audit(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -57,6 +62,7 @@ export class AdminPostController {
    * body: { reason: string }
    */
   @Post(':id/offline')
+  @ApiOperation({ summary: '强制下架帖子' })
   offline(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
