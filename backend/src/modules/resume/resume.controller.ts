@@ -27,12 +27,8 @@ export class ResumeController {
     });
   }
 
-  @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.resumeService.findOnePublic(BigInt(id));
-  }
-
+  // ⚠️ 必须在 :id 路由之前声明,否则 'me' 会被 :id 匹配 → BigInt('me') 抛 500
+  // F-4 修复:重排路由顺序
   @Get('me')
   findMine(@CurrentUser() user: JwtPayload) {
     return this.resumeService.findMine(BigInt(user.sub));
@@ -47,5 +43,11 @@ export class ResumeController {
   @Delete('me')
   remove(@CurrentUser() user: JwtPayload) {
     return this.resumeService.remove(BigInt(user.sub));
+  }
+
+  @Public()
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.resumeService.findOnePublic(BigInt(id));
   }
 }
