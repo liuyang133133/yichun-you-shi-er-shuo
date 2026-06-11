@@ -75,7 +75,12 @@ export default function LoginPage() {
         id: res.user?.phone || phone,
         phone: res.user?.phone || phone,
       });
-      router.push('/me');
+      // 登录成功后跳回 middleware 重定向前想去的页面（SHOULD-19）
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || '/me';
+      // 安全校验:只允许跳同源绝对路径,防止 open-redirect
+      const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/me';
+      router.push(safeRedirect);
     } catch (e: any) {
       setError(e?.message || '登录失败');
     } finally {
