@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AdminGuard } from '../admin/guards/admin-auth.guard';
+import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
 @Controller('users')
 export class UserController {
@@ -63,14 +65,25 @@ export class UserController {
   }
 
   /**
-   * 修改用户（必须 admin）
-   * - 普通用户修改自己信息走 /auth/me 或专门端点
+   * 修改用户
+   * F-6 修复:普通用户改自己 OR admin 改任意人都允许
+   * - UpdateUserDto 已排除 phone/password/role/status(只允许 nickname/avatar/bio/gender)
+   * - 即使是普通用户,也无法提权 / 改密
    */
-  @UseGuards(AdminGuard)
-  @Roles('admin')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(BigInt(id), dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    // 鉴权: 自己 OR admin
+    const targetId = BigInt(id);
+    const isSelf = String(targetId) === String(user.sub);
+    const isAdmin = user.role === 'admin';
+    if (!isSelf && !isAdmin) {
+      throw new ForbiddenException('只能修改自己的资料');
+    }
+    return this.userService.update(targetId, dto);
   }
 
   /**
