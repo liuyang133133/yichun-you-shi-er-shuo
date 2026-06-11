@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,14 @@ const DECORATIONS = ['精装', '简装', '毛坯', '豪装'];
 const COMMON_FACILITIES = ['空调', '洗衣机', '冰箱', '热水器', '床', '衣柜', '宽带', '电视', '沙发', '厨房'];
 
 export default function PublishPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted-foreground">加载中...</div>}>
+      <PublishContent />
+    </Suspense>
+  );
+}
+
+function PublishContent() {
   const router = useRouter();
   const search = useSearchParams();
   const type = (search.get('type') as 'house' | 'secondhand' | 'job' | 'lifebiz') || 'house';
