@@ -42,7 +42,16 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly smsService: SmsService,
     private readonly redis: RedisService,
-  ) {}
+  ) {
+    // 启动期强校验：JWT_SECRET 至少 32 字符
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret || secret.length < 32) {
+      throw new Error(
+        `JWT_SECRET must be at least 32 characters (current: ${secret?.length ?? 0}). ` +
+        `Generate with: openssl rand -base64 48`,
+      );
+    }
+  }
 
   /**
    * 发送登录验证码
