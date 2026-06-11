@@ -30,7 +30,7 @@ export class ResumeController {
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.resumeService.findMine(BigInt(id)).catch(() => null);
+    return this.resumeService.findOnePublic(BigInt(id));
   }
 
   @Get('me')

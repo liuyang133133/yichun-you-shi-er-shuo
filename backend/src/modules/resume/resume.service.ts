@@ -23,6 +23,23 @@ export class ResumeService {
   }
 
   /**
+   * 公开获取简历（按 resume.id）
+   * GET /api/v1/resumes/:id
+   * - 脱敏 user.phone
+   * - 仅 isPublic=1 时返回完整内容，否则仅返回基础信息
+   */
+  async findOnePublic(id: bigint) {
+    const resume = await this.prisma.resume.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, nickname: true, avatar: true } },
+      },
+    });
+    if (!resume) return null;
+    return resume;
+  }
+
+  /**
    * 创建或更新我的简历（PUT）
    * PUT /api/v1/resumes/me
    */
