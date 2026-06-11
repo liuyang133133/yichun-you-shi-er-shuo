@@ -58,15 +58,23 @@ async function bootstrap() {
   });
 
   // 5. CORS 白名单（MUST-4）
+  // F-5 修复:空配置应拒绝跨域,而不是放行所有 origin
   const origins = (config.get<string>('CORS_ORIGINS') || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
 
+  if (origins.length === 0) {
+    new Logger('Bootstrap').warn(
+      '⚠️  CORS_ORIGINS 为空:仅允许同源请求。生产环境必须在 .env 中显式设置。',
+    );
+  }
+
   app.enableCors({
     origin: (origin, callback) => {
-      // 同源 / Postman / curl（无 origin 头）允许
-      if (!origin || origins.length === 0 || origins.includes(origin)) {
+      // 同源（无 Origin 头，如 Postman / curl / 同站请求）放行
+      // 注意:F-5 修复后,空配置不再放行所有 origin
+      if (!origin || origins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -100,7 +108,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   logger.log(`🚀 后端服务运行在: http://localhost:${port}/api/v1`);
   logger.log(`📁 静态资源: http://localhost:${port}/uploads/`);
-  logger.log(`🔒 CORS 白名单: ${origins.join(', ') || '(空，允许所有)'}`);
+  logger.log(`🔒 CORS 白名单: ${origins.join(', ') || '(空,仅同源)'}`);
 }
 
 bootstrap();
