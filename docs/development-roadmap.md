@@ -116,13 +116,15 @@
 
 ### Week 9：生产部署
 
-| # | 任务 | 工时 | 状态 | 依赖 |
+| # | 任务 | 工时 | 状态 | Commit |
 |---|---|---|---|---|
-| MUST-15 | 生产 docker-compose + nginx + SSL | 2h | ⏳ | 无 |
+| MUST-15 | 生产 docker-compose + nginx + SSL | 2h | ✅ | `73be0ca` |
 | SHOULD-15 | Cron 清理 30 天前软删的 post + images | 0.5h | ⏳ | 无 |
-| SHOULD-16 | 删除用户改软删 status=2 | 0.5h | ⏳ | 无 |
-| SHOULD-31 | /api/health 真正检查后端健康 | 0.5h | ⏳ | 无 |
+| **SHOULD-16** | **删除用户改软删 status=2** | **0.5h** | **✅** | **`25cc83a`** |
+| **SHOULD-31** | **/api/health 真正检查后端健康** | **0.5h** | **✅** | **`5385601`** |
 | MUST-25 | Admin 审核事务修复 | 1h | ⏳ | MUST-16 |
+
+> **2026-06-11 P1 Sprint 1 同步:** 7 任务完成 (SHOULD-6/7/11/16/31/39 + 索引核验),共 6 commit。详见 [project-memory.md §10.5](./project-memory.md) 与 `docs/superpowers/plans/2026-06-11-p1-sprint1.md`。
 
 **Week 9 交付**：生产环境可部署，SSL/HTTPS/反向代理完整
 

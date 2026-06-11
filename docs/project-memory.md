@@ -508,6 +508,20 @@ GET    /api/v1/admin/categories
 
 详见 [development-roadmap.md](./development-roadmap.md) — 42 项 P1 + 19 项 P2 等后续迭代
 
+**P1 Sprint 1 (2026-06-11, V1.0 收尾冲刺,7 任务全部完成):**
+
+| 任务 | 来源 | Commit | 状态 |
+|---|---|---|---|
+| T1 | SHOULD-31 `GET /api/v1/health` 检 MySQL+Redis | `5385601` | ✅ + 修 3 个 review 问题 |
+| T2 | SHOULD-6 compression 中间件 | `210c335` + `dae19fe` | ✅ 5677B→964B(83% 节省) |
+| T3 | SHOULD-7 post 列表缓存 invalidation | `d5778f2` | ✅ E2E: 1 key → POST → 0 key |
+| T4 | SHOULD-16 删除用户改软删(status=2) | `25cc83a` | ✅ 4/4 冒烟 PASS |
+| T5 | SHOULD-39 删 post.service.ts `bigIntToString` helper | `e189dfe` | ✅ 改用 TransformInterceptor |
+| T6 | SHOULD-32~35 4 个 DB 索引 | (无 commit) | ⚠️ **审计 outdated** — schema.prisma 已含全部 4 个,DB 验证存在 |
+| T7 | SHOULD-11 pageSize `@Max(100)` | `00cb8cc` | ✅ 4 个 DTO,5/5 冒烟 PASS |
+
+**审计 outdated 修正**:SHOULD-32~35 报告称 4 个索引缺失,实际 schema.prisma 早已含 `users_role_status_idx`(左前缀 role)、`post_houses_rental_type_property_type_area_sqm_idx`、`companies_verified_idx`、`post_lifebizs_expire_at_idx`,DB SHOW INDEX 全部存在;`expireAt` 字段实际在 `PostLifebiz` 而非 `Post`(cron 目标表就是 PostLifebiz,索引位置正确)。
+
 ---
 
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
