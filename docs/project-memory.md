@@ -537,6 +537,28 @@ GET    /api/v1/admin/categories
 **已知遗留风险**:
 - ⚠️ Prisma drift 与 FULLTEXT 索引冲突 — schema.prisma 注释说明 Prisma 不支持原生 FULLTEXT,所以 `prisma migrate dev` 会自动 drop 未在 schema 中声明的 FULLTEXT 索引。建议:今后加 FULLTEXT 索引时,放在 prisma 生成的 migration 之后用独立 raw SQL 文件追加,且不跑 `migrate dev`(只 `migrate deploy`)。
 
+### 10.7 P1 Sprint 3 (2026-06-11, V1.0 上线冲刺 3,3 任务完成)
+
+| 任务 | 来源 | Commit | 状态 / 关键点 |
+|---|---|---|---|
+| T1 | SHOULD-41 nestjs-pino + pino-http 结构化日志 | `ac267fa` | ✅ 4 文件:package.json + main.ts + app.module.ts(LoggerModule.forRoot)+ package-lock.json;4 smoke 全 PASS(启动 JSON / reqId 注入 / x-request-id 透传 / 业务 Logger 兼容) |
+| T2 | SHOULD-38 JWT 缓存 (`auth:user:<id>` 5min TTL) | `ef7fe81` | ✅ 3 文件:jwt.strategy.ts + user.service.ts + admin-user.service.ts;cache miss/hit + 4 个失效点(update/remove/ban/unban)全 PASS;Redis 异常 catch fall through DB |
+| T3 | SHOULD-1 Post 创建事务 (`detail?` 字段 + `$transaction`) | `0dbd92a` | ✅ 2 文件:create-post.dto.ts + post.service.ts;3 smoke 全 PASS(原子写入 / 缺字段回滚无孤儿 / 旧路径兼容);4 type 全部覆盖 |
+
+**P1 Sprint 3 总计**:3 commit,3 P1 任务完成。**V1.0 P1 关键 20 项完成: 14/20**(Sprint 1+2+3 共 15 任务)。
+
+**Plan vs 实现的关键偏离**(更优实现,文档化留痕):
+- T1:plan 要求 `main.ts` 显式 `app.use(pinoHttp({...}))`,实际改为在 `app.module.ts` 用 `LoggerModule.forRoot({pinoHttp: {...}})` 集中注册 — **nestjs-pino 官方 README 唯一文档化姿势**。优点:`AsyncLocalStorage` 自动绑定 `req.id` 到任何 service 层业务 `new Logger().log()` 输出,避免双中间件导致 reqId 不共享。
+- T3:plan 用简化 `const { detail, ...postData } = dto;` spread 写法,实际用**显式字段列表**(逐一映射主表字段),并在事务外做 category/area/company 预校验 — 显式更安全(避免 DTO 增量字段意外污染 Post 表),预校验缩短事务持有时间。
+
+**Sprint 3 新增 / 继承风险**:
+| # | 风险 | 状态 | 备注 |
+|---|---|---|---|
+| R-1 | JWT 缓存击穿(同 key 大量 miss → DB 压力) | ⚠️ 已知 | 接受,V1.0 流量小;Sprint 4+ 可加 singleflight |
+| R-2 | 软删 status=2 不拦鉴权(7d 内 token 仍有效) | ⚠️ 已知 | 需后续接 jwt 黑名单刷新或缩短 accessToken 寿命 |
+| R-3 | 角色变更无失效路径 | ⚠️ 现状可接受 | 项目当前无 role 写(UpdateUserDto 排除,`buildTokenPair` 硬编码 'user'),防御性代码保留无害 |
+| R-4 | 文件编码 GB18030 教训(T3 之前 subagent 失误) | ✅ 本次已规避 | `create-post.dto.ts` / `post.service.ts` 已确认 UTF-8 无 BOM |
+
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
 
 > [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) 验收发现 V1.0 不可上线,4 个 P0 阻塞 + 2 个 BLOCKED。
