@@ -56,8 +56,8 @@ export class AuthService {
   /**
    * 发送登录验证码
    */
-  sendSmsCode(phone: string) {
-    return this.smsService.sendLoginCode(phone);
+  sendSmsCode(phone: string, ip: string) {
+    return this.smsService.sendLoginCode(phone, ip);
   }
 
   /**

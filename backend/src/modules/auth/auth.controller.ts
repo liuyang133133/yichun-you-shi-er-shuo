@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -16,12 +17,13 @@ export class AuthController {
   /**
    * POST /auth/sms-code
    * 发送登录验证码
-   * 限频：60s 一次，每天 10 次
+   * 限频：60s 一次，每天 10 次，每小时同 IP 30 次
    */
   @Public()
   @Post('sms-code')
-  async smsCode(@Body() dto: SmsCodeDto) {
-    return this.authService.sendSmsCode(dto.phone);
+  async smsCode(@Body() dto: SmsCodeDto, @Req() req: Request) {
+    const ip = this.getClientIp(req);
+    return this.authService.sendSmsCode(dto.phone, ip);
   }
 
   /**
@@ -79,5 +81,15 @@ export class AuthController {
   @Get('me')
   async me(@CurrentUser() user: JwtPayload) {
     return user;
+  }
+
+  /**
+   * 提取客户端 IP（兼容反向代理）
+   */
+  private getClientIp(req: Request): string {
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string') return xff.split(',')[0].trim();
+    if (Array.isArray(xff) && xff.length > 0) return xff[0];
+    return req.ip || req.socket?.remoteAddress || 'unknown';
   }
 }
