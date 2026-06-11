@@ -1,3 +1,4 @@
+
 # 项目记忆（Project Memory）
 
 > **项目代号**：yichun-you-shi-er-shuo（伊春有事儿说）
@@ -509,11 +510,67 @@ GET    /api/v1/admin/categories
 
 ---
 
+## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
+
+> [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) 验收发现 V1.0 不可上线,4 个 P0 阻塞 + 2 个 BLOCKED。
+> 2026-06-11 同一日完成 F-1~F-6 修复 + 全部冒烟通过。
+
+### 12.1 修复明细
+
+| # | 阻塞 | 根因 | 修复 | Commit |
+|---|---|---|---|---|
+| **F-1** | 后端在 Node 18.18 无法启动(file-type@22 ESM + sharp@0.35 + @nestjs/schedule crypto) | QA 临时绕过未提交 | 锁定 file-type@^16.5.4、sharp@^0.33.5,加 `webcrypto` polyfill,upload.service.ts 切到 v16 API | `466a647` |
+| **F-2** | 2 个迁移未应用(audit_logs/login_logs/view_logs/messages + FULLTEXT) | 误判 | 实际已应用,DB 验证:4 张表存在 + 2 个 FULLTEXT 索引 | (无需新 commit) |
+| **F-3** | `/api/v1/search` 每次 500 | 三层问题:(a) `...r` spread 保留原始 BigInt 字段;(b) count 查询多传 1 个 ftQuery;(c) `params2` 从未 spread | 显式列出所有字段 + `Number(_score)`;count 改成 8 params;两查询都加 `...params2` | `7c59f80` + `8b57d62` |
+| **F-4** | `GET /api/v1/resumes/me` 500 "Cannot convert me to a BigInt" | `@Get(':id')` 排在 `@Get('me')` 前 | 重排:`me/put/delete` 全部移到 `:id` 之前 | `d65d873` |
+| **F-5** | CORS `CORS_ORIGINS` 为空反而放行所有 origin | `origins.length === 0` 在 allow 分支 | 改为"空 = 仅同源",boot 加 warn | `3af9c22` |
+| **F-6** | 普通用户 PATCH 自己 `/users/:id` 被拒 403 | MUST-2 过度修复,加了 `@Roles('admin')` | 去掉 admin 守卫,改为 `isSelf \|\| isAdmin` 检查;UpdateUserDto 已排除敏感字段 | `81202b6` |
+
+### 12.2 冒烟验证结果(全部 PASS)
+
+| 测试 | 命令 | 期望 | 结果 |
+|---|---|---|---|
+| F-1 | 后端启动 + 看 CORS log | "CORS 白名单: (空,仅同源)" | ✅ |
+| F-2 | `SHOW TABLES` + `SHOW INDEX FROM posts WHERE Index_type = 'FULLTEXT'` | 4 张表 + 2 FULLTEXT | ✅ |
+| F-3 no filter | `GET /search?q=万象` | 200 | ✅ |
+| F-3 +type | `GET /search?q=万象&type=house` | 200 | ✅ |
+| F-3 +category | `GET /search?q=万象&categoryId=1` | 200 | ✅ |
+| F-3 +all | `GET /search?q=万象&type=house&categoryId=1&areaId=1` | 200 | ✅ |
+| F-4 GET /resumes/me | 拿 token + GET | 200/404(不 500) | ✅ 200 |
+| F-4 GET /resumes/999 | 回归 :id 路由 | 200/404(不 500) | ✅ 200 |
+| F-5 evil.com | `OPTIONS` w/ `Origin: https://evil.com` | 500 或无 CORS 头 | ✅ 500 |
+| F-5 localhost:3000 | `OPTIONS` w/ `Origin: http://localhost:3000` | 500(白名单空) | ✅ 500 |
+| F-5 no Origin | `OPTIONS` 无 Origin 头 | 204 + CORS 头 | ✅ 204 |
+| F-6 PATCH self | `PATCH /users/1` w/ token | 200 | ✅ 200 |
+| F-6 PATCH +role | `PATCH /users/1 {"role":"admin"}` | 400(DTO 拒绝) | ✅ 400 |
+
+### 12.3 真实 P0 完成度更新
+
+| 阶段 | 修复前 | 修复后 |
+|---|---|---|
+| 实施 plan 报告 | "25/25 完成"(11 修复 + 12 修复 + 2 误报) | 实施代码到位,但 4 项实际未跑通 |
+| 验收 | 4 P0 阻塞 + 2 BLOCKED | **0 P0 阻塞**,V1.0 现已具备冒烟通过条件 |
+| 当前真实状态 | 25/25 ✅(实施层) | **25/25 ✅(实施+冒烟)** |
+
+### 12.4 V1.0 上线剩余事项(已大幅减少)
+
+- 🔔 MySQL 密码轮换(同 §10.4)
+- 🔔 生产环境启动(同 §10.4)
+- 🔔 HTTPS 证书(同 §10.4)
+- 🔔 Admin 业务流端到端验证(原 B-1,需 1 小时 SMS 限频冷却后再跑)
+- ⚠️ P1 关键 20 项(roadmap Week 10-12)
+- ⚠️ B-2: 前端 4 个 `/me/*` 子页 e2e 验证
+- ⚠️ B-3: 生产 `docker-compose.prod.yml` 启动验证
+
+---
+
 ## 11. 重要文档索引
 
 | 文档 | 用途 |
 |---|---|
 | [audit-report-2026-06-11.md](./audit-report-2026-06-11.md) | 5 份并行审计 + 三大清单 + 差距分析 + 上线检查表 |
+| [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) | QA 验收报告 + F-1~F-6 修复记录(v2 节) |
 | [development-roadmap.md](./development-roadmap.md) | V1.0 → V1.1 → V1.2 → V2 完整路线图 |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | V1 架构设计基线 |
-| 本文件 | 项目状态快照（每次完成 P0/P1 后更新） |
+| [index.md](./index.md) | 文档唯一入口(按"读取目的"导航) |
+| 本文件 | 项目状态快照(每次完成 P0/P1 后更新) |
