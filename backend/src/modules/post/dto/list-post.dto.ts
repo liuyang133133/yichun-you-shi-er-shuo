@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsNumber, Min, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -56,6 +56,7 @@ export class ListPostQueryDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(100) // SHOULD-11: 防 DoS,单次最多 100 条
   @Type(() => Number)
   pageSize?: number = 20;
 }

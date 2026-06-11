@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsNumber, IsIn, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, IsIn, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { LIFEBIZ_SUB_CATEGORIES, SERVICE_TYPES } from './create-post-lifebiz.dto';
 
@@ -43,6 +43,7 @@ export class FilterLifebizDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(100) // SHOULD-11: 防 DoS
   @Type(() => Number)
   pageSize?: number = 20;
 }

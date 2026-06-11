@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsNumber, IsIn, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, IsIn, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FilterJobDto {
@@ -20,5 +20,5 @@ export class FilterJobDto {
   sort?: 'latest' | 'salary_asc' | 'salary_desc';
 
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) page?: number = 1;
-  @IsOptional() @IsInt() @Min(1) @Type(() => Number) pageSize?: number = 20;
+  @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) pageSize?: number = 20;
 }
