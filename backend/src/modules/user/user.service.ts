@@ -80,7 +80,35 @@ export class UserService {
   }
 
   /**
-   * 根据 ID 查询用户
+   * 公开用户列表（脱敏 phone）
+   * 用于公开 GET /users
+   */
+  async findAllPublic(page = 1, pageSize = 20) {
+    const skip = (page - 1) * pageSize;
+    const [list, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          nickname: true,
+          avatar: true,
+          gender: true,
+          bio: true,
+          createdAt: true,
+          // 显式不选：phone, status, role, lastLoginAt
+        },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    return { list, total, page, pageSize };
+  }
+
+  /**
+   * 根据 ID 查询用户（含敏感字段：phone/status/role）
+   * 仅内部或 admin 使用
    */
   async findOne(id: bigint) {
     const user = await this.prisma.user.findUnique({
@@ -103,6 +131,26 @@ export class UserService {
       throw new NotFoundException(`用户 ID ${id} 不存在`);
     }
     return user;
+  }
+
+  /**
+   * 公开查询用户（脱敏 phone / status / role / lastLoginAt）
+   * 用于公开 GET /users/:id
+   */
+  async findOnePublic(id: bigint) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        nickname: true,
+        avatar: true,
+        gender: true,
+        bio: true,
+        createdAt: true,
+        // 显式不选：phone, status, role, lastLoginAt, updatedAt
+      },
+    });
+    return user; // 找不到直接返回 null，不抛 404（保持 RESTful）
   }
 
   /**
