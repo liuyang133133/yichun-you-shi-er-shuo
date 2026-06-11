@@ -2,9 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { Logger as PinoNestLogger } from 'nestjs-pino';
+import { webcrypto } from 'crypto';
 import helmet from 'helmet';
 import compression from 'compression';
-import { webcrypto } from 'crypto';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -18,8 +19,13 @@ if (typeof (globalThis as any).crypto === 'undefined') {
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug'],
+    bufferLogs: true,
   });
+
+  // nestjs-pino 接管 NestJS 内部 Logger(SHOULD-41)
+  // 注意:pinoHttp 中间件在 AppModule 中由 LoggerModule.forRoot() 自动注册,
+  // 这里不能再 app.use(pinoHttp(...)),否则会注册两份导致 reqId 不共享
+  app.useLogger(app.get(PinoNestLogger));
 
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 3001);

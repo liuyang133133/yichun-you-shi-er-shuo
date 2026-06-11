@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
+import { randomUUID } from 'crypto';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { UserModule } from './modules/user/user.module';
@@ -38,6 +40,27 @@ import { AnnouncementModule } from './modules/announcement/announcement.module';
     ]),
     // MUST-23 定时任务
     ScheduleModule.forRoot(),
+    // SHOULD-41 结构化日志: 统一在此处配置 pinoHttp,
+    // nestjs-pino 会自动注册 pino-http 中间件(同 reqId 共享给 Nest Logger)
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL || 'info',
+        genReqId: (req) => req.headers['x-request-id'] || randomUUID(),
+        customLogLevel: (req, res, err) => {
+          if (err || res.statusCode >= 500) return 'error';
+          if (res.statusCode >= 400) return 'warn';
+          return 'info';
+        },
+        customSuccessMessage: (req, res) =>
+          `${req.method} ${req.url} ${res.statusCode}`,
+        customErrorMessage: (req, res, err) =>
+          `${req.method} ${req.url} ${res.statusCode} - ${err.message}`,
+        serializers: {
+          req: (req) => ({ id: req.id, method: req.method, url: req.url }),
+          res: (res) => ({ statusCode: res.statusCode }),
+        },
+      },
+    }),
     PrismaModule,
     RedisModule,
     UserModule,
