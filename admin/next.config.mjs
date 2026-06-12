@@ -2,15 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-    return [
-      {
-        source: '/api/proxy/:path*',
-        destination: `${apiUrl}/:path*`,
-      },
-    ];
-  },
+  // SHOULD-20: 已删除 /api/proxy rewrite（无任何源码使用，2026-06-12 清理）
+  // 跨域场景：使用 NEXT_PUBLIC_API_URL 绝对地址 + 后端 CORS 白名单
   eslint: {
     ignoreDuringBuilds: true,
   },

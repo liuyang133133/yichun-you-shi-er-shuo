@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api';
 import { clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
 import { LogOut, Plus, ChevronDown } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Header() {
   const router = useRouter();
@@ -79,6 +80,8 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* SHOULD-23: 暗色模式切换 */}
+          <ThemeToggle />
           {user ? (
             <>
               <Link href="/posts/publish">

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare } from 'lucide-react';
 import { getUser, clearAuth, getToken } from '@/lib/api';
 import { clsx } from 'clsx';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const NAV = [
   { href: '/dashboard', label: '看板', icon: LayoutDashboard },
@@ -78,8 +79,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t">
-          <div className="text-xs text-muted-foreground mb-2">已登录：{user.phone}</div>
+        <div className="p-3 border-t space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground truncate">已登录：{user.phone}</span>
+            {/* SHOULD-23: 暗色模式切换 */}
+            <ThemeToggle />
+          </div>
           <button
             onClick={() => {
               clearAuth();
