@@ -140,8 +140,8 @@
 - SHOULD-4（缓存 invalidation）✅ `d5778f2` — Sprint 1 T3
 - **SHOULD-9（CAPTCHA）** ✅ `fa6db41` — Sprint 5 T1
 - **SHOULD-19（Middleware SSR 401 跳转）** ✅ `15fc870` — Sprint 2 T5
-- SHOULD-20（next.config proxy）
-- SHOULD-23（next-themes 暗色模式）
+- **SHOULD-20（next.config proxy 清理）** ✅ `9e72fd1` — Sprint 6 T1
+- **SHOULD-23（next-themes 暗色模式）** ✅ `9e72fd1` — Sprint 6 T2
 - SHOULD-25（backdrop-blur 性能）
 - **SHOULD-27（批量审核 API）** ✅ `e4e1553` — Sprint 4 T2
 - **SHOULD-30（公告系统）** ✅ `a3643ab` + `37c08cd` + `183a4d6` — Sprint 2 T2
@@ -161,14 +161,16 @@
 
 **上线标准**：
 - ✅ 25 项 P0 全部完成
-- 🟡 P1 关键 20 项:**已 18/20**(Sprint 1+2+3+4+5 共 20 任务,含 MUST-25 + SHOULD-39),剩 2 项(SHOULD-20/23/25/37 4 项可选)
+- 🟡 P1 关键 20 项:**已 20/20** 🎉(Sprint 1+2+3+4+5+6 共 22 任务 + 1 bugfix,全完成)
 - ✅ admin/ 后台可日常运营
 - ✅ 生产部署稳定
 - ✅ CAPTCHA / 注册限频 / 新用户 1 帖/24h
+- ✅ 暗色模式 / 时区统一 / CI / 批量审核 / Swagger
 - ⏳ Sitemap 提交百度站长平台
 - ⏳ 客服/运营流程跑通
+- ⏳ 单元测试 / 真部署(后续 Sprint)
 
-> **2026-06-12 P1 完成汇总(18/20)**:SHOULD-1/3/4/6/7/9/11/15/16/19/27/30/31/36/38/39/40/41/42 + MUST-25 = 20 项。Sprint 1+2+3+4+5 共 17 commit,全部代码改动 + smoke test 通过。Sprint 4 额外修复 1 个历史 bug(buildTokenPair role 硬编码,`7cb23fb`)。Sprint 5 7/7 smoke test 全 PASS。
+> **2026-06-12 P1 关键 20/20 收官** 🎉:SHOULD-1/3/4/6/7/9/11/15/16/19/20/23/27/30/31/36/38/39/40/41/42 + MUST-25 = 20 项全完。Sprint 1+2+3+4+5+6 共 18 commit 全部 push origin/main。Sprint 4 修 1 历史 bug。Sprint 5 (SHOULD-9) 7/7 smoke PASS。Sprint 6 (SHOULD-20/23) 6/6 smoke PASS。
 
 ---
 

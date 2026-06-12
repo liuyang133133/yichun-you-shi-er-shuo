@@ -638,6 +638,62 @@ GET    /api/v1/admin/categories
 | R-2 | 新用户 24h 1 帖可能误伤真实用户 | ⚠️ 已知 | V1.0 流量低可接受;后续接举报 + 解封流程 |
 | R-3 | Turnstile siteverify 网络故障(国内访问 Cloudflare 不稳) | ⚠️ 已知 | 网络故障时 throw 400 让用户重试,生产可考虑 fallback 到阿里云滑块 |
 
+### 10.10 P1 Sprint 6 (2026-06-12, V1.0 P1 关键 20/20 收官,2 任务)
+
+| 任务 | 来源 | Commit | 状态 / 关键点 |
+|---|---|---|---|
+| **T1** | **SHOULD-20** 清理 dead `/api/proxy` rewrite | `9e72fd1` | ✅ 2 文件:`frontend/next.config.mjs` + `admin/next.config.mjs`;grep 全 src 无任何引用,直接删除;加注释"跨域走 NEXT_PUBLIC_API_URL 绝对地址 + CORS 白名单" |
+| **T2** | **SHOULD-23** 暗色模式入口 | `9e72fd1` | ✅ 2 模块 × 2 文件 = 4 新文件:`theme-provider.tsx` + `theme-toggle.tsx`(frontend + admin);`next-themes` 安装(legacy-peer-deps 解决 lucide-react 旧 peer);三态循环 light/dark/system;SSR 占位符避 hydration mismatch;利用既有 CSS 变量自动切换,无需给每个组件加 `dark:` 变体 |
+
+**P1 Sprint 6 总计**:1 commit,15 文件改动(2 config + 4 新组件 + 4 改 layout/shell + 4 package 文件 + 1 plan),456 行新增。
+
+**SHOULD-20 设计要点**:
+- 直接删除而非修复:grep 全源码 `/api/proxy` 0 引用,留着是给未来挖坑
+- CORS 路径不变:走 `NEXT_PUBLIC_API_URL` 绝对地址 + 后端 CORS 白名单(已配)
+- 注释明示"如需跨域部署,使用反向代理(Nginx)而不是 Next.js rewrite"
+
+**SHOULD-23 设计要点**:
+- `attribute="class"` + `darkMode: ['class']` in tailwind.config:无冲突
+- `defaultTheme="system"` + `enableSystem`:首次访问跟随系统
+- `disableTransitionOnChange`:切主题瞬间禁用 CSS 过渡,避免闪烁
+- 三态循环而非两态:light → dark → system → light
+- SSR 安全:`mounted` flag 渲染占位符,避免 hydration mismatch
+- 自动切换:globals.css 的 `:root`/`.dark` 两套 CSS 变量已存在,所有 `bg-background`/`text-foreground`/`bg-card`/`bg-muted`/`border-border` 自动适配
+- 装饰元素(`bg-white/15` 在 hero 模糊 + 价格标签)是有意保留,深色下也合理
+
+**Smoke 验证**(6/6 全 PASS):
+| # | 场景 | 结果 |
+|---|---|---|
+| 1 | `npx tsc --noEmit` (frontend) | ✅ 0 errors |
+| 2 | `npx tsc --noEmit` (admin) | ✅ 0 errors |
+| 3 | `npm run build` (frontend) | ✅ success |
+| 4 | `npm run build` (admin) | ✅ success |
+| 5 | `curl /` (frontend dev) HTML | ✅ 含 `aria-label="切换主题"` 按钮 + next-themes 脚本 |
+| 6 | grep `/api/proxy` 源码 | ✅ 0 references |
+
+## 🎉 V1.0 P1 关键 20 项完成度: **20/20** 🎉
+
+| Sprint | 时间 | 任务数 | 累计 P1 |
+|---|---|---|---|
+| Sprint 1 | 2026-06-11 下午 | 7 | 7 |
+| Sprint 2 | 2026-06-11 晚 | 5 | 12 |
+| Sprint 3 | 2026-06-12 上午 | 3 | 15 |
+| Sprint 4 | 2026-06-12 上午 | 3 + 1 bugfix | 19 |
+| Sprint 5 | 2026-06-12 上午 | 1 (SHOULD-9) | 20 |
+| Sprint 6 | 2026-06-12 上午 | 2 (SHOULD-20/23) | **20/20** ✅ |
+
+**累计 commit**:18(Sprint 1+2+3+4+5+6)+ 1 buildTokenPair bugfix = 19 commit,全部已 push origin/main。
+
+**V1.0 收官评估**:
+- ✅ 25 P0 必做
+- ✅ 20 P1 关键全完
+- ✅ admin 业务真端到端
+- ✅ CAPTCHA / 注册限频
+- ✅ 暗色模式 / 时区统一 / CI / 批量审核 / Swagger
+- ✅ JWT 鉴权缓存 / nestjs-pino 日志
+- 🟡 单元测试 0 覆盖(已知,V1.1 补)
+- 🟡 真实生产部署(known V1.0 收官后做)
+
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
 
 > [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) 验收发现 V1.0 不可上线,4 个 P0 阻塞 + 2 个 BLOCKED。
