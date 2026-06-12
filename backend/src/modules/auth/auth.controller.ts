@@ -20,36 +20,51 @@ export class AuthController {
    * POST /auth/sms-code
    * 发送登录验证码
    * 限频：60s 一次，每天 10 次，每小时同 IP 30 次
+   * SHOULD-9: 生产环境需传 captchaToken
    */
   @Public()
   @Post('sms-code')
   @ApiOperation({ summary: '发送短信验证码' })
   async smsCode(@Body() dto: SmsCodeDto, @Req() req: Request) {
     const ip = this.getClientIp(req);
-    return this.authService.sendSmsCode(dto.phone, ip);
+    return this.authService.sendSmsCode(dto.phone, ip, dto.captchaToken);
   }
 
   /**
    * POST /auth/login-sms
    * 短信验证码登录/注册（未注册用户自动注册）
+   * SHOULD-9: 生产环境需传 captchaToken
    */
   @Public()
   @Post('login-sms')
   @ApiOperation({ summary: '短信验证码登录（自动注册）' })
-  async loginBySms(@Body() dto: LoginBySmsDto) {
-    const tokens = await this.authService.loginBySms(dto.phone, dto.code);
+  async loginBySms(@Body() dto: LoginBySmsDto, @Req() req: Request) {
+    const ip = this.getClientIp(req);
+    const tokens = await this.authService.loginBySms(
+      dto.phone,
+      dto.code,
+      ip,
+      dto.captchaToken,
+    );
     return { ...tokens, user: { phone: dto.phone } };
   }
 
   /**
    * POST /auth/login-password
    * 密码登录（已注册用户）
+   * SHOULD-9: 生产环境需传 captchaToken
    */
   @Public()
   @Post('login-password')
   @ApiOperation({ summary: '密码登录' })
-  async loginByPassword(@Body() dto: LoginByPasswordDto) {
-    const tokens = await this.authService.loginByPassword(dto.phone, dto.password);
+  async loginByPassword(@Body() dto: LoginByPasswordDto, @Req() req: Request) {
+    const ip = this.getClientIp(req);
+    const tokens = await this.authService.loginByPassword(
+      dto.phone,
+      dto.password,
+      ip,
+      dto.captchaToken,
+    );
     return { ...tokens, user: { phone: dto.phone } };
   }
 

@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserModule } from '../user/user.module';
 import { SmsModule } from '../sms/sms.module';
+import { CaptchaModule } from '../captcha/captcha.module';
 
 @Module({
   imports: [
@@ -30,9 +31,11 @@ import { SmsModule } from '../sms/sms.module';
     }),
     UserModule,
     SmsModule,
+    // SHOULD-9: 人机验证 + 注册限频
+    CaptchaModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [AuthService, JwtModule, JwtAuthGuard],
+  exports: [AuthService, JwtModule, JwtAuthGuard, CaptchaModule],
 })
 export class AuthModule {}

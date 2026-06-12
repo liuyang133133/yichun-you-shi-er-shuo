@@ -12,6 +12,8 @@ import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { UserService } from '../user/user.service';
 import { SmsService } from '../sms/sms.service';
 import { RedisService } from '../../redis/redis.service';
+import { CaptchaService } from '../captcha/captcha.service';
+import { RegisterThrottleService } from '../captcha/register-throttle.service';
 
 export interface TokenPair {
   accessToken: string;
@@ -42,6 +44,9 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly smsService: SmsService,
     private readonly redis: RedisService,
+    // SHOULD-9
+    private readonly captchaService: CaptchaService,
+    private readonly registerThrottle: RegisterThrottleService,
   ) {
     // 启动期强校验：JWT_SECRET 至少 32 字符
     const secret = this.config.get<string>('JWT_SECRET');
@@ -55,38 +60,62 @@ export class AuthService {
 
   /**
    * 发送登录验证码
+   * SHOULD-9: 发送前先做 captcha 校验（在 sms.service 的 IP 限频之后，
+   * 防止攻击者用 captcha 验证消耗 turnstile 配额但拿不到短信）
    */
-  sendSmsCode(phone: string, ip: string) {
+  async sendSmsCode(phone: string, ip: string, captchaToken?: string) {
+    await this.captchaService.verify(captchaToken, ip);
     return this.smsService.sendLoginCode(phone, ip);
   }
 
   /**
    * 短信验证码登录/注册（自动注册）
+   * SHOULD-9:
+   *   - captcha 必填（开发环境 provider=none 可省）
+   *   - 自动注册时走 registerThrottle.preCheck + recordRegister
    */
-  async loginBySms(phone: string, code: string) {
+  async loginBySms(phone: string, code: string, ip: string, captchaToken?: string) {
+    // 1. captcha 校验（生产环境强制）
+    await this.captchaService.verify(captchaToken, ip);
+
+    // 2. 短信验证码校验
     await this.smsService.verifyCode(phone, code);
 
-    // 查找或自动注册
+    // 3. 查找用户
     const existing = await this.userService.findByPhone(phone);
-    const user =
-      existing ??
-      (await this.userService.create({
+
+    // 4. 自动注册场景：先 preCheck 再 create 再 record
+    let user: NonNullable<typeof existing> | null = existing;
+    if (!user) {
+      // 4a. 注册限频预检（IP/手机号 24h/7d 阈值）
+      await this.registerThrottle.preCheckRegister(ip, phone);
+
+      // 4b. 创建用户（仅传 phone + nickname，其他字段走默认）
+      user = (await this.userService.create({
         phone,
         nickname: `用户${phone.slice(-4)}`,
-      } as any));
-    this.logger.log(`用户登录: ${phone} -> id=${user.id}`);
+      } as any)) as unknown as NonNullable<typeof existing>;
 
-    if (user.status === 1) {
+      // 4c. 记录注册（写 Redis 计数）
+      await this.registerThrottle.recordRegister(ip, phone, user!.id);
+    }
+
+    this.logger.log(`用户登录: ${phone} -> id=${user!.id} (新注册: ${!existing})`);
+
+    if (user!.status === 1) {
       throw new UnauthorizedException('账号已被封禁');
     }
 
-    return this.buildTokenPair(user.id, user.phone, user.role);
+    return this.buildTokenPair(user!.id, user!.phone, user!.role);
   }
 
   /**
    * 密码登录
+   * SHOULD-9: 同样需要 captcha（防止撞库）
    */
-  async loginByPassword(phone: string, password: string) {
+  async loginByPassword(phone: string, password: string, ip: string, captchaToken?: string) {
+    await this.captchaService.verify(captchaToken, ip);
+
     const user = await this.userService.findByPhone(phone);
     if (!user) {
       throw new UnauthorizedException('手机号或密码错误');

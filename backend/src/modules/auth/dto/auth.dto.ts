@@ -1,4 +1,4 @@
-import { IsString, Length, Matches, IsOptional, MinLength } from 'class-validator';
+import { IsString, Length, Matches, IsOptional, MinLength, MaxLength } from 'class-validator';
 
 /**
  * 发送短信验证码
@@ -7,6 +7,12 @@ export class SmsCodeDto {
   @IsString()
   @Matches(/^1[3-9]\d{9}$/, { message: '请输入有效的 11 位手机号' })
   phone!: string;
+
+  /** SHOULD-9: 人机验证 token（生产环境 CAPTCHA_PROVIDER=turnstile 时必填） */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048, { message: 'captchaToken 长度非法' })
+  captchaToken?: string;
 }
 
 /**
@@ -20,6 +26,12 @@ export class LoginBySmsDto {
   @IsString()
   @Length(6, 6, { message: '验证码必须是 6 位' })
   code!: string;
+
+  /** SHOULD-9: 人机验证 token */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048, { message: 'captchaToken 长度非法' })
+  captchaToken?: string;
 }
 
 /**
@@ -33,6 +45,12 @@ export class LoginByPasswordDto {
   @IsString()
   @MinLength(6, { message: '密码至少 6 位' })
   password!: string;
+
+  /** SHOULD-9: 人机验证 token */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048, { message: 'captchaToken 长度非法' })
+  captchaToken?: string;
 }
 
 /**

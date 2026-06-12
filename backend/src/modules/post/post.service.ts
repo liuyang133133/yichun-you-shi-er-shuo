@@ -5,6 +5,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostQueryDto } from './dto/list-post.dto';
 import { RedisService } from '../../redis/redis.service';
 import { ViewLogService } from '../view-log/view-log.service';
+// SHOULD-9: 新用户 24h 内仅能 POST 1 条 post
+import { RegisterThrottleService } from '../captcha/register-throttle.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -13,6 +15,7 @@ export class PostService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly viewLog: ViewLogService,
+    private readonly registerThrottle: RegisterThrottleService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -153,6 +156,9 @@ export class PostService {
    * dto.detail 不传时保持旧行为（只写主表），前端可继续用两次 HTTP 路径。
    */
   async create(userId: bigint, dto: CreatePostDto) {
+    // ===== SHOULD-9: 新用户 24h 内仅能 POST 1 条 post =====
+    await this.registerThrottle.assertCanPost(userId);
+
     // ===== 预校验（事务外，避免无谓占连接） =====
     const category = await this.prisma.category.findUnique({
       where: { id: BigInt(dto.categoryId) },
