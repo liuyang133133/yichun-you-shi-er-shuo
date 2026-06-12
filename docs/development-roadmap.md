@@ -138,7 +138,7 @@
 - **SHOULD-1（Post 创建事务联动）** ✅ `0dbd92a` — Sprint 3 T3
 - **SHOULD-3（viewCount Redis INCR）** ✅ `a3222bc` + `0703b83` — Sprint 2 T1
 - SHOULD-4（缓存 invalidation）✅ `d5778f2` — Sprint 1 T3
-- SHOULD-9（CAPTCHA）
+- **SHOULD-9（CAPTCHA）** ✅ `fa6db41` — Sprint 5 T1
 - **SHOULD-19（Middleware SSR 401 跳转）** ✅ `15fc870` — Sprint 2 T5
 - SHOULD-20（next.config proxy）
 - SHOULD-23（next-themes 暗色模式）
@@ -161,13 +161,14 @@
 
 **上线标准**：
 - ✅ 25 项 P0 全部完成
-- 🟡 P1 关键 20 项:**已 17/20**(Sprint 1+2+3+4 共 19 任务,含 MUST-25 + SHOULD-39),剩 3 项
+- 🟡 P1 关键 20 项:**已 18/20**(Sprint 1+2+3+4+5 共 20 任务,含 MUST-25 + SHOULD-39),剩 2 项(SHOULD-20/23/25/37 4 项可选)
 - ✅ admin/ 后台可日常运营
 - ✅ 生产部署稳定
+- ✅ CAPTCHA / 注册限频 / 新用户 1 帖/24h
 - ⏳ Sitemap 提交百度站长平台
 - ⏳ 客服/运营流程跑通
 
-> **2026-06-12 P1 完成汇总(17/20)**:SHOULD-1/3/4/6/7/11/15/16/19/27/30/31/36/38/39/40/41/42 + MUST-25 = 19 项。Sprint 1+2+3+4 共 16 commit,全部代码改动 + smoke test 通过 + code review 通过。Sprint 4 额外修复 1 个历史 bug(buildTokenPair role 硬编码,`7cb23fb`)。
+> **2026-06-12 P1 完成汇总(18/20)**:SHOULD-1/3/4/6/7/9/11/15/16/19/27/30/31/36/38/39/40/41/42 + MUST-25 = 20 项。Sprint 1+2+3+4+5 共 17 commit,全部代码改动 + smoke test 通过。Sprint 4 额外修复 1 个历史 bug(buildTokenPair role 硬编码,`7cb23fb`)。Sprint 5 7/7 smoke test 全 PASS。
 
 ---
 

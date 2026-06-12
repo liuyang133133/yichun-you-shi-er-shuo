@@ -585,6 +585,59 @@ GET    /api/v1/admin/categories
 | R-5 | 文件编码 GB18030 教训 | ✅ 已规避 | T3 验证 UTF-8 |
 | R-6 | admin role 硬编码 buildTokenPair | ✅ **本次已修** | Sprint 4 暴露 + 同步修复,不再 P2 遗留 |
 
+### 10.9 P1 Sprint 5 (2026-06-12, V1.0 上线冲刺 5,1 任务: SHOULD-9 CAPTCHA + 注册限频)
+
+| 任务 | 来源 | Commit | 状态 / 关键点 |
+|---|---|---|---|
+| **T1** | **SHOULD-9** 人机验证 + 注册限频 | `fa6db41` | ✅ 3 模块:`captcha.service`（Cloudflare Turnstile siteverify + fail-closed） + `register-throttle.service`（IP 24h ≤ 5、phone 7d ≤ 3、new-user 24h ≤ 1 帖） + `captcha.module`；接入 3 个 auth 入口（sms-code / login-sms / login-password）+ post.create 入口；7 smoke 全 PASS |
+
+**P1 Sprint 5 总计**:1 commit,3 个新文件 + 6 个修改文件,共 531 行新增。
+
+**SHOULD-9 完整设计**:
+1. **CaptchaService**（`backend/src/modules/captcha/captcha.service.ts`）
+   - provider 抽象:`none` (dev) / `turnstile` (prod,Cloudflare 无感验证)
+   - `isEnabled()`:生产环境即使配 none 也强制 turnstile(fail-closed)
+   - `verify(token, ip)`:token 长度校验(≤2048) + Redis 5min 缓存防 retry 风暴击穿 turnstile 配额 + siteverify 调用
+   - siteverify 请求带 `remoteip`(防 token 跨 IP 重放)
+2. **RegisterThrottleService**（`backend/src/modules/captcha/register-throttle.service.ts`）
+   - `preCheckRegister(ip, phone)`:GET 计数,`>=` 阈值 throw 429
+   - `recordRegister(ip, phone, userId)`:INCR + EXPIRE 24h/7d,写审计日志
+   - `assertCanPost(userId)`:查 user.createdAt,< 24h 才限制
+3. **接入点**(4 处)
+   - `AuthService.sendSmsCode`:captcha 校验(在 sms.service IP 限频之后,防 captcha 配额被攻击者烧光)
+   - `AuthService.loginBySms`:captcha + 自动注册场景的 preCheck + recordRegister
+   - `AuthService.loginByPassword`:captcha(防撞库)
+   - `PostService.create`:assertCanPost(新用户 24h 1 帖,防灌水)
+4. **依赖注入**:`PostModule → AuthModule → CaptchaModule`,单向无环
+5. **env 配置**:`CAPTCHA_PROVIDER=none`、`TURNSTILE_SECRET=`、`TURNSTILE_SITE_KEY=`(.env + .env.example 都加)
+
+**Smoke 测试结果**(7/7 全 PASS):
+
+| # | 场景 | 期望 | 实际 |
+|---|---|---|---|
+| 1 | turnstile + 无 token | 400 请先完成人机验证 | ✅ |
+| 2 | turnstile + 假 token | 400 人机验证服务不可用 | ✅ |
+| 3 | dev (none) + sendSmsCode | 201 ok | ✅ |
+| 3b | dev (none) + auto-register login-sms | 201 + JWT tokens | ✅ |
+| 5 | 同 IP 注册 6 个新用户 | 前 5 pass、第 6 个 429 | ✅ (5/5 通过,6th 拒绝) |
+| 6a | 新用户发第 1 帖 | 201 created | ✅ |
+| 6b | 新用户发第 2 帖 | 429 新注册用户 24h 内最多 1 条 | ✅ |
+
+**V1.0 P1 关键 20 项完成: 18/20**(Sprint 1+2+3+4+5 = 20 任务,加 bonus buildTokenPair fix)。
+
+**剩余 2 项 P1**(不阻塞 V1.0 上线):
+- **SHOULD-20** `next.config /api/proxy` 实际接通或删除(0.5h) — 部署/配置问题
+- **SHOULD-23** next-themes 暗色模式切换(1h) — UX 增强
+- **SHOULD-25** `backdrop-blur` 性能降级(0.5h) — 低端 Android 适配
+- **SHOULD-37** `Post.slug` 字段 + URL `/posts/[id]-[slug]`(2h) — SEO 长尾
+
+**Sprint 5 新增风险**:
+| # | 风险 | 状态 | 备注 |
+|---|---|---|---|
+| R-1 | CAPTCHA provider 配置错误导致全员 401 | ⚠️ 已知 | `.env.example` 文档明示 fail-closed 行为,生产部署 checklist 必备 |
+| R-2 | 新用户 24h 1 帖可能误伤真实用户 | ⚠️ 已知 | V1.0 流量低可接受;后续接举报 + 解封流程 |
+| R-3 | Turnstile siteverify 网络故障(国内访问 Cloudflare 不稳) | ⚠️ 已知 | 网络故障时 throw 400 让用户重试,生产可考虑 fallback 到阿里云滑块 |
+
 ## 12. 2026-06-11 验收阻塞修复（F-1~F-6 全部 PASS）
 
 > [acceptance-report-2026-06-11.md](./acceptance-report-2026-06-11.md) 验收发现 V1.0 不可上线,4 个 P0 阻塞 + 2 个 BLOCKED。
