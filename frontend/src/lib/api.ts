@@ -156,6 +156,8 @@ export const postApi = {
     );
   },
   get: (id: string | number) => api.get<any>(`/posts/${id}`),
+  /** T-P1-02: 获取联系方式(已登录,个保法) */
+  getContact: (id: string | number) => api.get<any>(`/posts/${id}/contact`),
   count: (type?: string) =>
     api.get<number>('/posts/count' + (type ? `?type=${type}` : '')),
   create: (data: any) => api.post<any>('/posts', data),

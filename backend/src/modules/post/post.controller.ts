@@ -78,6 +78,20 @@ export class PostController {
   }
 
   /**
+   * GET /api/v1/posts/:id/contact (T-P1-02)
+   * 获取联系方式(已登录 + 个保法合规)
+   * F-4 教训:字面量路由必须在 :id 之前,否则 :id 会吞掉 '123/contact' 抛 BigInt 错
+   */
+  @Get(':id/contact')
+  @ApiOperation({ summary: '获取联系方式(已登录,个保法)' })
+  async getContact(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.postService.getContact(BigInt(id), BigInt(user.sub));
+  }
+
+  /**
    * GET /api/v1/posts/:id
    */
   @Public()

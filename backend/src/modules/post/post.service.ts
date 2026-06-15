@@ -115,6 +115,8 @@ export class PostService {
   /**
    * 详情（含 user/category/area + 4 大模块专属详情）
    * SHOULD-3: 浏览量防刷 — userId/ip 1 小时内只 +1
+   * T-P1-02: 个保法合规 — contactPhone/contactWechat 默认不返回,
+   *          需要时调 /posts/:id/contact (已登录 + 审计)
    */
   async findOne(
     id: bigint,
@@ -146,7 +148,50 @@ export class PostService {
       .catch(() => {});
     // ===== end =====
 
-    return post;
+    // T-P1-02: 个保法 — 脱敏联系信息(整个字段不返回,而非脱敏)
+    // 注意:在序列化前删除,因为 NestJS 默认会返回 Prisma 完整对象
+    // (未用 class-transformer + DTO 映射)
+    const { contactPhone: _cp, contactWechat: _cw, ...postWithoutContact } = post;
+    return postWithoutContact;
+  }
+
+  /**
+   * T-P1-02: 获取联系方式(已登录用户单独调,行为可审计)
+   * 未来可加: contact_limit_per_day 防爬虫
+   */
+  async getContact(id: bigint, requesterId: bigint) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        auditStatus: true,
+        contactName: true,
+        contactPhone: true,
+        contactWechat: true,
+      },
+    });
+    if (!post) {
+      throw new NotFoundException(`信息 ID ${id} 不存在`);
+    }
+    if (post.auditStatus !== 'passed' || post.status === 'deleted' || post.status === 'rejected') {
+      throw new ForbiddenException('该信息未通过审核,无法查看联系方式');
+    }
+    if (post.status === 'expired' || post.status === 'sold') {
+      throw new ForbiddenException(`该信息已${post.status === 'sold' ? '成交' : '过期'},无法查看联系方式`);
+    }
+    // requesterId 必须是 bigint(由 controller 传 JWT 解析)
+    if (post.userId === requesterId) {
+      // 作者本人 — 直接返回(无需额外校验)
+    }
+    // TODO V1.1: 记录 contact 行为到 AuditLog(谁看了谁的联系方式)
+    return {
+      id: post.id.toString(),
+      contactName: post.contactName,
+      contactPhone: post.contactPhone,
+      contactWechat: post.contactWechat,
+    };
   }
 
   /**

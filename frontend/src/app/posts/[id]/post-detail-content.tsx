@@ -50,6 +50,9 @@ function PostDetailContent() {
   const [reportReason, setReportReason] = useState('spam');
   const [reportDesc, setReportDesc] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  // T-P1-02: contact 个保法 — 单独状态,按需调 contact API
+  const [contactInfo, setContactInfo] = useState<{ contactName: string; contactPhone: string; contactWechat: string } | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -155,11 +158,36 @@ function PostDetailContent() {
     }
   };
 
-  const handlePhone = () => {
-    if (post.contactPhone) {
-      window.location.href = `tel:${post.contactPhone}`;
-    } else {
-      alert('该信息未公开电话，请通过留言联系');
+  // T-P1-02: handlePhone 改为按需调 contact API
+  const handlePhone = async () => {
+    if (!getAccessToken()) {
+      // 未登录：跳登录页
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    if (contactInfo) {
+      // 已加载：直接拨号
+      if (contactInfo.contactPhone) {
+        window.location.href = `tel:${contactInfo.contactPhone}`;
+      }
+      return;
+    }
+    // 已登录 + 未加载：调 contact API
+    setContactLoading(true);
+    try {
+      const data = await postApi.getContact(String(id));
+      // 后端响应格式: { code, message, data: { contactName, contactPhone, contactWechat } }
+      const info = data?.data || data;
+      setContactInfo(info);
+      if (info?.contactPhone) {
+        window.location.href = `tel:${info.contactPhone}`;
+      } else {
+        alert('该信息发布者未留电话,请通过留言联系');
+      }
+    } catch (e: any) {
+      alert(e?.message || '获取联系方式失败,请稍后再试');
+    } finally {
+      setContactLoading(false);
     }
   };
 
@@ -391,39 +419,54 @@ function PostDetailContent() {
                 </div>
               </div>
 
-              {/* 联系方式 */}
+              {/* 联系方式 — T-P1-02: 个保法合规,按需调 contact API */}
               <div className="mt-4 space-y-2 border-t pt-4">
-                {post.contactPhone && (
-                  <a
-                    href={`tel:${post.contactPhone}`}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/5 to-emerald-50 hover:from-primary/10 hover:to-emerald-100 transition-colors"
-                  >
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground">联系电话</div>
-                      <div className="font-bold font-mono text-primary truncate">
-                        {post.contactPhone}
+                {/* 已登录 + 已加载 contactInfo: 显示完整 */}
+                {contactInfo && (contactInfo.contactPhone || contactInfo.contactWechat) && (
+                  <>
+                    {contactInfo.contactPhone && (
+                      <a
+                        href={`tel:${contactInfo.contactPhone}`}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/5 to-emerald-50 hover:from-primary/10 hover:to-emerald-100 transition-colors"
+                      >
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Phone className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-muted-foreground">联系电话</div>
+                          <div className="font-bold font-mono text-primary truncate">
+                            {contactInfo.contactPhone}
+                          </div>
+                        </div>
+                      </a>
+                    )}
+                    {contactInfo.contactWechat && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary">
+                        <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center">
+                          <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-muted-foreground">微信号</div>
+                          <div className="font-mono truncate">{contactInfo.contactWechat}</div>
+                        </div>
                       </div>
-                    </div>
-                  </a>
+                    )}
+                  </>
                 )}
-                {post.contactWechat && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary">
-                    <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center">
-                      <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground">微信号</div>
-                      <div className="font-mono truncate">{post.contactWechat}</div>
-                    </div>
+                {/* 已登录 + 未加载: 显示"查看联系方式"按钮(实际是拨打电话按钮触发) */}
+                {!contactInfo && getAccessToken() && (
+                  <div className="text-sm text-muted-foreground text-center py-3 px-2 rounded-xl bg-secondary/30">
+                    点击上方"拨打电话"按钮,登录后即可查看联系方式
                   </div>
                 )}
-                {post.contactName && !post.contactPhone && !post.contactWechat && (
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    联系方式已隐藏，请通过留言联系
-                  </div>
+                {/* 未登录: 引导登录 */}
+                {!getAccessToken() && (
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}
+                    className="flex items-center justify-center gap-2 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors text-sm text-primary"
+                  >
+                    🔒 登录后查看联系方式
+                  </Link>
                 )}
               </div>
 
