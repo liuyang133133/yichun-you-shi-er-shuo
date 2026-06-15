@@ -17,6 +17,71 @@ if (typeof (globalThis as any).crypto === 'undefined') {
   (globalThis as any).crypto = webcrypto;
 }
 
+// T-P1-01: 启动期强校验关键环境变量 (MUST-1 + Phase 1 T-P1-01)
+// 弱密钥/缺失密钥直接 process.exit(1) 防止部署到生产
+function validateRequiredEnv(): void {
+  const errors: string[] = [];
+
+  // JWT_SECRET: ≥ 32 字符
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 32) {
+    errors.push(
+      `JWT_SECRET is missing or too weak (length=${jwtSecret?.length ?? 0}, required ≥ 32). ` +
+        `Generate with: openssl rand -hex 32`,
+    );
+  }
+  // 弱密钥黑名单（防止 'change-in-production' 这种占位符混进生产）
+  const weakSecrets = [
+    'change-in-production',
+    'change_in_production',
+    'change-me',
+    'secret',
+    'dev-secret',
+    'yichun-you-shi-er-shuo-jwt-secret-change-in-production', // 旧默认值
+  ];
+  if (jwtSecret && weakSecrets.some((w) => jwtSecret.toLowerCase().includes(w))) {
+    errors.push(
+      `JWT_SECRET contains a weak placeholder substring. ` +
+        `Generate a new one with: openssl rand -hex 32`,
+    );
+  }
+
+  // DATABASE_URL: 必须是 mysql://
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl || !dbUrl.startsWith('mysql://')) {
+    errors.push(
+      `DATABASE_URL is missing or invalid (must start with mysql://). ` +
+        `Check backend/.env.`,
+    );
+  }
+
+  // REDIS_URL: 必须是 redis://
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl || !redisUrl.startsWith('redis://')) {
+    errors.push(
+      `REDIS_URL is missing or invalid (must start with redis://). ` +
+        `Check backend/.env.`,
+    );
+  }
+
+  if (errors.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error('========================================');
+    // eslint-disable-next-line no-console
+    console.error('❌ FATAL: Invalid or weak environment configuration');
+    // eslint-disable-next-line no-console
+    console.error('========================================');
+    errors.forEach((e) => {
+      // eslint-disable-next-line no-console
+      console.error(`  - ${e}`);
+    });
+    // eslint-disable-next-line no-console
+    console.error('========================================');
+    process.exit(1);
+  }
+}
+validateRequiredEnv();
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,

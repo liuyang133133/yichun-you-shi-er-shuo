@@ -1,4 +1,5 @@
-version: '3.9'
+# T-P1-01: 所有密码/密钥强制从 .env 读,无默认值 (避免 yichun123456 兜底泄露)
+# 启动前必须复制 .env.example 为 .env 并填入真实值
 
 services:
   mysql:
@@ -6,10 +7,10 @@ services:
     container_name: yichun-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD_is_required_Generate_with_openssl_rand_hex_16}'
       MYSQL_DATABASE: ${MYSQL_DATABASE:-yichun_db}
       MYSQL_USER: ${MYSQL_USER:-yichun}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-yichun123456}
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD:?MYSQL_PASSWORD_is_required_Generate_with_openssl_rand_hex_16}'
     ports:
       - "3307:3306"
     volumes:
@@ -17,7 +18,7 @@ services:
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root123456}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -32,7 +33,14 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    # T-P1-01: Redis 加密码认证 (之前是裸 redis-server,无认证风险)
+    # 用 environment 注入(强校验) + command 数组 shell 替换
+    environment:
+      REDIS_PASSWORD: '${REDIS_PASSWORD:?REDIS_PASSWORD_is_required_Generate_with_openssl_rand_hex_16}'
+    command:
+      - sh
+      - -c
+      - 'redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru'
     networks:
       - yichun-network
 
@@ -48,9 +56,12 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3001
-      DATABASE_URL: mysql://${MYSQL_USER:-yichun}:${MYSQL_PASSWORD:-yichun123456}@mysql:3306/${MYSQL_DATABASE:-yichun_db}?charset=utf8mb4&timezone=+08:00
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-yichun-you-shi-er-shuo-jwt-secret-change-in-production}
+      # T-P1-01: DATABASE_URL 引用已强校验的 MYSQL_PASSWORD (注意单引号包裹,避免 YAML interpolation 误识别 ?)
+      DATABASE_URL: 'mysql://${MYSQL_USER:-yichun}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-yichun_db}?charset=utf8mb4&timezone=+08:00'
+      # T-P1-01: REDIS_URL 引用已强校验的 REDIS_PASSWORD
+      REDIS_URL: 'redis://:${REDIS_PASSWORD}@redis:6379'
+      # T-P1-01: JWT_SECRET 启动期强校验(≥ 32 字符,否则 main.ts process.exit(1))
+      JWT_SECRET: '${JWT_SECRET:?JWT_SECRET_is_required_and_must_be_at_least_32_chars_Generate_with_openssl_rand_hex_32}'
       JWT_EXPIRES_IN: 7d
     depends_on:
       mysql:
