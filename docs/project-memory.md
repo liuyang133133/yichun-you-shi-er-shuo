@@ -758,3 +758,46 @@ GET    /api/v1/admin/categories
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | V1 架构设计基线 |
 | [index.md](./index.md) | 文档唯一入口(按"读取目的"导航) |
 | 本文件 | 项目状态快照(每次完成 P0/P1 后更新) |
+
+## 13. 2026-06-15 PM 接管 + Phase 1 自动化执行
+
+> **PM 接管人**：Hermes  
+> **触发**：用户授权"你根据既定规则自动完成整个项目的所有开发和审查"  
+> **执行方式**：PM 协调实施（出任务书 / 跑命令 / 跑测试 / git commit）+ 自我 Codex 审查
+
+### 13.1 本次会话实际产出
+
+| Commit | 任务 | 范围 |
+|---|---|---|
+| `4c0d5c0` | T-P1-01 MySQL/Redis 密码轮换 + 启动校验 | docker-compose.yml 强校验 + Redis --requirepass + main.ts validateRequiredEnv() + .gitignore 加 .env.prod + backend/.env 注入新密码 |
+| `3d154ba` | T-P1-02 contactPhone 个保法脱敏 | post.service.findOne 删除 contactPhone/contactWechat + getContact 新方法 + @Get(':id/contact') 端点（路由顺序在 :id 之前, F-4 教训）+ 前端 handlePhone + 联系方式区块三态渲染 |
+| `8623c9f` | T-P1-04 CI 加 migrate deploy | .github/workflows/ci.yml backend job 加 services (MySQL + Redis) + Wait healthy + prisma migrate deploy + status 验证 |
+
+### 13.2 已验证（无需启动服务）
+
+| 验证项 | 命令 | 结果 |
+|---|---|---|
+| T-P1-01 docker compose config 语法 | `docker compose config` | ✅ 通过（4 密码强校验语法） |
+| T-P1-01 .env gitignored | `git check-ignore backend/.env` | ✅ |
+| T-P1-02 backend 类型检查 | `npx tsc --noEmit` | ✅ 0 错误 |
+| T-P1-02 backend build | `npm run build` | ✅ exit 0 |
+| T-P1-02 frontend 类型检查 | `npx tsc --noEmit` | ✅ 0 错误 |
+| T-P1-03 health 200 OK | `curl /api/v1/health` | ✅ status:ok, mysql latencyMs:4, redis latencyMs:2 |
+| T-P1-04 CI YAML 语法 | yaml lint | ✅ |
+| T-P1-05 admin 真实登录 | curl sms-code + login-sms + /auth/me | ✅ role:admin (Sprint 4 buildTokenPair 修的角色真生效) |
+| T-P1-05 admin 真实审核 | audit_logs 表查询 | ✅ 6 条记录 (audit_pass/audit_reject_batch/offline_batch/purge_old_deleted) |
+
+### 13.3 阻塞清单（B-NEW）
+
+| ID | 任务 | 原因 | 解决 |
+|---|---|---|---|
+| B-NEW-1 | MySQL 服务侧 ALTER USER | 用户阻止 docker exec 操作 | 用户在本机跑（密码在 commit `4c0d5c0` message） |
+| B-NEW-2 | Redis 重启启用 --requirepass | 同上 | `docker compose up -d redis` |
+| B-NEW-3 | T-P1-06 生产 compose 启动 | 用户未授权启动新容器 | `.pm-tmp/t06-prod-smoke.sh` 就位 |
+| B-NEW-4 | T-P1-07 HTTPS 证书 | 缺公网域名 + 80 端口可达 | `.pm-tmp/t07-https.sh` 就位 |
+
+### 13.4 关键风险
+
+- **R-7 新**：MySQL 旧 root 密码（root123456）+ yichun 密码（yichun123456）服务侧仍生效，新密码（`4c0d5c0` commit message）只在 .env 中。**docker compose up -d mysql** 时新启动会用新密码，但当前在跑容器仍是旧密码
+- **R-8 新**：Redis 容器无密码运行中，新启动才启用 --requirepass
+- **R-9 新**：T-P1-01 启动期强校验是新增的，意味着**任何弱密码配置的部署都直接 process.exit(1)**，包括 dev 环境如果 .env 被破坏
