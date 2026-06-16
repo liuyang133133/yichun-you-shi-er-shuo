@@ -6,16 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
 import { FileText, Users, Flag, Building2, MessageSquare, TrendingUp, Clock } from 'lucide-react';
 
+// 修复: 后端返回嵌套结构 (与 admin-dashboard.service.ts 一致), 不是扁平字段
+interface PostsBucket { total: number; today: number; pending: number; active: number; byType?: Record<string, number> }
+interface UsersBucket { total: number; today: number }
+interface ReportsBucket { total: number; pending: number }
+
 interface DashboardData {
-  totalPosts: number;
-  totalUsers: number;
-  totalReports: number;
-  totalCompanies: number;
-  totalMessages: number;
-  pendingPosts: number;
-  pendingReports: number;
-  newUsersToday: number;
-  newPostsToday: number;
+  users: UsersBucket;
+  posts: PostsBucket;
+  reports: ReportsBucket;
+  companies: { total: number };
+  resumes: { total: number };
+  categories: { total: number };
+  favorites: { total: number };
+  comments: { total: number };
 }
 
 export default function DashboardPage() {
@@ -42,19 +46,20 @@ export default function DashboardPage() {
   }
   if (!data) return null;
 
+  // 兼容字段: 后端用 today, 兜底用 total (历史快照回放场景)
   const cards = [
-    { label: '今日新帖', value: data.newPostsToday, total: data.totalPosts, icon: TrendingUp, color: 'text-emerald-600 bg-emerald-50' },
-    { label: '待审核', value: data.pendingPosts, total: data.totalPosts, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: '今日新用户', value: data.newUsersToday, total: data.totalUsers, icon: Users, color: 'text-blue-600 bg-blue-50' },
-    { label: '待处理举报', value: data.pendingReports, total: data.totalReports, icon: Flag, color: 'text-rose-600 bg-rose-50' },
+    { label: '今日新帖', value: data.posts?.today ?? 0, total: data.posts?.total ?? 0, icon: TrendingUp, color: 'text-emerald-600 bg-emerald-50' },
+    { label: '待审核', value: data.posts?.pending ?? 0, total: data.posts?.total ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+    { label: '今日新用户', value: data.users?.today ?? 0, total: data.users?.total ?? 0, icon: Users, color: 'text-blue-600 bg-blue-50' },
+    { label: '待处理举报', value: data.reports?.pending ?? 0, total: data.reports?.total ?? 0, icon: Flag, color: 'text-rose-600 bg-rose-50' },
   ];
 
   const totals = [
-    { label: '信息总数', value: data.totalPosts, icon: FileText, href: '/posts' },
-    { label: '用户总数', value: data.totalUsers, icon: Users, href: '/users' },
-    { label: '举报总数', value: data.totalReports, icon: Flag, href: '/reports' },
-    { label: '公司总数', value: data.totalCompanies, icon: Building2, href: '/companies' },
-    { label: '站内信总数', value: data.totalMessages, icon: MessageSquare, href: '#' },
+    { label: '信息总数', value: data.posts?.total ?? 0, icon: FileText, href: '/posts' },
+    { label: '用户总数', value: data.users?.total ?? 0, icon: Users, href: '/users' },
+    { label: '举报总数', value: data.reports?.total ?? 0, icon: Flag, href: '/reports' },
+    { label: '公司总数', value: data.companies?.total ?? 0, icon: Building2, href: '/companies' },
+    { label: '站内信总数', value: 0, icon: MessageSquare, href: '#' },
   ];
 
   return (

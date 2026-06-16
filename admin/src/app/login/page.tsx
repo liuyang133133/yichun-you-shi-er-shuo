@@ -9,10 +9,15 @@ import { Button } from '@/components/ui/button';
 import { apiFetch, setToken, setUser, getToken } from '@/lib/api';
 import { Shield, AlertCircle } from 'lucide-react';
 
+type Tab = 'sms' | 'password';
+
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>('sms');
   const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
+  const [cooldown, setCooldown] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,19 +27,54 @@ export default function AdminLoginPage() {
     }
   }, [router]);
 
+  async function sendCode() {
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      setError('请输入有效的 11 位手机号');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const r: any = await apiFetch('/auth/sms-code', {
+        method: 'POST',
+        body: { phone: phone.trim() },
+      });
+      const cd = r?.cooldown || 60;
+      setCooldown(cd);
+      const timer = setInterval(() => {
+        setCooldown((s) => {
+          if (s <= 1) { clearInterval(timer); return 0; }
+          return s - 1;
+        });
+      }, 1000);
+    } catch (e: any) {
+      setError(e?.message || '发送失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!phone.trim() || !password) {
-      setError('请输入手机号和密码');
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      setError('请输入有效的 11 位手机号');
+      return;
+    }
+    if (tab === 'sms' && !/^\d{6}$/.test(code)) {
+      setError('请输入 6 位验证码');
+      return;
+    }
+    if (tab === 'password' && !password) {
+      setError('请输入密码');
       return;
     }
     setLoading(true);
     try {
-      const tokens: any = await apiFetch('/auth/login-password', {
-        method: 'POST',
-        body: { phone: phone.trim(), password },
-      });
+      const tokens: any = await apiFetch(
+        tab === 'sms' ? '/auth/login-sms' : '/auth/login-password',
+        { method: 'POST', body: tab === 'sms' ? { phone: phone.trim(), code } : { phone: phone.trim(), password } },
+      );
       setToken(tokens.accessToken);
 
       // 拉取用户信息
@@ -70,6 +110,28 @@ export default function AdminLoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Tab 切换: 验证码登录 / 密码登录 */}
+              <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setTab('sms')}
+                  className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    tab === 'sms' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  验证码登录
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab('password')}
+                  className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    tab === 'password' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  密码登录
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">手机号</label>
                 <Input
@@ -80,15 +142,40 @@ export default function AdminLoginPage() {
                   type="tel"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">密码</label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="登录密码"
-                />
-              </div>
+
+              {tab === 'sms' ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">验证码</label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="6 位验证码"
+                      maxLength={6}
+                      inputMode="numeric"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={sendCode}
+                      disabled={loading || cooldown > 0}
+                      className="whitespace-nowrap"
+                    >
+                      {cooldown > 0 ? `${cooldown}s` : '发送验证码'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">密码</label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="登录密码"
+                  />
+                </div>
+              )}
               {error && (
                 <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
