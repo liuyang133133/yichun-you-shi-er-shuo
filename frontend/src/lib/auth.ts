@@ -8,7 +8,7 @@
  * - 提供 useAuth() hook + 工具函数
  */
 
-const ACCESS_TOKEN_KEY = 'yichun_access_token';
+export const ACCESS_TOKEN_KEY = 'yichun_access_token';
 const USER_INFO_KEY = 'yichun_user';
 
 // 与 Next.js Middleware 共享的 cookie 名（SHOULD-19）

@@ -3,6 +3,8 @@
  * 浏览器端 fetch，Next.js 15 客户端组件使用
  */
 
+import { ACCESS_TOKEN_KEY } from './auth';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -40,7 +42,7 @@ async function request<T>(
 
   // 注入 token（如果有）
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
