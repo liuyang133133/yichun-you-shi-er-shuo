@@ -24,18 +24,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!getToken() || !getUser()) {
-      router.replace('/login');
+      const next = encodeURIComponent(pathname || '/dashboard');
+      router.replace(`/login?expired=1&next=${next}`);
       return;
     }
     const u = getUser()!;
     if (u.role !== 'admin') {
       clearAuth();
-      router.replace('/login');
+      const next = encodeURIComponent(pathname || '/dashboard');
+      router.replace(`/login?expired=1&next=${next}`);
       return;
     }
     setUserState(u);
     setReady(true);
-  }, [router]);
+  }, [router, pathname]);
 
   if (!ready || !user) {
     return (

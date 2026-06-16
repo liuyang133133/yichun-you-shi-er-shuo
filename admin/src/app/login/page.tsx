@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,20 +12,31 @@ import { Shield, AlertCircle } from 'lucide-react';
 type Tab = 'sms' | 'password';
 
 export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginInner />
+    </Suspense>
+  );
+}
+
+function AdminLoginInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const expired = search.get('expired') === '1';
+  const next = search.get('next') || '/dashboard';
   const [tab, setTab] = useState<Tab>('sms');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [cooldown, setCooldown] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(expired ? '登录已过期，请重新登录' : null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (getToken()) {
-      router.replace('/dashboard');
+      router.replace(next);
     }
-  }, [router]);
+  }, [router, next]);
 
   async function sendCode() {
     if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -85,7 +96,7 @@ export default function AdminLoginPage() {
         return;
       }
       setUser(me);
-      router.replace('/dashboard');
+      router.replace(next);
     } catch (e: any) {
       setError(e?.message || '登录失败');
     } finally {
@@ -109,6 +120,12 @@ export default function AdminLoginPage() {
             <CardTitle>登录</CardTitle>
           </CardHeader>
           <CardContent>
+            {expired && (
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>登录已过期，请重新登录</span>
+              </div>
+            )}
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Tab 切换: 验证码登录 / 密码登录 */}
               <div className="flex gap-1 p-1 bg-muted rounded-lg">

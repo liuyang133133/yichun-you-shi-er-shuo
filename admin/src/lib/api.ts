@@ -50,6 +50,16 @@ export async function apiFetch<T = any>(
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+  // 401 自动跳登录: 避免"加载失败 / 没数据"这种迷惑状态
+  // 触发场景: token 过期 / role 改了 / 后端 JWT_SECRET 轮换
+  if (res.status === 401) {
+    clearAuth();
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/login?expired=1&next=${next}`;
+    }
+    throw new Error('登录已过期，请重新登录');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message || `HTTP ${res.status}`);
