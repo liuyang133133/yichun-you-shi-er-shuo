@@ -16,7 +16,8 @@ out/
 .env.development.local
 .env.production.local
 .env.test.local
-.env.prod    # T-P1-01: 生产环境配置（必含真实密码），必须 gitignored
+.env.prod
+/.env.prod  # T-P1-06: 仓库根的 .env.prod 必须 gitignored（无论 git status 在仓库根）
 
 # Logs
 logs/

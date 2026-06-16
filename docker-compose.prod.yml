@@ -124,6 +124,31 @@ services:
           cpus: '0.5'
           memory: 512M
 
+  # T-P1-06: 管理后台 (独立 Next.js 项目)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: yichun-admin-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    expose:
+      - "3002"
+    networks:
+      - yichun-prod
+    security_opt:
+      - no-new-privileges
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 384M
+
   nginx:
     image: nginx:1.25-alpine
     container_name: yichun-nginx
@@ -144,14 +169,16 @@ services:
     security_opt:
       - no-new-privileges
 
-  # Let's Encrypt 自动续期（首次启动需手动 init）
-  # certbot:
-  #   image: certbot/certbot
-  #   container_name: yichun-certbot
-  #   volumes:
-  #     - ./docker/nginx/certs:/etc/letsencrypt
-  #     - ./docker/nginx/certbot/www:/var/www/certbot:rw
-  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done'"
+  # T-P1-07: Let's Encrypt 自动续期 (首次启动需手动 init)
+  certbot:
+    image: certbot/certbot
+    container_name: yichun-certbot
+    volumes:
+      - ./docker/nginx/certs:/etc/letsencrypt:rw
+      - ./docker/nginx/certbot/www:/var/www/certbot:rw
+    networks:
+      - yichun-prod
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done'"
 
 volumes:
   mysql_data_prod:
