@@ -123,7 +123,9 @@ export class AdminPostService {
     await this.prisma.$transaction([
       this.prisma.post.update({
         where: { id: postId },
-        data: { status: 'rejected', auditStatus: 'rejected', auditReason: reasonText },
+        // 修复:offline 应设 status=deleted (PRD §4.2), 30 天后硬清 cron (line 266) 才能匹配
+        // 此前写 'rejected' 会让强制下架的帖子永远不被清理
+        data: { status: 'deleted', auditStatus: 'rejected', auditReason: reasonText },
       }),
       this.prisma.auditLog.create({
         data: {
@@ -227,7 +229,8 @@ export class AdminPostService {
     const updateOp = this.prisma.post.updateMany({
       where: { id: { in: targetIds } },
       data: {
-        status: 'rejected',
+        // 同 offline 单条修复:status=deleted 让 30 天硬清 cron 命中
+        status: 'deleted',
         auditStatus: 'rejected',
         auditReason: `[强制下架] ${reason}`,
       },
