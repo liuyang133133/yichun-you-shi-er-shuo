@@ -68,7 +68,7 @@ function PostDetailContent() {
     if (!id) return;
     fetch(`http://localhost:3001/api/v1/posts/${id}/comments`)
       .then(r => r.json())
-      .then(r => setComments(r?.data || []))
+      .then(r => setComments(r?.data?.list || r?.data || []))
       .catch(() => {});
   }, [id]);
 
@@ -132,7 +132,7 @@ function PostDetailContent() {
       setCommentText('');
       // 重新加载评论
       const r = await fetch(`http://localhost:3001/api/v1/posts/${id}/comments`).then(r => r.json());
-      setComments(r?.data || []);
+      setComments(r?.data?.list || r?.data || []);
     } catch {
       alert('发表失败');
     } finally {
