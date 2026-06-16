@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { RedisService } from '../../redis/redis.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * 短信服务（V1 mock 版）
@@ -11,6 +12,7 @@ import { RedisService } from '../../redis/redis.service';
  * - 同 IP 30 次/小时限制（防扫描）
  * - 验证失败计数：5 次错误后该号验证码失效，冻结 15 分钟
  * - 验证码验证通过后才删除（不提前清除）
+ * - 每次发码 / 验证同步写 sms_codes 表（审计 + Navicat 查码面板）
  */
 @Injectable()
 export class SmsService {
@@ -22,7 +24,10 @@ export class SmsService {
   private readonly MAX_ATTEMPTS = 5;          // 5 次错误后冻结
   private readonly ATTEMPT_TTL = 15 * 60;     // 失败计数 15 分钟
 
-  constructor(private readonly redis: RedisService) {}
+  constructor(
+    private readonly redis: RedisService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * 发送登录验证码
@@ -79,6 +84,12 @@ export class SmsService {
       `📱 [SMS MOCK] phone=${phone} code=${code} ip=${ip} (valid for ${this.CODE_TTL}s)`,
     );
 
+    // 8. 持久化留痕：写 sms_codes 表（审计 / Navicat 查码面板）
+    //    fire-and-forget：库写失败不影响发码主流程，但会 warn
+    this.persistCode(phone, code, ip).catch((e) =>
+      this.logger.warn(`sms_codes 写入失败: ${e?.message ?? e}`),
+    );
+
     return { cooldown: this.COOLDOWN_SECONDS };
   }
 
@@ -114,6 +125,8 @@ export class SmsService {
     if (stored !== code) {
       // 失败：递增计数
       await this.redis.incr(attemptsKey);
+      // 同步库 attempts（仅最后一次更新有意义，但保留每次失败记录便于审计）
+      this.markVerifyFailure(phone).catch(() => undefined);
       const remain = this.MAX_ATTEMPTS - attempts - 1;
       throw new BadRequestException(
         `验证码错误（还剩 ${remain} 次尝试机会）`,
@@ -123,7 +136,45 @@ export class SmsService {
     // 3. 成功：清除验证码和失败计数
     await this.redis.del(codeKey);
     await this.redis.del(attemptsKey);
+    this.markConsumed(phone, code).catch(() => undefined);
     return true;
+  }
+
+  /**
+   * 写库：发码留痕
+   */
+  private async persistCode(phone: string, code: string, ip?: string) {
+    await this.prisma.smsCode.create({
+      data: {
+        phone,
+        code,
+        purpose: 'login',
+        ip: ip ?? null,
+        consumed: false,
+        attempts: 0,
+        expiresAt: new Date(Date.now() + this.CODE_TTL * 1000),
+      },
+    });
+  }
+
+  /**
+   * 验证失败：把该手机号最近一条未消费记录 attempts++（库层审计）
+   */
+  private async markVerifyFailure(phone: string) {
+    await this.prisma.smsCode.updateMany({
+      where: { phone, consumed: false },
+      data: { attempts: { increment: 1 } },
+    });
+  }
+
+  /**
+   * 验证成功：标记 consumed + consumedAt
+   */
+  private async markConsumed(phone: string, code: string) {
+    await this.prisma.smsCode.updateMany({
+      where: { phone, code, consumed: false },
+      data: { consumed: true, consumedAt: new Date() },
+    });
   }
 
   private todayKey(): string {
