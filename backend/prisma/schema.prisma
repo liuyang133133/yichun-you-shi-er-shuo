@@ -94,6 +94,7 @@ model Post {
   status        String   @default("draft") @db.VarChar(20)
   auditStatus   String   @default("pending") @map("audit_status") @db.VarChar(20)
   auditReason   String?  @map("audit_reason") @db.VarChar(255)
+  tags          Json?    @map("tags")
   viewCount     Int      @default(0) @map("view_count")
   favoriteCount Int      @default(0) @map("favorite_count")
   commentCount  Int      @default(0) @map("comment_count")
@@ -537,4 +538,27 @@ model Announcement {
   @@index([status, priority, createdAt])
   @@index([startsAt, endsAt])
   @@map("announcements")
+}
+
+// =====================================================
+// 首页 / 列表页 Banner 运营位（首页轮播 / 分类页 banner）
+// =====================================================
+model Banner {
+  id         BigInt   @id @default(autoincrement())
+  title      String   @db.VarChar(100)
+  imageUrl   String   @map("image_url") @db.VarChar(500)
+  linkType   String   @default("url") @map("link_type") @db.VarChar(20)
+  linkTarget String   @default("") @map("link_target") @db.VarChar(500)
+  position   String   @default("home_top") @db.VarChar(30)
+  sortOrder  Int      @default(0) @map("sort_order")
+  status     Int      @default(1) @db.TinyInt
+  startsAt   DateTime? @map("starts_at")
+  endsAt     DateTime? @map("ends_at")
+  createdBy  BigInt   @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([position, status, sortOrder])
+  @@index([startsAt, endsAt])
+  @@map("banners")
 }

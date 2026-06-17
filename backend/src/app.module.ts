@@ -28,6 +28,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CronModule } from './cron/cron.module';
 import { ViewLogModule } from './modules/view-log/view-log.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
+import { BannerModule } from './modules/banner/banner.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { AnnouncementModule } from './modules/announcement/announcement.module';
     CronModule,
     ViewLogModule,
     AnnouncementModule,
+    BannerModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
