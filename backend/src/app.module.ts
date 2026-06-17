@@ -29,6 +29,7 @@ import { CronModule } from './cron/cron.module';
 import { ViewLogModule } from './modules/view-log/view-log.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
 import { BannerModule } from './modules/banner/banner.module';
+import { ClaudeClient } from './modules/ai/llm/claude.client';
 
 @Module({
   imports: [
@@ -89,6 +90,8 @@ import { BannerModule } from './modules/banner/banner.module';
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    ClaudeClient,
   ],
+  exports: [ClaudeClient],
 })
 export class AppModule {}
