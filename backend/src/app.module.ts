@@ -21,6 +21,7 @@ import { CompanyModule } from './modules/company/company.module';
 import { ResumeModule } from './modules/resume/resume.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AiModule } from './modules/ai/ai.module';
 import { SearchModule } from './modules/search/search.module';
 import { MessageModule } from './modules/message/message.module';
 import { HealthModule } from './modules/health/health.module';
@@ -77,6 +78,7 @@ import { ClaudeClient } from './modules/ai/llm/claude.client';
     ResumeModule,
     ApplicationModule,
     AdminModule,
+    AiModule,
     SearchModule,
     SmsModule,
     AuthModule,
