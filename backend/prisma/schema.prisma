@@ -562,3 +562,27 @@ model Banner {
   @@index([startsAt, endsAt])
   @@map("banners")
 }
+
+// =====================================================
+// AI 智能发布 (Phase 1: extract / suggest-title) 调用审计
+// =====================================================
+/// AI 调用审计表 (Phase 1: extract / suggest-title)
+model AiUsageLog {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt?  @map("user_id")
+  kind         String   @db.VarChar(32)        // 'extract' | 'suggest-title'
+  model        String   @db.VarChar(64)        // 'claude-haiku-4-5-20251001'
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  costUsd      Decimal  @map("cost_usd") @db.Decimal(10, 6)
+  latencyMs    Int      @map("latency_ms")
+  cached       Boolean  @default(false)
+  success      Boolean  @default(true)
+  errorCode    String?  @db.VarChar(64) @map("error_code")
+  inputHash    String?  @db.VarChar(64) @map("input_hash")  // sha256(rawText), 用于审计去重
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([kind, createdAt])
+  @@map("ai_usage_logs")
+}
