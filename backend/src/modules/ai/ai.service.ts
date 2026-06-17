@@ -1,0 +1,236 @@
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
+import { ClaudeClient, ClaudeCallResult } from './llm/claude.client';
+import { EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './llm/prompts/extract';
+import { redactPii, sha256 } from '../../common/utils/pii-redact.util';
+import {
+  ExtractRequestDto,
+  ExtractResponse,
+  ExtractChip,
+  AiPostType,
+} from './dto/extract.dto';
+import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
+
+const CACHE_TTL_SECONDS = 5 * 60;
+const RATE_LIMIT_PER_MINUTE = 30;
+const RATE_LIMIT_PER_DAY = 200;
+
+@Injectable()
+export class AiService {
+  private readonly logger = new Logger(AiService.name);
+
+  constructor(
+    private readonly claude: ClaudeClient,
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    private readonly config: ConfigService,
+  ) {}
+
+  /**
+   * extract 入口: PII 脱敏 → 查缓存 → 调 LLM → 写日志 → 返回
+   */
+  async extract(userId: bigint | null, dto: ExtractRequestDto): Promise<ExtractResponse> {
+    const start = Date.now();
+    const textHash = sha256(dto.rawText);
+    const cacheKey = `ai:extract:${textHash}`;
+
+    // 1) 限频
+    await this.checkRateLimit(userId);
+
+    // 2) 查缓存
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached) as ExtractResponse;
+      const result = { ...parsed, cached: true };
+      await this.logUsage(userId, 'extract', 0, 0, 0, 0, true, null, textHash);
+      return result;
+    }
+
+    // 3) Claude 不可用 → 503
+    if (!this.claude.isAvailable()) {
+      throw new HttpException('AI 暂不可用', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 4) PII 脱敏
+    const safeText = redactPii(dto.rawText);
+
+    // 5) 调 LLM
+    let llmResult: ClaudeCallResult;
+    try {
+      llmResult = await this.claude.call({
+        system: EXTRACT_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildExtractUserPrompt(safeText, dto.typeHint) }],
+        maxTokens: 1500,
+        temperature: 0.2,
+        timeoutMs: 5000,
+      });
+    } catch (e: any) {
+      await this.logUsage(userId, 'extract', 0, 0, 0, Date.now() - start, false, e?.message, textHash);
+      throw new HttpException('AI 调用失败', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 6) 解析 LLM JSON
+    const parsed = this.parseLlmJson(llmResult.text, dto.typeHint);
+    const durationMs = Date.now() - start;
+    const costUsd = this.estimateCost(llmResult.inputTokens, llmResult.outputTokens);
+
+    const response: ExtractResponse = {
+      type: parsed.type,
+      typeConfidence: parsed.typeConfidence,
+      fields: parsed.fields,
+      fieldsConfidence: parsed.fieldsConfidence,
+      missingFields: parsed.missingFields,
+      chips: this.buildChips(parsed),
+      suggestions: parsed.suggestions,
+      rawTextHash: textHash,
+      durationMs,
+      cached: false,
+    };
+
+    // 7) 写缓存
+    await this.redis.setEx(cacheKey, JSON.stringify({ ...response, cached: false }), CACHE_TTL_SECONDS);
+
+    // 8) 写日志
+    await this.logUsage(
+      userId,
+      'extract',
+      llmResult.inputTokens,
+      llmResult.outputTokens,
+      costUsd,
+      durationMs,
+      true,
+      null,
+      textHash,
+    );
+
+    return response;
+  }
+
+  /**
+   * suggest-title: 用 extract 的 fields 二次调 LLM, 生成 3 个标题
+   * Phase 1: 直接复用 extract 的 suggestions.titles, 不二次调用 LLM
+   */
+  async suggestTitle(userId: bigint | null, dto: SuggestTitleRequestDto): Promise<SuggestTitleResponse> {
+    const titles = (dto.fields?.suggestedTitles as string[]) || [];
+    return { titles: titles.slice(0, dto.count ?? 3), cached: false };
+  }
+
+  // ============ 私有方法 ============
+
+  private async checkRateLimit(userId: bigint | null): Promise<void> {
+    if (!userId) return;
+    const minuteKey = `ai:rl:extract:${userId}:${Math.floor(Date.now() / 60000)}`;
+    const dayKey = `ai:daily:extract:${userId}:${this.todayKey()}`;
+
+    const minuteCount = await this.redis.incr(minuteKey);
+    if (minuteCount === 1) await this.redis.expire(minuteKey, 60);
+    const dayCount = parseInt((await this.redis.get(dayKey)) || '0', 10) + 1;
+
+    if (minuteCount > RATE_LIMIT_PER_MINUTE) {
+      throw new HttpException('操作太频繁, 请稍后再试', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (dayCount > RATE_LIMIT_PER_DAY) {
+      throw new HttpException('今日 AI 调用次数已达上限', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (dayCount === 1) {
+      await this.redis.setEx(dayKey, '1', 24 * 60 * 60);
+    } else {
+      await this.redis.incr(dayKey);
+    }
+  }
+
+  private buildChips(parsed: any): ExtractChip[] {
+    const f = parsed.fields || {};
+    const conf = parsed.fieldsConfidence || {};
+    const map: Array<[string, string]> = [
+      ['小区', 'areaName'],
+      ['户型', 'layout'],
+      ['租金', 'price'],
+      ['面积', 'areaSize'],
+      ['楼层', 'floor'],
+      ['装修', 'decoration'],
+    ];
+    const chips: ExtractChip[] = [];
+    for (const [label, key] of map) {
+      const v = f[key];
+      if (v !== null && v !== undefined && v !== '') {
+        chips.push({
+          label,
+          value: key === 'price' ? `${v} 元/月` : String(v),
+          confidence: conf[key] ?? 0.8,
+        });
+      }
+    }
+    return chips;
+  }
+
+  private parseLlmJson(text: string, typeHint?: string): any {
+    try {
+      return JSON.parse(text);
+    } catch {}
+    const m = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (m) {
+      try {
+        return JSON.parse(m[1]);
+      } catch {}
+    }
+    const m2 = text.match(/\{[\s\S]+\}/);
+    if (m2) {
+      try {
+        return JSON.parse(m2[0]);
+      } catch {}
+    }
+    this.logger.warn(`LLM 返回非 JSON: ${text.slice(0, 200)}`);
+    return {
+      type: typeHint ?? 'house',
+      typeConfidence: 0.3,
+      fields: {},
+      fieldsConfidence: {},
+      missingFields: [],
+      suggestions: { titles: [], tags: [] },
+    };
+  }
+
+  private estimateCost(inputTokens: number, outputTokens: number): number {
+    return (inputTokens * 0.8 + outputTokens * 4) / 1_000_000;
+  }
+
+  private todayKey(): string {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private async logUsage(
+    userId: bigint | null,
+    kind: string,
+    inputTokens: number,
+    outputTokens: number,
+    costUsd: number,
+    latencyMs: number,
+    success: boolean,
+    errorCode: string | null,
+    inputHash: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.aiUsageLog.create({
+        data: {
+          userId: userId ?? null,
+          kind,
+          model: this.config.get<string>('ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001',
+          inputTokens,
+          outputTokens,
+          costUsd,
+          latencyMs,
+          cached: false,
+          success,
+          errorCode,
+          inputHash,
+        },
+      });
+    } catch (e: any) {
+      this.logger.warn(`写 ai_usage_logs 失败: ${e?.message ?? e}`);
+    }
+  }
+}
