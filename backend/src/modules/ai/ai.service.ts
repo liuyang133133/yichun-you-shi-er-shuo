@@ -2,7 +2,8 @@ import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
-import { ClaudeClient, ClaudeCallResult } from './llm/claude.client';
+import { ClaudeClient } from './llm/claude.client';
+import { GlmClient } from './llm/glm.client';
 import { EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './llm/prompts/extract';
 import { redactPii, sha256 } from '../../common/utils/pii-redact.util';
 import {
@@ -17,16 +18,61 @@ const CACHE_TTL_SECONDS = 5 * 60;
 const RATE_LIMIT_PER_MINUTE = 30;
 const RATE_LIMIT_PER_DAY = 200;
 
+/**
+ * LLM 抽象接口 — service 只依赖此接口,
+ * 由 ai.module.ts 注入具体实现 (ClaudeClient 或 GlmClient)。
+ */
+interface LlmMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface LlmCallOptions {
+  system?: string;
+  messages: LlmMessage[];
+  maxTokens?: number;
+  temperature?: number;
+  timeoutMs?: number;
+}
+
+interface LlmCallResult {
+  text: string;
+  inputTokens: number;
+  outputTokens: number;
+  model: string;
+  latencyMs: number;
+}
+
+interface LlmClient {
+  isAvailable(): boolean;
+  call(opts: LlmCallOptions): Promise<LlmCallResult>;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
+  private readonly llm: LlmClient;
+  private readonly llmModel: string;
 
   constructor(
-    private readonly claude: ClaudeClient,
+    claude: ClaudeClient,
+    glm: GlmClient,
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    const provider = (this.config.get<string>('AI_PROVIDER') || 'glm').toLowerCase();
+    if (provider === 'claude') {
+      this.llm = claude;
+      this.llmModel =
+        this.config.get<string>('ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001';
+      this.logger.log(`AI provider: Claude (${this.llmModel})`);
+    } else {
+      this.llm = glm;
+      this.llmModel = this.config.get<string>('GLM_MODEL') ?? 'glm-4-air';
+      this.logger.log(`AI provider: GLM (${this.llmModel})`);
+    }
+  }
 
   /**
    * extract 入口: PII 脱敏 → 查缓存 → 调 LLM → 写日志 → 返回
@@ -48,8 +94,8 @@ export class AiService {
       return result;
     }
 
-    // 3) Claude 不可用 → 503
-    if (!this.claude.isAvailable()) {
+    // 3) LLM 不可用 → 503
+    if (!this.llm.isAvailable()) {
       throw new HttpException('AI 暂不可用', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -57,14 +103,14 @@ export class AiService {
     const safeText = redactPii(dto.rawText);
 
     // 5) 调 LLM
-    let llmResult: ClaudeCallResult;
+    let llmResult: LlmCallResult;
     try {
-      llmResult = await this.claude.call({
+      llmResult = await this.llm.call({
         system: EXTRACT_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildExtractUserPrompt(safeText, dto.typeHint) }],
         maxTokens: 1500,
         temperature: 0.2,
-        timeoutMs: 5000,
+        timeoutMs: 15000,
       });
     } catch (e: any) {
       await this.logUsage(userId, 'extract', 0, 0, 0, Date.now() - start, false, e?.message, textHash);
@@ -194,6 +240,8 @@ export class AiService {
   }
 
   private estimateCost(inputTokens: number, outputTokens: number): number {
+    // GLM-4.5-Air 约 0.00006 元/1k input, 0.00011 元/1k output (¥)
+    // 简化: 用 Claude 估算系数 (Phase 1 不影响业务, 仅审计)
     return (inputTokens * 0.8 + outputTokens * 4) / 1_000_000;
   }
 
@@ -218,7 +266,7 @@ export class AiService {
         data: {
           userId: userId ?? null,
           kind,
-          model: this.config.get<string>('ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001',
+          model: this.llmModel,
           inputTokens,
           outputTokens,
           costUsd,
