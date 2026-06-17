@@ -2,6 +2,9 @@
  * AI 智能发布 API 客户端
  */
 
+import { ACCESS_TOKEN_KEY } from './auth';
+import { ApiError } from './api';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export type AiPostType = 'house' | 'job' | 'secondhand' | 'lifebiz';
@@ -34,7 +37,7 @@ export interface SuggestTitleResponse {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('yichun_access_token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
@@ -46,10 +49,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json?.code !== 0) {
-    const err: any = new Error(json?.message || `HTTP ${res.status}`);
-    err.status = res.status;
-    err.code = json?.code;
-    throw err;
+    throw new ApiError(
+      json?.message || `请求失败 (${res.status})`,
+      json?.code ?? res.status,
+      res.status,
+      null,
+    );
   }
   return json.data as T;
 }
