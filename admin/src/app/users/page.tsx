@@ -33,15 +33,40 @@ export default function AdminUsersPage() {
 
   async function toggleStatus(userId: string, currentStatus: number) {
     const action = currentStatus === 0 ? 'ban' : 'unban';
-    if (!confirm(action === 'ban' ? '确认封禁此用户？' : '确认解封？')) return;
-    setActing(userId);
-    try {
-      await apiFetch(`/admin/users/${userId}/${action}`, { method: 'POST' });
-      setList((l) => l.map((u) => (String(u.id) === userId ? { ...u, status: action === 'ban' ? 1 : 0 } : u)));
-    } catch (e: any) {
-      alert('操作失败：' + (e?.message || ''));
-    } finally {
-      setActing(null);
+
+    if (action === 'ban') {
+      // 封禁需要理由（后端必填，用于审计）
+      const reasonInput = window.prompt('请输入封禁理由（必填）:', '');
+      if (reasonInput === null) return; // 用户取消
+      const reason = reasonInput.trim();
+      if (!reason) {
+        alert('封禁理由不能为空');
+        return;
+      }
+      if (!confirm(`确认封禁此用户？\n理由：${reason}`)) return;
+
+      setActing(userId);
+      try {
+        await apiFetch(`/admin/users/${userId}/ban`, { method: 'POST', body: { reason } });
+        setList((l) => l.map((u) => (String(u.id) === userId ? { ...u, status: 1 } : u)));
+      } catch (e: any) {
+        alert('操作失败：' + (e?.message || ''));
+      } finally {
+        setActing(null);
+      }
+    } else {
+      // 解封：无需理由
+      if (!confirm('确认解封？')) return;
+
+      setActing(userId);
+      try {
+        await apiFetch(`/admin/users/${userId}/unban`, { method: 'POST' });
+        setList((l) => l.map((u) => (String(u.id) === userId ? { ...u, status: 0 } : u)));
+      } catch (e: any) {
+        alert('操作失败：' + (e?.message || ''));
+      } finally {
+        setActing(null);
+      }
     }
   }
 
