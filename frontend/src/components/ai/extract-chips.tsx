@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { ExtractChip } from '@/lib/api-ai';
-import { Check, AlertTriangle, X } from 'lucide-react';
+import { Check, AlertTriangle, X, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 function confidenceColor(c: number): string {
@@ -33,28 +33,31 @@ const MISSING_LABELS: Record<string, string> = {
 
 export function ExtractChips({ chips, missingFields = [] }: Props) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {chips.map((chip, i) => (
-        <Badge
-          key={`${chip.label}-${i}`}
-          variant="outline"
-          className={clsx('px-2.5 py-1 text-xs flex items-center gap-1.5', confidenceColor(chip.confidence))}
-        >
-          {confidenceIcon(chip.confidence)}
-          <span className="font-medium">{chip.label}：</span>
-          <span>{chip.value}</span>
-        </Badge>
-      ))}
-      {missingFields.map((f) => (
-        <Badge
-          key={`missing-${f}`}
-          variant="outline"
-          className="px-2.5 py-1 text-xs flex items-center gap-1.5 bg-slate-50 text-slate-500 border-slate-200 border-dashed"
-        >
-          <X className="h-3 w-3" />
-          <span>{MISSING_LABELS[f] || f}：未识别</span>
-        </Badge>
-      ))}
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {chips.map((chip, i) => (
+          <Badge
+            key={`${chip.label}-${i}`}
+            variant="outline"
+            className={clsx('px-2.5 py-1 text-xs flex items-center gap-1.5', confidenceColor(chip.confidence))}
+          >
+            {confidenceIcon(chip.confidence)}
+            <span className="font-medium">{chip.label}：</span>
+            <span>{chip.value}</span>
+          </Badge>
+        ))}
+      </div>
+      {missingFields.length > 0 && (
+        <div className="flex items-start gap-2 text-sm text-rose-600 bg-rose-50 rounded-lg p-3">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <div className="font-medium">还有 {missingFields.length} 项必填未识别</div>
+            <div className="text-xs text-rose-500 mt-0.5">
+              {missingFields.map((f) => MISSING_LABELS[f] || f).join('、')}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
