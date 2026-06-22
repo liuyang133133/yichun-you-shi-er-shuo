@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExtractChips } from '@/components/ai/extract-chips';
 import { TitleSuggestions, SkipAiButton } from '@/components/ai/title-suggestions';
+import { BusinessDetector } from '@/components/ai/business-detector';
 import { aiApi, ExtractResponse, RAW_TEXT_MAX, RAW_TEXT_MIN, AiPostType } from '@/lib/api-ai';
 import { Sparkles, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 
@@ -83,6 +84,14 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/40 to-white">
+      {/* 商家识别 toast (仅在 extract 成功后渲染) */}
+      {result && (
+        <BusinessDetector
+          isBusiness={result.isBusiness ?? false}
+          businessType={result.businessType ?? null}
+          businessConfidence={result.businessConfidence}
+        />
+      )}
       <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">

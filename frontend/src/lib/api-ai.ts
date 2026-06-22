@@ -31,6 +31,10 @@ export interface ExtractResponse {
   rawTextHash: string;
   durationMs: number;
   cached: boolean;
+  // 商家识别 (Phase 2.2b)
+  isBusiness?: boolean;
+  businessType?: 'recruiter' | 'agent' | 'wholesaler' | null;
+  businessConfidence?: number;
 }
 
 export interface SuggestTitleResponse {
