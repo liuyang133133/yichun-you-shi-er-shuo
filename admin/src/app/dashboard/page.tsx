@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
-import { FileText, Users, Flag, Building2, MessageSquare, TrendingUp, Clock } from 'lucide-react';
+import { FileText, Users, Flag, Building2, MessageSquare, TrendingUp, Clock, Brain } from 'lucide-react';
 
 // 修复: 后端返回嵌套结构 (与 admin-dashboard.service.ts 一致), 不是扁平字段
 interface PostsBucket { total: number; today: number; pending: number; active: number; byType?: Record<string, number> }
@@ -60,6 +60,7 @@ export default function DashboardPage() {
     { label: '举报总数', value: data.reports?.total ?? 0, icon: Flag, href: '/reports' },
     { label: '公司总数', value: data.companies?.total ?? 0, icon: Building2, href: '/companies' },
     { label: '站内信总数', value: 0, icon: MessageSquare, href: '#' },
+    { label: 'AI 调用看板', value: '查看 →', icon: Brain, href: '/ai-usage' },
   ];
 
   return (
@@ -94,7 +95,7 @@ export default function DashboardPage() {
       {/* 累计统计 */}
       <div>
         <h2 className="text-lg font-semibold mb-3">累计数据</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {totals.map((t) => {
             const Icon = t.icon;
             return (
@@ -105,7 +106,9 @@ export default function DashboardPage() {
                       <Icon className="h-4 w-4" />
                       <span className="text-xs">{t.label}</span>
                     </div>
-                    <div className="text-xl font-bold">{t.value.toLocaleString()}</div>
+                    <div className="text-xl font-bold">
+                      {typeof t.value === 'number' ? t.value.toLocaleString() : t.value}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
