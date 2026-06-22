@@ -173,9 +173,9 @@ export class AiService {
     const cacheKey = `ai:title:${dto.type}:${sha256(JSON.stringify(fieldsKey))}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
-      const parsed = JSON.parse(cached);
+      const parsed = JSON.parse(cached) as { titles: string[] };
       await this.logUsage(userId, 'suggest-title', 0, 0, 0, 0, true, null, cacheKey);
-      return { titles: parsed.titles, cached: true, durationMs: Date.now() - start } as any;
+      return { titles: parsed.titles, cached: true, durationMs: Date.now() - start };
     }
 
     // 3) LLM 不可用 → 503
@@ -205,8 +205,10 @@ export class AiService {
     const titles = this.parseTitles(llmResult.text);
     const durationMs = Date.now() - start;
 
-    // 7) 写缓存 (30 min)
-    await this.redis.setEx(cacheKey, JSON.stringify({ titles }), 30 * 60);
+    // 7) 写缓存 (30 min, 仅缓存非空结果以避免 LLM 抖动锁死)
+    if (titles.length > 0) {
+      await this.redis.setEx(cacheKey, JSON.stringify({ titles }), 30 * 60);
+    }
 
     // 8) 写日志
     await this.logUsage(
@@ -221,22 +223,12 @@ export class AiService {
       cacheKey,
     );
 
-    return { titles, cached: false, durationMs } as any;
+    return { titles, cached: false, durationMs };
   }
 
   private parseTitles(text: string): string[] {
-    try {
-      const obj = JSON.parse(text);
-      if (Array.isArray(obj.titles)) return obj.titles.slice(0, 3);
-    } catch {}
-    const m = text.match(/```(?:json)?\s*(\{[\s\S]+?\})\s*```/);
-    if (m) {
-      try {
-        const obj = JSON.parse(m[1]);
-        if (Array.isArray(obj.titles)) return obj.titles.slice(0, 3);
-      } catch {}
-    }
-    return [];
+    const obj = this.parseLlmJson(text);
+    return Array.isArray(obj?.titles) ? obj.titles.slice(0, 3) : [];
   }
 
   // ============ 私有方法 ============
