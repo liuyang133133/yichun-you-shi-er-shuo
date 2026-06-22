@@ -10,9 +10,10 @@ import { AdminDashboardService } from './dashboard/admin-dashboard.service';
 import { AdminCategoryController } from './category/admin-category.controller';
 import { CategoryModule } from '../category/category.module';
 import { AdminGuard } from './guards/admin-auth.guard';
+import { AiUsageModule } from './ai-usage/ai-usage.module';
 
 @Module({
-  imports: [CategoryModule],
+  imports: [CategoryModule, AiUsageModule],
   controllers: [
     AdminPostController,
     AdminUserController,
