@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { RewritePopover } from '@/components/ai/rewrite-popover';
 import { postApi, categoryApi, areaApi, uploadApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2 } from 'lucide-react';
@@ -361,7 +362,16 @@ function ManualPublishForm() {
           {step === 1 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm">标题 <span className="text-destructive">*</span></Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="title" className="text-sm">标题 <span className="text-destructive">*</span></Label>
+                  <RewritePopover
+                    type={type}
+                    field="title"
+                    original={title}
+                    context={{ price, priceUnit, rentalType, areaSqm, rooms, livingRooms, communityName }}
+                    onApply={(t) => setTitle(t)}
+                  />
+                </div>
                 <Input id="title" placeholder="一句话描述你的信息" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} className="h-11" />
                 <div className="text-xs text-muted-foreground text-right">{title.length}/100</div>
               </div>
@@ -476,7 +486,16 @@ function ManualPublishForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="desc" className="text-sm">详细描述 <span className="text-destructive">*</span></Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="desc" className="text-sm">详细描述 <span className="text-destructive">*</span></Label>
+                  <RewritePopover
+                    type={type}
+                    field="description"
+                    original={description}
+                    context={{ title, price, priceUnit, rentalType, areaSqm, communityName }}
+                    onApply={(t) => setDescription(t)}
+                  />
+                </div>
                 <textarea
                   id="desc"
                   rows={8}

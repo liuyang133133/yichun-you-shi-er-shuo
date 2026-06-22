@@ -5,6 +5,7 @@
 import { ACCESS_TOKEN_KEY } from './auth';
 import { ApiError } from './api';
 import type { ScoreRequestDto, ScoreResponse } from '@/types/ai-score';
+import type { RewriteRequestDto, RewriteResponse } from '@/types/ai-rewrite';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -75,6 +76,11 @@ export const aiApi = {
     request('/ai/health'),
   score: (dto: ScoreRequestDto): Promise<ScoreResponse> =>
     request<ScoreResponse>('/ai/draft/score', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    }),
+  rewrite: (dto: RewriteRequestDto): Promise<RewriteResponse> =>
+    request<RewriteResponse>('/ai/draft/rewrite', {
       method: 'POST',
       body: JSON.stringify(dto),
     }),
