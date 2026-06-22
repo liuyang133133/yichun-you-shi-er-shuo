@@ -16,7 +16,6 @@ import { buildChips } from './llm/field-maps';
 import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
 
 const CACHE_TTL_SECONDS = 5 * 60;
-const RATE_LIMIT_PER_MINUTE = 30;
 const RATE_LIMIT_PER_DAY = 200;
 
 /**
@@ -84,7 +83,7 @@ export class AiService {
     const cacheKey = `ai:extract:${textHash}`;
 
     // 1) 限频
-    await this.checkRateLimit(userId);
+    await this.checkRateLimit(userId, 'extract');
 
     // 2) 查缓存
     const cached = await this.redis.get(cacheKey);
@@ -162,8 +161,8 @@ export class AiService {
   async suggestTitle(userId: bigint | null, dto: SuggestTitleRequestDto): Promise<SuggestTitleResponse> {
     const start = Date.now();
 
-    // 1) 限频 (共用 extract 池)
-    await this.checkRateLimit(userId);
+    // 1) 限频
+    await this.checkRateLimit(userId, 'suggest-title');
 
     // 2) 缓存 key (按 fields 排序后序列化, 保证字段顺序无关)
     const fieldsKey = Object.keys(dto.fields || {}).sort().reduce((acc, k) => {
@@ -233,25 +232,24 @@ export class AiService {
 
   // ============ 私有方法 ============
 
-  private async checkRateLimit(userId: bigint | null): Promise<void> {
+  private async checkRateLimit(userId: bigint | null, kind: string): Promise<void> {
     if (!userId) return;
-    const minuteKey = `ai:rl:extract:${userId}:${Math.floor(Date.now() / 60000)}`;
-    const dayKey = `ai:daily:extract:${userId}:${this.todayKey()}`;
-
+    // 每分钟按 kind 分桶 (避免某端点刷爆全局)
+    const minuteKey = `ai:rl:${kind}:${userId}:${Math.floor(Date.now() / 60000)}`;
     const minuteCount = await this.redis.incr(minuteKey);
     if (minuteCount === 1) await this.redis.expire(minuteKey, 60);
-    const dayCount = parseInt((await this.redis.get(dayKey)) || '0', 10) + 1;
 
-    if (minuteCount > RATE_LIMIT_PER_MINUTE) {
+    // 全局总池 (200/天, 跨 kind 共用)
+    const dayKey = `ai:daily:${userId}:${this.todayKey()}`;
+    const dayCount = await this.redis.incr(dayKey);
+    if (dayCount === 1) await this.redis.expire(dayKey, 24 * 60 * 60);
+
+    const MINUTE_LIMIT = kind === 'rewrite' ? 10 : 30; // rewrite 更严
+    if (minuteCount > MINUTE_LIMIT) {
       throw new HttpException('操作太频繁, 请稍后再试', HttpStatus.TOO_MANY_REQUESTS);
     }
     if (dayCount > RATE_LIMIT_PER_DAY) {
       throw new HttpException('今日 AI 调用次数已达上限', HttpStatus.TOO_MANY_REQUESTS);
-    }
-    if (dayCount === 1) {
-      await this.redis.setEx(dayKey, '1', 24 * 60 * 60);
-    } else {
-      await this.redis.incr(dayKey);
     }
   }
 
