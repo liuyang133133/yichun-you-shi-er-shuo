@@ -74,7 +74,7 @@ export class PostService {
     const skip = (page - 1) * pageSize;
 
     // ===== T10.2 Redis 缓存：列表 5 分钟 =====
-    const cacheKey = `cache:posts:${type}:${JSON.stringify({ areaId, categoryId, status, keyword, minPrice, maxPrice, sort, page, pageSize })}`;
+    const cacheKey = `cache:posts:${type}:${JSON.stringify({ areaId, categoryId, status, keyword, minPrice, maxPrice, sort, page, pageSize, aiRank: process.env.AI_RANK_ENABLED })}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       try {
@@ -83,20 +83,72 @@ export class PostService {
     }
     // ===== 缓存 end =====
 
-    const [list, total] = await Promise.all([
-      this.prisma.post.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy,
-        include: {
-          user: { select: { id: true, nickname: true, avatar: true } },
-          category: { select: { id: true, name: true, code: true } },
-          area: { select: { id: true, name: true, level: true } },
-        },
-      }),
-      this.prisma.post.count({ where }),
-    ]);
+    // ===== Phase 2.2a: AI 排序权重（灰度，默认 off）=====
+    // 启用条件: AI_RANK_ENABLED=true 且 sort='latest'（其他 sort 维持原语义）
+    const isRankEnabled = process.env.AI_RANK_ENABLED === 'true' && sort === 'latest';
+
+    let list: any[];
+    let total: number;
+
+    if (isRankEnabled) {
+      // AI 排序: quality(0.3) + 新鲜度(0.4) + 置顶(0.3)
+      // 注意: raw SQL 不支持 Prisma include, 所以仅取主表字段;
+      // 关联数据 (user/category/area/images) 用 IN(...) 二次查询补全
+      const ranked = await this.prisma.$queryRaw<Array<{ id: bigint }>>`
+        SELECT id
+        FROM posts
+        WHERE type = ${type}
+          AND status = ${status}
+          AND audit_status = 'passed'
+        ORDER BY (
+          COALESCE(quality_score, 50) * 0.3 +
+          (100.0 / (1 + TIMESTAMPDIFF(HOUR, created_at, NOW()) / 24)) * 0.4 +
+          (CASE WHEN boost_expires_at IS NOT NULL AND boost_expires_at > NOW() THEN 100 ELSE 0 END) * 0.3
+        ) DESC, created_at DESC
+        LIMIT ${pageSize} OFFSET ${skip}
+      `;
+
+      if (ranked.length === 0) {
+        list = [];
+      } else {
+        const ids = ranked.map((r) => r.id);
+        const posts = await this.prisma.post.findMany({
+          where: { id: { in: ids } },
+          include: {
+            user: { select: { id: true, nickname: true, avatar: true } },
+            category: { select: { id: true, name: true, code: true } },
+            area: { select: { id: true, name: true, level: true } },
+            images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { id: true, url: true } },
+          },
+        });
+        // 按 AI 排序的 id 顺序还原 (Prisma findMany 不保证顺序)
+        const byId = new Map(posts.map((p) => [p.id.toString(), p]));
+        list = ranked
+          .map((r) => byId.get(r.id.toString()))
+          .filter((p): p is NonNullable<typeof p> => p !== undefined);
+      }
+
+      total = await this.prisma.post.count({ where });
+    } else {
+      // 默认: 按 createdAt DESC（或其他 sort）
+      [list, total] = await Promise.all([
+        this.prisma.post.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy,
+          include: {
+            user: { select: { id: true, nickname: true, avatar: true } },
+            category: { select: { id: true, name: true, code: true } },
+            area: { select: { id: true, name: true, level: true } },
+            // 取首张图作为封面（select 第一个；limit 1 用 take）
+            images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { id: true, url: true } },
+          },
+        }),
+        this.prisma.post.count({ where }),
+      ]);
+    }
+    // ===== Phase 2.2a end =====
 
     const result = { list, total, page, pageSize };
     // 写缓存（异步，不阻塞返回）— 响应侧由 TransformInterceptor 把 BigInt → string；
@@ -128,6 +180,7 @@ export class PostService {
         user: { select: { id: true, nickname: true, avatar: true } },
         category: { select: { id: true, name: true, code: true } },
         area: { select: { id: true, name: true, level: true } },
+        images: { orderBy: { sortOrder: 'asc' } },
         house: true,
         secondhand: true,
         lifebiz: true,
@@ -373,6 +426,19 @@ export class PostService {
         }
       }
 
+      // ===== 图片写入（事务内原子化） =====
+      if (dto.images && dto.images.length > 0) {
+        const imgs = dto.images.slice(0, 9); // 上限 9 张
+        await tx.postImage.createMany({
+          data: imgs.map((url, idx) => ({
+            postId: created.id,
+            url,
+            sortOrder: idx,
+            isCover: idx === 0 ? 1 : 0,
+          })),
+        });
+      }
+
       return created;
     });
 
@@ -383,6 +449,7 @@ export class PostService {
         user: { select: { id: true, nickname: true, avatar: true } },
         category: { select: { id: true, name: true, code: true } },
         area: { select: { id: true, name: true, level: true } },
+        images: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
