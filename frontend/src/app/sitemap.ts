@@ -3,6 +3,13 @@ import { postApi, categoryApi, areaApi } from '@/lib/api';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
 
+interface SitemapEntry {
+  loc: string;
+  lastmod: string;
+  changefreq: 'daily' | 'hourly' | 'monthly';
+  priority: string;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
@@ -16,19 +23,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/login`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ];
 
-  // 动态页：最新 100 条 post
+  // 动态页: 调后端 sitemap-data
   let postPages: MetadataRoute.Sitemap = [];
   try {
-    const r = await postApi.list({ pageSize: 100, sort: 'latest' } as any);
-    const list = (r as any)?.data?.list || (r as any)?.list || [];
-    postPages = list.map((p: any) => ({
-      url: `${BASE}/posts/${p.id}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
+    const data: any = await postApi.getSitemapData(50000);
+    const list: SitemapEntry[] = Array.isArray(data) ? data : (data?.data || []);
+    postPages = list.map((e) => ({
+      url: e.loc,
+      lastModified: new Date(e.lastmod),
+      changeFrequency: e.changefreq as any,
+      priority: parseFloat(e.priority),
     }));
   } catch {
-    // 后端不可达时跳过
+    // 后端不可达时降级到原 100 条
+    try {
+      const r: any = await postApi.list({ pageSize: 100, sort: 'latest' } as any);
+      const list = (r as any)?.data?.list || (r as any)?.list || [];
+      postPages = list.map((p: any) => ({
+        url: `${BASE}/posts/${p.id}`,
+        lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
+        changeFrequency: 'daily' as const,
+        priority: 0.7,
+      }));
+    } catch {}
   }
 
   return [...staticPages, ...postPages];
