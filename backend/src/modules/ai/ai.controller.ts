@@ -6,6 +6,7 @@ import { AiService } from './ai.service';
 import { ExtractRequestDto, ExtractResponse } from './dto/extract.dto';
 import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
 import { ScoreRequestDto, ScoreResponse } from './dto/score.dto';
+import { RewriteRequestDto, RewriteResponse } from './dto/rewrite.dto';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -43,6 +44,18 @@ export class AiController {
     @Body() dto: ScoreRequestDto,
   ): Promise<ScoreResponse> {
     return this.aiService.score(BigInt(user.sub), dto);
+  }
+
+  /**
+   * 3 风格改写 (concise / attractive / seo) + 预计分提升
+   * Phase 2.2: 30 分钟缓存, 10/min 限频
+   */
+  @Post('draft/rewrite')
+  async rewrite(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RewriteRequestDto,
+  ): Promise<RewriteResponse> {
+    return this.aiService.rewrite(BigInt(user.sub), dto);
   }
 
   /**

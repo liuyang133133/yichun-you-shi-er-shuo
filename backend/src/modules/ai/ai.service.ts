@@ -16,6 +16,8 @@ import {
 import { buildChips } from './llm/field-maps';
 import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
 import { ScoreRequestDto, ScoreResponse, ScoreBreakdown } from './dto/score.dto';
+import { RewriteRequestDto, RewriteResponse, RewriteVersion } from './dto/rewrite.dto';
+import { REWRITE_SYSTEM_PROMPT, buildRewriteUserPrompt } from './llm/prompts/rewrite';
 
 const CACHE_TTL_SECONDS = 5 * 60;
 const RATE_LIMIT_PER_DAY = 200;
@@ -319,6 +321,123 @@ export class AiService {
     );
 
     return response;
+  }
+
+  /**
+   * rewrite: 3 风格改写 (concise / attractive / seo) + 预计分提升
+   * Phase 2.2: 30 分钟缓存 (长于 score, 因为改写更用户驱动)
+   */
+  async rewrite(userId: bigint | null, dto: RewriteRequestDto): Promise<RewriteResponse> {
+    const start = Date.now();
+
+    // 1) 限频 (10/min, 更严)
+    await this.checkRateLimit(userId, 'rewrite');
+
+    // 2) 缓存 key (按 type + field + original + context 序列化)
+    const contentHash = sha256(
+      JSON.stringify({
+        type: dto.type,
+        field: dto.field,
+        original: dto.original,
+        context: dto.context,
+      }),
+    );
+    const cacheKey = `ai:rewrite:${contentHash}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      await this.logUsage(userId, 'rewrite', 0, 0, 0, 0, true, null, contentHash);
+      return { versions: parsed.versions, cached: true, durationMs: Date.now() - start };
+    }
+
+    // 3) LLM 不可用 → 503
+    if (!this.llm.isAvailable()) {
+      throw new HttpException('AI 暂不可用', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 4) PII 脱敏
+    const safeContext = dto.context ? JSON.parse(redactPii(JSON.stringify(dto.context))) : {};
+    const safeOriginal = redactPii(dto.original);
+
+    // 5) 调 LLM
+    let llmResult: LlmCallResult;
+    try {
+      llmResult = await this.llm.call({
+        system: REWRITE_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: buildRewriteUserPrompt(dto.type, dto.field, safeOriginal, safeContext),
+          },
+        ],
+        maxTokens: 800,
+        temperature: 0.8,
+        timeoutMs: 15000,
+      });
+    } catch (e: any) {
+      await this.logUsage(userId, 'rewrite', 0, 0, 0, Date.now() - start, false, e?.message, contentHash);
+      throw new HttpException('AI 调用失败', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 6) 解析 LLM JSON
+    const versions = this.parseRewriteJson(llmResult.text);
+    const durationMs = Date.now() - start;
+    const costUsd = this.estimateCost(llmResult.inputTokens, llmResult.outputTokens);
+
+    const response: RewriteResponse = { versions, cached: false, durationMs };
+
+    // 7) 写缓存 (30 min, 仅缓存非空结果以避免 LLM 抖动锁死)
+    if (versions.length > 0) {
+      await this.redis.setEx(cacheKey, JSON.stringify(response), 30 * 60);
+    }
+
+    // 8) 写日志
+    await this.logUsage(
+      userId,
+      'rewrite',
+      llmResult.inputTokens,
+      llmResult.outputTokens,
+      costUsd,
+      durationMs,
+      true,
+      null,
+      contentHash,
+    );
+
+    return response;
+  }
+
+  private parseRewriteJson(text: string): RewriteVersion[] {
+    const safeParse = (raw: string): RewriteVersion[] | null => {
+      try {
+        const obj = JSON.parse(raw);
+        if (Array.isArray(obj.versions)) {
+          return obj.versions
+            .filter((v: any) => v.text && v.style)
+            .map((v: any) => ({
+              text: v.text,
+              style: v.style,
+              estimatedScoreGain: Math.max(0, Math.min(15, Math.round(v.estimatedScoreGain || 0))),
+            }))
+            .slice(0, 3);
+        }
+      } catch {}
+      return null;
+    };
+
+    // 1) 纯 JSON
+    let result = safeParse(text);
+    if (result) return result;
+
+    // 2) markdown ```json``` 包装
+    const m = text.match(/```(?:json)?\s*(\{[\s\S]+?\})\s*```/);
+    if (m) {
+      result = safeParse(m[1]);
+      if (result) return result;
+    }
+
+    // 3) 兜底: 返回空数组
+    return [];
   }
 
   private parseScoreJson(
