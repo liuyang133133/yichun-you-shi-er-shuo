@@ -9,9 +9,9 @@ import { redactPii, sha256 } from '../../common/utils/pii-redact.util';
 import {
   ExtractRequestDto,
   ExtractResponse,
-  ExtractChip,
   AiPostType,
 } from './dto/extract.dto';
+import { buildChips } from './llm/field-maps';
 import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
 
 const CACHE_TTL_SECONDS = 5 * 60;
@@ -128,7 +128,7 @@ export class AiService {
       fields: parsed.fields,
       fieldsConfidence: parsed.fieldsConfidence,
       missingFields: parsed.missingFields,
-      chips: this.buildChips(parsed),
+      chips: buildChips(parsed.type, parsed.fields, parsed.fieldsConfidence),
       suggestions: parsed.suggestions,
       rawTextHash: textHash,
       durationMs,
@@ -185,31 +185,6 @@ export class AiService {
     } else {
       await this.redis.incr(dayKey);
     }
-  }
-
-  private buildChips(parsed: any): ExtractChip[] {
-    const f = parsed.fields || {};
-    const conf = parsed.fieldsConfidence || {};
-    const map: Array<[string, string]> = [
-      ['小区', 'areaName'],
-      ['户型', 'layout'],
-      ['租金', 'price'],
-      ['面积', 'areaSize'],
-      ['楼层', 'floor'],
-      ['装修', 'decoration'],
-    ];
-    const chips: ExtractChip[] = [];
-    for (const [label, key] of map) {
-      const v = f[key];
-      if (v !== null && v !== undefined && v !== '') {
-        chips.push({
-          label,
-          value: key === 'price' ? `${v} 元/月` : String(v),
-          confidence: conf[key] ?? 0.8,
-        });
-      }
-    }
-    return chips;
   }
 
   private parseLlmJson(text: string, typeHint?: string): any {
