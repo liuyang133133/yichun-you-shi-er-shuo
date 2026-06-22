@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -254,6 +254,28 @@ export class PostService {
    * dto.detail 不传时保持旧行为（只写主表），前端可继续用两次 HTTP 路径。
    */
   async create(userId: bigint, dto: CreatePostDto) {
+    // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const dup = await this.prisma.post.findFirst({
+      where: {
+        userId,
+        title: dto.title,
+        createdAt: { gte: oneDayAgo },
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      throw new HttpException(
+        {
+          code: 'DUPLICATE_POST',
+          message: '1 天内已发过相同标题的帖子',
+          existingPostId: dup.id.toString(),
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     // ===== SHOULD-9: 新用户 24h 内仅能 POST 1 条 post =====
     await this.registerThrottle.assertCanPost(userId);
 

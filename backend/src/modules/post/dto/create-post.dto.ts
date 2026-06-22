@@ -40,6 +40,9 @@ import {
  *   - PostJob:         companyId/jobType 必填；其余可选
  *   - PostLifebiz:     subCategory/serviceType 必填
  */
+
+// Error codes:
+// - DUPLICATE_POST: 1 天内已发过相同标题的帖子 (400)
 export class PostDetailDto {
   // ===== house =====
   @IsOptional()
@@ -314,4 +317,14 @@ export class CreatePostDto {
   @ValidateNested()
   @Type(() => PostDetailDto)
   detail?: PostDetailDto;
+
+  /**
+   * 图片 URL 数组（可选，最多 9 张）
+   * - 第一张自动设为封面（isCover=1）
+   * - 后端会在主表事务内写入 post_images 表
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
 }
