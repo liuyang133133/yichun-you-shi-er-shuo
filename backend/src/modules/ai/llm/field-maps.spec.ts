@@ -52,4 +52,11 @@ describe('buildChips', () => {
   it('空字段返回空数组', () => {
     expect(buildChips('house', {}, {})).toEqual([]);
   });
+
+  it('house: 出售时价格带 "万"', () => {
+    const chips = buildChips('house',
+      { dealType: 'sale', price: 30, areaSize: 100 },
+      { price: 0.9, areaSize: 0.8 });
+    expect(chips.find(c => c.label === '租金')?.value).toBe('30 万');
+  });
 });
