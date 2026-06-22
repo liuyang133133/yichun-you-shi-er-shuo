@@ -22,6 +22,7 @@ import { ResumeModule } from './modules/resume/resume.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AiModule } from './modules/ai/ai.module';
+import { SeoModule } from './modules/seo/seo.module';
 import { SearchModule } from './modules/search/search.module';
 import { MessageModule } from './modules/message/message.module';
 import { HealthModule } from './modules/health/health.module';
@@ -30,7 +31,6 @@ import { CronModule } from './cron/cron.module';
 import { ViewLogModule } from './modules/view-log/view-log.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
 import { BannerModule } from './modules/banner/banner.module';
-import { ClaudeClient } from './modules/ai/llm/claude.client';
 
 @Module({
   imports: [
@@ -79,6 +79,7 @@ import { ClaudeClient } from './modules/ai/llm/claude.client';
     ApplicationModule,
     AdminModule,
     AiModule,
+    SeoModule,
     SearchModule,
     SmsModule,
     AuthModule,
@@ -92,8 +93,6 @@ import { ClaudeClient } from './modules/ai/llm/claude.client';
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    ClaudeClient,
   ],
-  exports: [ClaudeClient],
 })
 export class AppModule {}
