@@ -9,7 +9,8 @@ export class PostBoostController {
 
   @Post(':id/boost')
   async boost(@Req() req: any, @Param('id') id: string, @Body() body: { days: number; paymentToken: string }) {
-    const userId = BigInt(req.user.id);
+    // req.user.sub (JWT payload) 不是 req.user.id
+    const userId = BigInt(req.user.sub);
     return this.service.boost(userId, BigInt(id), body.days, body.paymentToken);
   }
 }

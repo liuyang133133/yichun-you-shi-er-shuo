@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { PostService } from './post.service';
+import { SeoService } from '../seo/seo.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostQueryDto, ChangeStatusDto } from './dto/list-post.dto';
@@ -22,7 +23,10 @@ import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.de
 @ApiBearerAuth('JWT')
 @Controller('posts')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly seoService: SeoService,
+  ) {}
 
   /**
    * POST /api/v1/posts
@@ -89,6 +93,17 @@ export class PostController {
     @Param('id') id: string,
   ) {
     return this.postService.getContact(BigInt(id), BigInt(user.sub));
+  }
+
+  /**
+   * GET /api/v1/posts/sitemap-data
+   * SEO sitemap 数据 — 必须在 :id 之前注册, 否则会被 :id 当成 id 解析为 BigInt 失败
+   */
+  @Public()
+  @Get('sitemap-data')
+  @ApiOperation({ summary: 'SEO sitemap 数据 (公开)' })
+  async getSitemapData(@Query('limit') limit = '50000') {
+    return this.seoService.getSitemapData(parseInt(limit));
   }
 
   /**

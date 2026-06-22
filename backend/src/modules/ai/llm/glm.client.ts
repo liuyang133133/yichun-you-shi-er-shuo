@@ -164,7 +164,9 @@ export class GlmClient implements OnModuleInit {
     const start = Date.now();
     const maxTokens = opts.maxTokens ?? 1024;
     const temperature = opts.temperature ?? 0.2;
-    const timeoutMs = opts.timeoutMs ?? 15000;
+    // 60s 默认: 15s/30s 都不够, suggest-title 经 SOCKS5 代理 偶尔 50s+;
+    // 短 call (suggest-title) 实际 ~6s, 60s 留充足容错
+    const timeoutMs = opts.timeoutMs ?? 60000;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);

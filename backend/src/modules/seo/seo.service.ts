@@ -56,7 +56,7 @@ export class SeoService {
       messages: [{ role: 'user', content: buildSeoMetaUserPrompt(post.type as any, fields) }],
       maxTokens: 1000,
       temperature: 0.2,
-      timeoutMs: 20000,
+      timeoutMs: 30000,
     });
 
     const parsed = this.parseSeoJson(llmResult.text);

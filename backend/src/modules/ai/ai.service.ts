@@ -114,7 +114,7 @@ export class AiService {
         messages: [{ role: 'user', content: buildExtractUserPrompt(safeText, dto.typeHint) }],
         maxTokens: 1500,
         temperature: 0.2,
-        timeoutMs: 15000,
+        timeoutMs: 60000,
       });
     } catch (e: any) {
       await this.logUsage(userId, 'extract', 0, 0, 0, Date.now() - start, false, e?.message, textHash);
@@ -179,11 +179,12 @@ export class AiService {
       acc[k] = dto.fields[k];
       return acc;
     }, {} as Record<string, any>);
-    const cacheKey = `ai:title:${dto.type}:${sha256(JSON.stringify(fieldsKey))}`;
+    const inputHash = sha256(JSON.stringify(fieldsKey));
+    const cacheKey = `ai:title:${dto.type}:${inputHash}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached) as { titles: string[] };
-      await this.logUsage(userId, 'suggest-title', 0, 0, 0, 0, true, null, cacheKey);
+      await this.logUsage(userId, 'suggest-title', 0, 0, 0, 0, true, null, inputHash);
       return { titles: parsed.titles, cached: true, durationMs: Date.now() - start };
     }
 
@@ -203,10 +204,10 @@ export class AiService {
         messages: [{ role: 'user', content: buildSuggestTitleUserPrompt(dto.type, safeFields) }],
         maxTokens: 500,
         temperature: 0.7,
-        timeoutMs: 15000,
+        timeoutMs: 60000,
       });
     } catch (e: any) {
-      await this.logUsage(userId, 'suggest-title', 0, 0, 0, Date.now() - start, false, e?.message, cacheKey);
+      await this.logUsage(userId, 'suggest-title', 0, 0, 0, Date.now() - start, false, e?.message, inputHash);
       throw new HttpException('AI 调用失败', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -229,7 +230,7 @@ export class AiService {
       durationMs,
       true,
       null,
-      cacheKey,
+      inputHash,
     );
 
     return { titles, cached: false, durationMs };
@@ -284,7 +285,7 @@ export class AiService {
         ],
         maxTokens: 500,
         temperature: 0.3,
-        timeoutMs: 15000,
+        timeoutMs: 60000,
       });
     } catch (e: any) {
       await this.logUsage(userId, 'score', 0, 0, 0, Date.now() - start, false, e?.message, contentHash);
@@ -372,7 +373,7 @@ export class AiService {
         ],
         maxTokens: 800,
         temperature: 0.8,
-        timeoutMs: 15000,
+        timeoutMs: 60000,
       });
     } catch (e: any) {
       await this.logUsage(userId, 'rewrite', 0, 0, 0, Date.now() - start, false, e?.message, contentHash);
