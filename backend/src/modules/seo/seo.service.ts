@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SEO_META_SYSTEM_PROMPT, buildSeoMetaUserPrompt } from '../ai/llm/prompts/seo-meta';
+import { ClaudeClient } from '../ai/llm/claude.client';
+import { GlmClient } from '../ai/llm/glm.client';
 import { BaiduHttpClient } from './baidu-http.client';
 
 interface SeoMetaResult {
@@ -20,8 +22,8 @@ export class SeoService {
 
   constructor(
     private readonly prisma: PrismaService,
-    claude: any,
-    glm: any,
+    claude: ClaudeClient,
+    glm: GlmClient,
     private readonly http: BaiduHttpClient,
     private readonly config: ConfigService,
   ) {
