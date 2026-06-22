@@ -7,6 +7,9 @@ import { RedisService } from '../../redis/redis.service';
 import { ViewLogService } from '../view-log/view-log.service';
 // SHOULD-9: 新用户 24h 内仅能 POST 1 条 post
 import { RegisterThrottleService } from '../captcha/register-throttle.service';
+// T-27: 发布后自动 AI (score + seo 异步)
+import { AiService } from '../ai/ai.service';
+import { SeoService } from '../seo/seo.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -16,6 +19,9 @@ export class PostService {
     private readonly redis: RedisService,
     private readonly viewLog: ViewLogService,
     private readonly registerThrottle: RegisterThrottleService,
+    // T-27: 发布后自动 AI (score + seo 异步)
+    private readonly aiService: AiService,
+    private readonly seoService: SeoService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -478,7 +484,51 @@ export class PostService {
     // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
     this.redis.invalidatePattern('cache:posts:*').catch(() => {});
 
+    // T-27: 异步触发 (不阻塞响应) — fire-and-forget score + seo
+    setImmediate(() => {
+      this.triggerPostPublishAi(post.id, userId, dto).catch((e) => {
+        // 不抛错,仅记录
+        // eslint-disable-next-line no-console
+        console.warn(`Post ${post.id} 发布后 AI 处理失败: ${e?.message}`);
+      });
+    });
+
     return result;
+  }
+
+  /**
+   * T-27: 发布后自动 AI — 异步算 qualityScore + 生成 SEO meta
+   * 由 setImmediate 触发, fire-and-forget, 错误不抛
+   */
+  private async triggerPostPublishAi(postId: bigint, userId: bigint, dto: any) {
+    // 1) 算质量分 → 写 Post.qualityScore
+    try {
+      const scoreResult = await this.aiService.score(userId, {
+        type: dto.type,
+        title: dto.title,
+        description: dto.description,
+        fields: dto.fields ?? {},
+      });
+      await this.prisma.post.update({
+        where: { id: postId },
+        data: { qualityScore: scoreResult.score },
+      });
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.warn(`score failed for post ${postId}:`, e?.message);
+    }
+
+    // 2) 生成 SEO meta → 写 Post.seoMeta (SeoService 内部已 update)
+    try {
+      const seoResult = await this.seoService.generateSeoMeta(postId);
+      // eslint-disable-next-line no-console
+      console.log(
+        `Post ${postId} 发布后 AI: score + seo="${seoResult.seoMeta?.metaTitle}"`,
+      );
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.warn(`seo failed for post ${postId}:`, e?.message);
+    }
   }
 
   /** lifebiz.validityPeriod → expireAt（同步自 LifebizService 行为） */

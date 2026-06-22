@@ -10,6 +10,9 @@ import { JobModule } from './job/job.module';
 import { ViewLogModule } from '../view-log/view-log.module';
 // SHOULD-9: 新用户 24h 内仅能 POST 1 条 post（导入 AuthModule 取 CaptchaModule）
 import { AuthModule } from '../auth/auth.module';
+// T-27: 发布后自动 AI (score + seo 异步)
+import { AiModule } from '../ai/ai.module';
+import { SeoModule } from '../seo/seo.module';
 
 @Module({
   imports: [
@@ -19,6 +22,9 @@ import { AuthModule } from '../auth/auth.module';
     JobModule,
     ViewLogModule,
     AuthModule, // 注入 CaptchaModule（含 RegisterThrottleService）
+    // T-27: 发布后自动 AI (score + seo 异步)
+    AiModule,
+    SeoModule,
   ],
   controllers: [PostController, PostBoostController],
   providers: [PostService, PostBoostService],

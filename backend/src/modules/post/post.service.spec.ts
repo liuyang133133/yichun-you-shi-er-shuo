@@ -6,6 +6,8 @@ describe('PostService.create - 重复检测', () => {
   let mockRedis: any;
   let mockViewLog: any;
   let mockRegisterThrottle: any;
+  let mockAiService: any;
+  let mockSeoService: any;
 
   beforeEach(() => {
     mockPrisma = {
@@ -20,6 +22,7 @@ describe('PostService.create - 重复检测', () => {
           images: [],
         }),
         create: jest.fn().mockResolvedValue({ id: 1n }),
+        update: jest.fn().mockResolvedValue({ id: 1n }),
       },
     };
     mockRedis = {
@@ -33,11 +36,19 @@ describe('PostService.create - 重复检测', () => {
     mockRegisterThrottle = {
       assertCanPost: jest.fn().mockResolvedValue(undefined),
     };
+    mockAiService = {
+      score: jest.fn().mockResolvedValue({ score: 80 }),
+    };
+    mockSeoService = {
+      generateSeoMeta: jest.fn().mockResolvedValue({ seoMeta: { metaTitle: 'test' } }),
+    };
     service = new PostService(
       mockPrisma,
       mockRedis,
       mockViewLog,
       mockRegisterThrottle,
+      mockAiService,
+      mockSeoService,
     );
   });
 
