@@ -4,6 +4,7 @@
 
 import { ACCESS_TOKEN_KEY } from './auth';
 import { ApiError } from './api';
+import type { ScoreRequestDto, ScoreResponse } from '@/types/ai-score';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -72,6 +73,18 @@ export const aiApi = {
     }),
   health: (): Promise<{ available: boolean; model: string; version: string }> =>
     request('/ai/health'),
+  score: (dto: ScoreRequestDto): Promise<ScoreResponse> =>
+    request<ScoreResponse>('/ai/draft/score', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    }),
+  regenerateSeo: (
+    postId: number,
+  ): Promise<{ postId: string; seoMeta: any; durationMs: number }> =>
+    request<{ postId: string; seoMeta: any; durationMs: number }>(
+      `/admin/ai/regenerate-seo/${postId}`,
+      { method: 'POST' },
+    ),
 };
 
 /** 把数字 rawText 长度可视化 */
