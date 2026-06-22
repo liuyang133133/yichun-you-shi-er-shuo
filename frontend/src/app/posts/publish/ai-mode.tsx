@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExtractChips } from '@/components/ai/extract-chips';
+import { QualityBadge } from '@/components/ai/quality-badge';
 import { TitleSuggestions, SkipAiButton } from '@/components/ai/title-suggestions';
 import { BusinessDetector } from '@/components/ai/business-detector';
 import { aiApi, ExtractResponse, RAW_TEXT_MAX, RAW_TEXT_MIN, AiPostType } from '@/lib/api-ai';
@@ -31,6 +32,8 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractResponse | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<string>('');
+  const [score, setScore] = useState<number | null>(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const lastHash = useRef<string>('');
 
@@ -52,6 +55,27 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawText]);
+
+  // extract 成功后调用 score 端点进行实时评分
+  useEffect(() => {
+    if (!result) return;
+    const titleForScore = result.suggestions?.titles?.[0] || result.fields?.title || '';
+    if (!titleForScore) {
+      setScore(null);
+      return;
+    }
+    setScoreLoading(true);
+    aiApi
+      .score({
+        type: result.type,
+        title: titleForScore,
+        description: result.fields?.description,
+        fields: result.fields,
+      })
+      .then((r) => setScore(r.score))
+      .catch(() => setScore(null))
+      .finally(() => setScoreLoading(false));
+  }, [result]);
 
   async function runExtract() {
     setError(null);
@@ -172,6 +196,10 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
                   <span className="text-xs text-muted-foreground ml-auto">
                     {Object.keys(result.fields).filter((k) => result.fields[k]).length} / {Object.keys(result.fields).length} 个字段
                   </span>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  {score !== null && <QualityBadge score={score} />}
+                  {scoreLoading && <QualityBadge score={0} loading />}
                 </div>
                 <ExtractChips chips={result.chips} missingFields={result.missingFields} />
               </div>
