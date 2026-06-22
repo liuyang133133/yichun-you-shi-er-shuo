@@ -20,6 +20,10 @@ describe('AiUsageService.getStats', () => {
           .mockResolvedValue([]),
       },
       user: { findMany: jest.fn().mockResolvedValue([{ id: 1n, phone: '13900000001' }]) },
+      post: {
+        count: jest.fn().mockResolvedValue(0),
+        aggregate: jest.fn().mockResolvedValue({ _avg: { qualityScore: null } }),
+      },
     };
     service = new AiUsageService(mockPrisma);
   });
@@ -35,6 +39,9 @@ describe('AiUsageService.getStats', () => {
       byType: expect.any(Object),
       topUsers: expect.any(Array),
       errorBreakdown: expect.any(Array),
+      seoCoverageRate: 0,
+      avgQualityScore: 0,
+      businessPostRate: 0,
     });
   });
 

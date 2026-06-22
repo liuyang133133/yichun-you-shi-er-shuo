@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 type Range = 'today' | 'week' | 'month';
@@ -64,6 +65,25 @@ export class AiUsageService {
     // 真实数据要 join posts 表
     const byType = { house: 0, job: 0, secondhand: 0, lifebiz: 0 };
 
+    // Phase 2.2: 内容质量指标 (SEO 覆盖率 / 平均质量分 / 商家帖比例)
+    const [totalPosts, seoPosts, scoreAgg, businessPosts] = await Promise.all([
+      this.prisma.post.count({ where: { status: 'passed' } }),
+      this.prisma.post.count({
+        where: { status: 'passed', seoMeta: { not: Prisma.JsonNull } },
+      }),
+      this.prisma.post.aggregate({
+        where: { status: 'passed', qualityScore: { not: null } },
+        _avg: { qualityScore: true },
+      }),
+      this.prisma.post.count({
+        where: { status: 'passed', isBusiness: true },
+      }),
+    ]);
+
+    const seoCoverageRate = totalPosts > 0 ? seoPosts / totalPosts : 0;
+    const avgQualityScore = scoreAgg._avg.qualityScore ?? 0;
+    const businessPostRate = totalPosts > 0 ? businessPosts / totalPosts : 0;
+
     return {
       totalCalls,
       successRate,
@@ -74,6 +94,9 @@ export class AiUsageService {
       byType,
       topUsers,
       errorBreakdown: errorRaw.map((e: any) => ({ code: e.errorCode, count: e._count._all })),
+      seoCoverageRate,
+      avgQualityScore,
+      businessPostRate,
     };
   }
 

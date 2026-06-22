@@ -97,6 +97,25 @@ export default function AiUsagePage() {
         />
       </div>
 
+      {/* Phase 2.2: 内容质量指标 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          label="SEO 覆盖率"
+          value={`${(stats.seoCoverageRate * 100).toFixed(0)}%`}
+          color="text-indigo-600 bg-indigo-50"
+        />
+        <StatCard
+          label="平均质量分"
+          value={stats.avgQualityScore.toFixed(0)}
+          color="text-rose-600 bg-rose-50"
+        />
+        <StatCard
+          label="商家帖比例"
+          value={`${(stats.businessPostRate * 100).toFixed(0)}%`}
+          color="text-cyan-600 bg-cyan-50"
+        />
+      </div>
+
       {/* byKind + Top 用户 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>

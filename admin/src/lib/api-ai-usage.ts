@@ -28,6 +28,10 @@ export interface AiUsageStats {
   byType: Record<string, number>;
   topUsers: AiUsageTopUser[];
   errorBreakdown: AiUsageErrorItem[];
+  // Phase 2.2: 内容质量指标
+  seoCoverageRate: number;
+  avgQualityScore: number;
+  businessPostRate: number;
 }
 
 export const aiUsageApi = {
