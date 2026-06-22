@@ -98,6 +98,13 @@ model Post {
   viewCount     Int      @default(0) @map("view_count")
   favoriteCount Int      @default(0) @map("favorite_count")
   commentCount  Int      @default(0) @map("comment_count")
+  // Phase 2: AI 智能发布 - SEO + 质量分 + 商业识别
+  seoMeta          Json?     @map("seo_meta")
+  qualityScore     Int?      @map("quality_score")
+  seoMetaUpdatedAt DateTime? @map("seo_meta_updated_at")
+  isBusiness       Boolean?  @map("is_business")
+  businessType     String?   @db.VarChar(32) @map("business_type")
+  boostExpiresAt   DateTime? @map("boost_expires_at")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -120,6 +127,11 @@ model Post {
   @@index([type, status, createdAt])
   @@index([auditStatus, createdAt])
   @@index([title])
+  // Phase 2 索引: SEO 重生成 / 质量分排序 / 商业识别 / 置顶过期
+  @@index([seoMetaUpdatedAt])
+  @@index([qualityScore])
+  @@index([isBusiness, businessType])
+  @@index([boostExpiresAt])
   // 全文索引（MySQL FULLTEXT，V1 简化版用空格分词；中文支持有限，V1.1 接 ES）
   // 注：FULLTEXT 索引需要在迁移后用 SQL 单独添加（Prisma 不支持原生 FULLTEXT）
   @@map("posts")
@@ -585,4 +597,20 @@ model AiUsageLog {
   @@index([userId, createdAt])
   @@index([kind, createdAt])
   @@map("ai_usage_logs")
+}
+
+// =====================================================
+// Sitemap 推送日志 (Phase 2: 主动推送收录面板)
+// 用于记录 baidu / sogou / 360 的推送结果
+// =====================================================
+model SitemapPushLog {
+  id        BigInt   @id @default(autoincrement())
+  target    String   @db.VarChar(16)  // 'baidu' | 'sogou' | '360'
+  postIds   Json                       // 推送的 post id 列表
+  status    String   @db.VarChar(16)  // 'success' | 'failed' | 'partial'
+  response  String?  @db.Text         // 推送接口原始响应
+  pushedAt  DateTime @default(now()) @map("pushed_at")
+
+  @@index([target, pushedAt])
+  @@map("sitemap_push_logs")
 }
