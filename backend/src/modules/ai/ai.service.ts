@@ -5,6 +5,7 @@ import { RedisService } from '../../redis/redis.service';
 import { ClaudeClient } from './llm/claude.client';
 import { GlmClient } from './llm/glm.client';
 import { EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './llm/prompts/extract';
+import { SUGGEST_TITLE_SYSTEM_PROMPT, buildSuggestTitleUserPrompt } from './llm/prompts/suggest-title';
 import { redactPii, sha256 } from '../../common/utils/pii-redact.util';
 import {
   ExtractRequestDto,
@@ -156,11 +157,86 @@ export class AiService {
 
   /**
    * suggest-title: 用 extract 的 fields 二次调 LLM, 生成 3 个标题
-   * Phase 1: 直接复用 extract 的 suggestions.titles, 不二次调用 LLM
+   * Phase 2: 真调 LLM, 30 分钟缓存
    */
   async suggestTitle(userId: bigint | null, dto: SuggestTitleRequestDto): Promise<SuggestTitleResponse> {
-    const titles = (dto.fields?.suggestedTitles as string[]) || [];
-    return { titles: titles.slice(0, dto.count ?? 3), cached: false };
+    const start = Date.now();
+
+    // 1) 限频 (共用 extract 池)
+    await this.checkRateLimit(userId);
+
+    // 2) 缓存 key (按 fields 排序后序列化, 保证字段顺序无关)
+    const fieldsKey = Object.keys(dto.fields || {}).sort().reduce((acc, k) => {
+      acc[k] = dto.fields[k];
+      return acc;
+    }, {} as Record<string, any>);
+    const cacheKey = `ai:title:${dto.type}:${sha256(JSON.stringify(fieldsKey))}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      await this.logUsage(userId, 'suggest-title', 0, 0, 0, 0, true, null, cacheKey);
+      return { titles: parsed.titles, cached: true, durationMs: Date.now() - start } as any;
+    }
+
+    // 3) LLM 不可用 → 503
+    if (!this.llm.isAvailable()) {
+      throw new HttpException('AI 暂不可用', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 4) PII 脱敏 (对 fields 做序列化后脱敏)
+    const safeFields = JSON.parse(redactPii(JSON.stringify(dto.fields)));
+
+    // 5) 调 LLM
+    let llmResult: LlmCallResult;
+    try {
+      llmResult = await this.llm.call({
+        system: SUGGEST_TITLE_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildSuggestTitleUserPrompt(dto.type, safeFields) }],
+        maxTokens: 500,
+        temperature: 0.7,
+        timeoutMs: 15000,
+      });
+    } catch (e: any) {
+      await this.logUsage(userId, 'suggest-title', 0, 0, 0, Date.now() - start, false, e?.message, cacheKey);
+      throw new HttpException('AI 调用失败', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 6) 解析 (允许 markdown ```json 包装)
+    const titles = this.parseTitles(llmResult.text);
+    const durationMs = Date.now() - start;
+
+    // 7) 写缓存 (30 min)
+    await this.redis.setEx(cacheKey, JSON.stringify({ titles }), 30 * 60);
+
+    // 8) 写日志
+    await this.logUsage(
+      userId,
+      'suggest-title',
+      llmResult.inputTokens,
+      llmResult.outputTokens,
+      this.estimateCost(llmResult.inputTokens, llmResult.outputTokens),
+      durationMs,
+      true,
+      null,
+      cacheKey,
+    );
+
+    return { titles, cached: false, durationMs } as any;
+  }
+
+  private parseTitles(text: string): string[] {
+    try {
+      const obj = JSON.parse(text);
+      if (Array.isArray(obj.titles)) return obj.titles.slice(0, 3);
+    } catch {}
+    const m = text.match(/```(?:json)?\s*(\{[\s\S]+?\})\s*```/);
+    if (m) {
+      try {
+        const obj = JSON.parse(m[1]);
+        if (Array.isArray(obj.titles)) return obj.titles.slice(0, 3);
+      } catch {}
+    }
+    return [];
   }
 
   // ============ 私有方法 ============

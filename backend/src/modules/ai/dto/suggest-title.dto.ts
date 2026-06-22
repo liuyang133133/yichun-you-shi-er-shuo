@@ -1,6 +1,10 @@
-import { IsObject, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsObject, IsOptional, IsInt, Min, Max, IsIn } from 'class-validator';
+import { AiPostType } from './extract.dto';
 
 export class SuggestTitleRequestDto {
+  @IsIn(['house', 'job', 'secondhand', 'lifebiz'])
+  type!: AiPostType;
+
   @IsObject()
   fields!: Record<string, any>;
 
@@ -14,4 +18,5 @@ export class SuggestTitleRequestDto {
 export interface SuggestTitleResponse {
   titles: string[];
   cached: boolean;
+  durationMs: number;
 }
