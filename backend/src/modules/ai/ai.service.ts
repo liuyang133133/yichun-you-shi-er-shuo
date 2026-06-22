@@ -133,6 +133,12 @@ export class AiService {
       rawTextHash: textHash,
       durationMs,
       cached: false,
+      isBusiness: parsed.isBusiness ?? false,
+      businessType: parsed.businessType ?? null,
+      businessConfidence: parsed.businessConfidence ?? 0,
+      isForestEconomy: parsed.isForestEconomy ?? false,
+      forestCategory: parsed.forestCategory ?? null,
+      forestConfidence: parsed.forestConfidence ?? 0,
     };
 
     // 7) 写缓存
@@ -277,6 +283,12 @@ export class AiService {
       fieldsConfidence: {},
       missingFields: [],
       suggestions: { titles: [], tags: [] },
+      isBusiness: false,
+      businessType: null,
+      businessConfidence: 0,
+      isForestEconomy: false,
+      forestCategory: null,
+      forestConfidence: 0,
     };
   }
 

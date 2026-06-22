@@ -33,4 +33,11 @@ export interface ExtractResponse {
   rawTextHash: string;
   durationMs: number;
   cached: boolean;
+  // === 商家与林下经济识别 (Phase 2.2b 准备) ===
+  isBusiness?: boolean;
+  businessType?: 'recruiter' | 'agent' | 'wholesaler' | null;
+  businessConfidence?: number;
+  isForestEconomy?: boolean;
+  forestCategory?: 'blueberry' | 'fungus' | 'pine-nut' | 'ginseng' | 'hazelnut' | 'honey' | null;
+  forestConfidence?: number;
 }

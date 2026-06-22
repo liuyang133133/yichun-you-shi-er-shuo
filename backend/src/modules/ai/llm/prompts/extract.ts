@@ -46,7 +46,23 @@ JSON schema (Phase 1 只用 house, 其他 type 先返回 null):
   "suggestions": {
     "titles": string[],          // 3 个备选标题
     "tags": string[]             // 3-5 个标签
-  }
+  },
+  // === 商家与林下经济识别 (Phase 2.2b 准备) ===
+  // 同时判断:
+  // - isBusiness: 帖子是否来自商家/中介/批发商 (招聘方/房产中介/二手批发)
+  //   - 招聘类: 招聘方/HR/公司主体 → isBusiness=true, businessType='recruiter'
+  //   - 房屋类: 中介特征 (如"代理"/"多家房源"/"中介费") → isBusiness=true, businessType='agent'
+  //   - 二手类: 批发/多件同售/进货渠道 → isBusiness=true, businessType='wholesaler'
+  //   - 其它个人 → isBusiness=false, businessType=null
+  // - isForestEconomy: 帖子是否涉及林下经济 (蓝莓/木耳/松子/林下参/榛子/蜂蜜)
+  //   - 是 → isForestEconomy=true, forestCategory='blueberry'|'fungus'|'pine-nut'|'ginseng'|'hazelnut'|'honey'
+  //   - 否 → isForestEconomy=false, forestCategory=null
+  "isBusiness": boolean,
+  "businessType": "recruiter"|"agent"|"wholesaler"|null,
+  "businessConfidence": number,  // 0-1
+  "isForestEconomy": boolean,
+  "forestCategory": "blueberry"|"fungus"|"pine-nut"|"ginseng"|"hazelnut"|"honey"|null,
+  "forestConfidence": number     // 0-1
 }`;
 
 export function buildExtractUserPrompt(rawText: string, typeHint?: string): string {
