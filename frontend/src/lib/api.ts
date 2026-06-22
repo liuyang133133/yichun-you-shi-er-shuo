@@ -135,6 +135,25 @@ export const categoryApi = {
 };
 
 // 信息
+export interface Post {
+  id: string | number;
+  title: string;
+  description?: string;
+  type: 'house' | 'secondhand' | 'job' | 'lifebiz';
+  price?: number | string | null;
+  /** Phase 2: AI 生成的 SEO meta（如未生成则为 null） */
+  seoMeta?: {
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string[];
+    jsonLd: Record<string, any>;
+    generatedAt?: string;
+    modelUsed?: string;
+  } | null;
+  /** Phase 2: 内容质量分（0-100，AI 评分） */
+  qualityScore?: number | null;
+}
+
 export const postApi = {
   list: (params: {
     type?: string;
@@ -194,6 +213,12 @@ export interface TokenPair {
   refreshExpiresIn: number;
 }
 
+export interface MeDetail {
+  sub: string;
+  phone: string;
+  role: string;
+}
+
 export const authApi = {
   /** 发送短信验证码 */
   sendSmsCode: (phone: string) =>
@@ -215,7 +240,105 @@ export const authApi = {
   logout: () => api.post<{ ok: boolean }>('/auth/logout', {}),
 
   /** 当前用户 */
-  me: () => api.get<{ sub: string; phone: string; role: string }>('/auth/me'),
+  me: () => api.get<MeDetail>('/auth/me'),
+};
+
+// 我的（统计 / 资料）
+export const meApi = {
+  /** 我的发布数（用 /posts/me 拿 total） */
+  postsCount: async (): Promise<number> => {
+    const r = await api.get<{ list: any[]; total: number }>('/posts/me', { page: 1, pageSize: 1 });
+    return r?.total || 0;
+  },
+  /** 我的收藏数（/favorites/count 直接返回数字） */
+  favoritesCount: () => api.get<number>('/favorites/count'),
+  /** 我的留言数（暂无独立接口，派生自我的发布 commentCount 之和） */
+  commentsCount: async (): Promise<number> => {
+    const r = await api.get<{ list: any[]; total: number }>('/posts/me', { page: 1, pageSize: 100 });
+    return (r?.list || []).reduce((s: number, p: any) => s + (p.commentCount || 0), 0);
+  },
+};
+
+// 上传图片
+export const uploadApi = {
+  /** 单图上传 (FormData 字段名: file)，返回 { url, size, mimeType, filename } */
+  image: async (file: File): Promise<{ url: string; size: number; mimeType: string; filename: string }> => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+    const fd = new FormData();
+    fd.append('file', file);
+    const headers: Record<string, string> = {};
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/upload/image`, { method: 'POST', body: fd, headers });
+    const json = await res.json();
+    if (!res.ok || json.code !== 0) {
+      throw new ApiError(json.message || `上传失败 (${res.status})`, json.code, res.status, json.data);
+    }
+    return json.data;
+  },
+};
+
+// 站内信
+export interface MessageItem {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  isRead: number;
+  createdAt: string;
+  sender?: { id: string; nickname: string; avatar?: string };
+  receiver?: { id: string; nickname: string; avatar?: string };
+}
+
+export interface MessageListResp {
+  list: MessageItem[];
+  total: number;
+  unreadCount?: number;
+}
+
+export const messagesApi = {
+  inbox: (params?: { page?: number; pageSize?: number }) =>
+    api.get<MessageListResp>('/messages/inbox', params),
+  outbox: (params?: { page?: number; pageSize?: number }) =>
+    api.get<MessageListResp>('/messages/outbox', params),
+  send: (data: { receiverId: string | number; content: string }) =>
+    api.post<MessageItem>('/messages', data),
+  readAll: () => api.post<{ ok: boolean }>('/messages/read-all', {}),
+};
+
+// Banner（运营位）
+export interface BannerItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkType: 'post' | 'url' | 'category' | 'search';
+  linkTarget: string;
+  position: 'home_top' | 'home_mid' | 'list_top';
+  sortOrder: number;
+  status: number;
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+export const bannerApi = {
+  /** 获取生效中的 banner 列表（按 position 过滤） */
+  active: (position?: BannerItem['position']) =>
+    api.get<BannerItem[]>('/banners/active' + (position ? `?position=${position}` : '')),
+};
+
+// 用户搜索（按手机号）
+export interface UserListItem {
+  id: string;
+  phone: string;
+  nickname: string;
+  avatar?: string;
+}
+
+export const usersApi = {
+  search: (keyword: string) =>
+    api.get<{ list: UserListItem[]; total: number }>('/users', { keyword }),
 };
 
 // 收藏

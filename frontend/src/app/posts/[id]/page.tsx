@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { PostDetailContent } from './post-detail-content';
+import type { Post } from '@/lib/api';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
 
@@ -11,8 +12,9 @@ const TYPE_NAMES: Record<string, string> = {
 };
 
 /**
- * 服务端 metadata 注入（MUST-21）
- * - 标题/描述/OG/canonical 来自 post 详情
+ * 服务端 metadata 注入（MUST-21 + Phase 2.3）
+ * - 优先级: Post.seoMeta (AI 生成) > 默认 fallback
+ * - seoMeta 含 metaTitle / metaDescription / keywords / jsonLd
  * - 异步从后端拉数据（V1 简化：直接 fetch 一次）
  */
 export async function generateMetadata({
@@ -29,19 +31,31 @@ export async function generateMetadata({
       return { title: '信息不存在 - 伊春有事儿说' };
     }
     const json = await res.json();
-    const post = json?.data;
+    const post: Post | undefined = json?.data;
     if (!post) {
       return { title: '信息不存在 - 伊春有事儿说' };
     }
     const typeName = TYPE_NAMES[post.type] || '信息';
-    const title = `${post.title} - ${typeName} | 伊春有事儿说`;
-    const description = (post.description || post.title).slice(0, 160);
     const url = `${BASE}/posts/${id}`;
+
+    // Phase 2.3: 优先使用 AI 生成的 seoMeta（更高质量的搜索摘要）
+    const seo = post.seoMeta;
+    const hasAiSeo = !!(seo && seo.metaTitle && seo.metaDescription);
+
+    const title = hasAiSeo
+      ? `${seo!.metaTitle} | 伊春有事儿说`
+      : `${post.title} - ${typeName} | 伊春有事儿说`;
+    const description = hasAiSeo
+      ? seo!.metaDescription
+      : (post.description || post.title).slice(0, 160);
+    const keywords = hasAiSeo
+      ? (seo!.keywords || []).join(',')
+      : [typeName, '伊春', '本地', '分类信息', post.title].filter(Boolean).join(',');
 
     return {
       title,
       description,
-      keywords: [typeName, '伊春', '本地', '分类信息', post.title].filter(Boolean).join(','),
+      keywords,
       alternates: { canonical: url },
       openGraph: {
         title,
@@ -63,9 +77,9 @@ export async function generateMetadata({
 }
 
 /**
- * 服务端 JSON-LD 结构化数据（MUST-21）
+ * 服务端 JSON-LD 结构化数据（MUST-21 + Phase 2.3）
+ * - 优先级: Post.seoMeta.jsonLd (AI 生成) > 默认 4-type schema.org 模板
  * - 百度/微信/神马 搜索结果中显示富媒体
- * - 4 大 type 对应不同 schema.org 类型
  */
 async function getPostForJsonLd(id: string) {
   try {
@@ -87,7 +101,13 @@ export default async function PostDetailPage({
 }) {
   const { id } = await params;
   const post = await getPostForJsonLd(id);
-  const jsonLd = post ? buildJsonLd(post, id) : null;
+  // Phase 2.3: 优先使用 AI 生成的 jsonLd，否则 fallback 到 4-type 模板
+  const aiJsonLd = post?.seoMeta?.jsonLd;
+  const jsonLd = aiJsonLd && Object.keys(aiJsonLd).length > 0
+    ? aiJsonLd
+    : post
+    ? buildJsonLd(post, id)
+    : null;
 
   return (
     <>
