@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { postApi, favoriteApi, commentApi, reportApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { formatDateTime, formatDate } from '@/lib/date';
+import { BoostCta } from '@/components/post/boost-cta';
+import { useSearchParams } from 'next/navigation';
 import {
   MapPin, Eye, Heart, MessageCircle, User as UserIcon,
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
-  Sparkles, BadgeCheck, X,
+  Sparkles, BadgeCheck, X, ChevronLeft,
 } from 'lucide-react';
 
 const TYPE_META: Record<string, { label: string; gradient: string; emoji: string }> = {
@@ -35,6 +37,7 @@ function Field({ label, value, icon }: { label: string; value: string; icon?: Re
 
 function PostDetailContent() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const id = params?.id;
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,9 @@ function PostDetailContent() {
   const [contactInfo, setContactInfo] = useState<{ contactName: string; contactPhone: string; contactWechat: string } | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
 
+  // 图片轮播
+  const [imgIdx, setImgIdx] = useState(0);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -66,9 +72,8 @@ function PostDetailContent() {
   // 加载评论
   useEffect(() => {
     if (!id) return;
-    fetch(`http://localhost:3001/api/v1/posts/${id}/comments`)
-      .then(r => r.json())
-      .then(r => setComments(r?.data?.list || r?.data || []))
+    commentApi.list(String(id))
+      .then((r: any) => setComments(r?.list || r || []))
       .catch(() => {});
   }, [id]);
 
@@ -131,8 +136,8 @@ function PostDetailContent() {
       await commentApi.create(String(id), { content: text });
       setCommentText('');
       // 重新加载评论
-      const r = await fetch(`http://localhost:3001/api/v1/posts/${id}/comments`).then(r => r.json());
-      setComments(r?.data?.list || r?.data || []);
+      const r = await commentApi.list(String(id));
+      setComments((r as any)?.list || (r as any) || []);
     } catch {
       alert('发表失败');
     } finally {
@@ -231,11 +236,55 @@ function PostDetailContent() {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Left: 主内容 */}
         <div className="md:col-span-2 space-y-5">
-          {/* Hero 图 */}
-          <div className={`relative aspect-[16/9] rounded-3xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center overflow-hidden shadow-lg`}>
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/15 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
-            <div className="relative text-9xl drop-shadow-2xl">{meta.emoji}</div>
+          {/* Hero 图（多图轮播 or 占位渐变）*/}
+          <div className={`relative aspect-[16/9] rounded-3xl ${post.images?.length ? 'bg-foreground/5' : `bg-gradient-to-br ${meta.gradient}`} flex items-center justify-center overflow-hidden shadow-lg`}>
+            {post.images?.length ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={post.images[imgIdx]?.url}
+                  alt={post.title}
+                  className="absolute inset-0 h-full w-full object-contain bg-black/5"
+                />
+                {post.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setImgIdx((i) => (i - 1 + post.images.length) % post.images.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
+                      aria-label="上一张"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setImgIdx((i) => (i + 1) % post.images.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
+                      aria-label="下一张"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {post.images.map((_: any, i: number) => (
+                        <button
+                          key={i}
+                          onClick={() => setImgIdx(i)}
+                          className={`h-1.5 rounded-full transition-all ${i === imgIdx ? 'bg-white w-6' : 'bg-white/50 w-1.5'}`}
+                          aria-label={`第${i + 1}张`}
+                        />
+                      ))}
+                    </div>
+                    <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-semibold bg-black/60 text-white">
+                      {imgIdx + 1} / {post.images.length}
+                    </span>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/15 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+                <div className="relative text-9xl drop-shadow-2xl">{meta.emoji}</div>
+              </>
+            )}
             <span className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md bg-white/90 text-foreground ring-1 ring-white/40">
               {meta.label}
             </span>
@@ -245,6 +294,24 @@ function PostDetailContent() {
               </span>
             )}
           </div>
+
+          {/* 缩略图条 */}
+          {post.images?.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {post.images.map((img: any, i: number) => (
+                <button
+                  key={img.id || i}
+                  onClick={() => setImgIdx(i)}
+                  className={`flex-shrink-0 h-16 w-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    i === imgIdx ? 'border-primary ring-2 ring-primary/30' : 'border-transparent opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* 标题 + 价格 */}
           <div className="rounded-2xl border bg-card p-6 shadow-soft">
@@ -617,6 +684,11 @@ function PostDetailContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Boost CTA — 显示条件: ?justPublished=1 */}
+      {searchParams?.get('justPublished') === '1' && (
+        <BoostCta postId={post.id} qualityScore={post.qualityScore} />
       )}
     </main>
   );

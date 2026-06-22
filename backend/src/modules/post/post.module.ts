@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
+import { PostBoostController } from './post-boost.controller';
+import { PostBoostService } from './post-boost.service';
 import { HouseModule } from './house/house.module';
 import { SecondhandModule } from './secondhand/secondhand.module';
 import { LifebizModule } from './lifebiz/lifebiz.module';
@@ -18,8 +20,8 @@ import { AuthModule } from '../auth/auth.module';
     ViewLogModule,
     AuthModule, // 注入 CaptchaModule（含 RegisterThrottleService）
   ],
-  controllers: [PostController],
-  providers: [PostService],
+  controllers: [PostController, PostBoostController],
+  providers: [PostService, PostBoostService],
   exports: [PostService],
 })
 export class PostModule {}
