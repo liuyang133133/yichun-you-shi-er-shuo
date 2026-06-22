@@ -6,6 +6,7 @@ import { ClaudeClient } from './llm/claude.client';
 import { GlmClient } from './llm/glm.client';
 import { EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './llm/prompts/extract';
 import { SUGGEST_TITLE_SYSTEM_PROMPT, buildSuggestTitleUserPrompt } from './llm/prompts/suggest-title';
+import { SCORE_SYSTEM_PROMPT, buildScoreUserPrompt } from './llm/prompts/score';
 import { redactPii, sha256 } from '../../common/utils/pii-redact.util';
 import {
   ExtractRequestDto,
@@ -14,6 +15,7 @@ import {
 } from './dto/extract.dto';
 import { buildChips } from './llm/field-maps';
 import { SuggestTitleRequestDto, SuggestTitleResponse } from './dto/suggest-title.dto';
+import { ScoreRequestDto, ScoreResponse, ScoreBreakdown } from './dto/score.dto';
 
 const CACHE_TTL_SECONDS = 5 * 60;
 const RATE_LIMIT_PER_DAY = 200;
@@ -229,6 +231,135 @@ export class AiService {
     );
 
     return { titles, cached: false, durationMs };
+  }
+
+  /**
+   * score: 4 维质量分 (title + description + completeness + contact)
+   * Phase 2: 真调 LLM, 10 分钟缓存
+   */
+  async score(userId: bigint | null, dto: ScoreRequestDto): Promise<ScoreResponse> {
+    const start = Date.now();
+
+    // 1) 限频
+    await this.checkRateLimit(userId, 'score');
+
+    // 2) 缓存 key (按 type + title + description + fields + contactHint 序列化)
+    const contentHash = sha256(
+      JSON.stringify({
+        type: dto.type,
+        title: dto.title,
+        description: dto.description,
+        fields: dto.fields,
+        contactHint: dto.contactPhone ? 'present' : 'absent',
+      }),
+    );
+    const cacheKey = `ai:score:${contentHash}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached) as ScoreResponse;
+      await this.logUsage(userId, 'score', 0, 0, 0, 0, true, null, contentHash);
+      return { ...parsed, cached: true, durationMs: Date.now() - start };
+    }
+
+    // 3) LLM 不可用 → 503
+    if (!this.llm.isAvailable()) {
+      throw new HttpException('AI 暂不可用', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 4) PII 脱敏 (对 fields 做序列化后脱敏)
+    const safeFields = dto.fields ? JSON.parse(redactPii(JSON.stringify(dto.fields))) : {};
+
+    // 5) 调 LLM
+    let llmResult: LlmCallResult;
+    try {
+      llmResult = await this.llm.call({
+        system: SCORE_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: buildScoreUserPrompt(dto.type, dto.title, dto.description, safeFields),
+          },
+        ],
+        maxTokens: 500,
+        temperature: 0.3,
+        timeoutMs: 15000,
+      });
+    } catch (e: any) {
+      await this.logUsage(userId, 'score', 0, 0, 0, Date.now() - start, false, e?.message, contentHash);
+      throw new HttpException('AI 调用失败', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // 6) 解析 LLM JSON
+    const parsed = this.parseScoreJson(llmResult.text);
+    const durationMs = Date.now() - start;
+    const costUsd = this.estimateCost(llmResult.inputTokens, llmResult.outputTokens);
+
+    const response: ScoreResponse = {
+      score: parsed.score,
+      breakdown: parsed.breakdown,
+      suggestions: parsed.suggestions,
+      cached: false,
+      durationMs,
+    };
+
+    // 7) 写缓存 (10 min)
+    await this.redis.setEx(cacheKey, JSON.stringify(response), 10 * 60);
+
+    // 8) 写日志
+    await this.logUsage(
+      userId,
+      'score',
+      llmResult.inputTokens,
+      llmResult.outputTokens,
+      costUsd,
+      durationMs,
+      true,
+      null,
+      contentHash,
+    );
+
+    return response;
+  }
+
+  private parseScoreJson(
+    text: string,
+  ): { score: number; breakdown: ScoreBreakdown; suggestions: string[] } {
+    const safeParse = (raw: string) => {
+      try {
+        const obj = JSON.parse(raw);
+        if (typeof obj.score === 'number') {
+          return {
+            score: Math.max(0, Math.min(100, Math.round(obj.score))),
+            breakdown: obj.breakdown || {
+              title: 0,
+              description: 0,
+              completeness: 0,
+              contact: 0,
+            },
+            suggestions: Array.isArray(obj.suggestions) ? obj.suggestions : [],
+          };
+        }
+      } catch {}
+      return null;
+    };
+
+    // 1) 纯 JSON
+    let result = safeParse(text);
+    if (result) return result;
+
+    // 2) markdown ```json``` 包装
+    const m = text.match(/```(?:json)?\s*(\{[\s\S]+?\})\s*```/);
+    if (m) {
+      result = safeParse(m[1]);
+      if (result) return result;
+    }
+
+    // 3) 兜底: 50 分 + 提示失败
+    return {
+      score: 50,
+      breakdown: { title: 0, description: 0, completeness: 0, contact: 0 },
+      suggestions: ['AI 评分失败'],
+    };
   }
 
   private parseTitles(text: string): string[] {
