@@ -1,26 +1,75 @@
+/**
+ * Admin 全局样式 — 引用 frontend design tokens 实现设计一致性
+ * 主色/圆角/间距/阴影 与用户端完全一致
+ */
+@import '../../../../frontend/src/styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 158 84% 28%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --background: var(--color-bg);
+    --foreground: var(--color-fg);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-muted-fg);
+    --card: var(--color-card);
+    --card-foreground: var(--color-card-fg);
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-fg);
+    --secondary: var(--color-secondary);
+    --secondary-foreground: var(--color-secondary-fg);
+    --accent: var(--color-accent);
+    --accent-foreground: var(--color-accent-fg);
+    --destructive: var(--color-danger);
     --destructive-foreground: 0 0% 100%;
-    --ring: 158 84% 28%;
-    --radius: 0.5rem;
+    --ring: var(--color-ring);
+    --radius: var(--radius-lg);
   }
+
+  .dark {
+    --background: var(--color-bg);
+    --foreground: var(--color-fg);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-muted-fg);
+    --card: var(--color-card);
+    --card-foreground: var(--color-card-fg);
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-fg);
+    --secondary: var(--color-secondary);
+    --secondary-foreground: var(--color-secondary-fg);
+    --accent: var(--color-accent);
+    --accent-foreground: var(--color-accent-fg);
+    --destructive: var(--color-danger);
+    --destructive-foreground: 0 0% 100%;
+    --ring: var(--color-ring);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  h1, h2, h3, .font-display {
+    font-family: "Noto Serif SC", "Noto Sans SC", serif;
+  }
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-hover { box-shadow: var(--shadow-hover); }
 }

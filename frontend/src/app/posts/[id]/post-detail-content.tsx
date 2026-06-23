@@ -3,25 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/patterns/avatar';
+import { Skeleton, PageLoading, ErrorState, EmptyState } from '@/components/patterns/empty-state';
+import { toast } from '@/components/toast/toaster';
+import { Dialog } from '@/components/ui/dialog';
 import { postApi, favoriteApi, commentApi, reportApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { formatDateTime, formatDate } from '@/lib/date';
 import { BoostCta } from '@/components/post/boost-cta';
 import { useSearchParams } from 'next/navigation';
+import { MODULE_BY_CODE } from '@/config/modules';
 import {
   MapPin, Eye, Heart, MessageCircle, User as UserIcon,
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
   Sparkles, BadgeCheck, X, ChevronLeft,
 } from 'lucide-react';
-
-const TYPE_META: Record<string, { label: string; gradient: string; emoji: string }> = {
-  house:      { label: '房屋',  gradient: 'from-blue-500 via-blue-600 to-indigo-700',    emoji: '🏠' },
-  secondhand: { label: '二手',  gradient: 'from-pink-500 via-rose-600 to-fuchsia-700', emoji: '🛍️' },
-  job:        { label: '招聘',  gradient: 'from-emerald-500 via-teal-600 to-cyan-700', emoji: '💼' },
-  lifebiz:    { label: '便民',  gradient: 'from-amber-500 via-orange-600 to-red-600',    emoji: '📌' },
-};
 
 function Field({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
@@ -36,6 +35,7 @@ function Field({ label, value, icon }: { label: string; value: string; icon?: Re
 }
 
 function PostDetailContent() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const id = params?.id;
@@ -60,9 +60,19 @@ function PostDetailContent() {
   // 图片轮播
   const [imgIdx, setImgIdx] = useState(0);
 
+  function requireLogin() {
+    if (!getAccessToken()) {
+      toast.warning('请先登录');
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return false;
+    }
+    return true;
+  }
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setError(null);
     postApi.get(id)
       .then(setPost)
       .catch((e) => setError(e?.message || '加载失败'))
@@ -90,34 +100,33 @@ function PostDetailContent() {
 
   // 操作 handlers
   const handleFavorite = async () => {
-    if (!getAccessToken()) {
-      alert('请先登录');
-      return;
-    }
+    if (!requireLogin()) return;
     setFavLoading(true);
     try {
       if (favorited) {
         await favoriteApi.remove(String(id));
         setFavorited(false);
+        toast.success('已取消收藏');
       } else {
         await favoriteApi.add({ postId: id });
         setFavorited(true);
+        toast.success('收藏成功');
       }
-    } catch {
-      alert('操作失败，请稍后再试');
+    } catch (e: any) {
+      toast.error(e?.message || '操作失败，请稍后再试');
     } finally {
       setFavLoading(false);
     }
   };
 
   const handleShare = async () => {
-    const shareData = { title: post.title, text: post.title, url: window.location.href };
+    const shareData = { title: post?.title, text: post?.title, url: window.location.href };
     try {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(window.location.href);
-        alert('链接已复制到剪贴板');
+        toast.success('链接已复制到剪贴板');
       }
     } catch {
       // 用户取消
@@ -125,39 +134,36 @@ function PostDetailContent() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!getAccessToken()) {
-      alert('请先登录');
+    if (!requireLogin()) return;
+    const text = commentText.trim();
+    if (!text) {
+      toast.warning('请输入留言内容');
       return;
     }
-    const text = commentText.trim();
-    if (!text) return;
     setCommentSubmitting(true);
     try {
       await commentApi.create(String(id), { content: text });
       setCommentText('');
-      // 重新加载评论
+      toast.success('留言成功');
       const r = await commentApi.list(String(id));
       setComments((r as any)?.list || (r as any) || []);
-    } catch {
-      alert('发表失败');
+    } catch (e: any) {
+      toast.error(e?.message || '发表失败');
     } finally {
       setCommentSubmitting(false);
     }
   };
 
   const handleReportSubmit = async () => {
-    if (!getAccessToken()) {
-      alert('请先登录');
-      return;
-    }
+    if (!requireLogin()) return;
     setReportSubmitting(true);
     try {
       await reportApi.create({ postId: id, reason: reportReason, description: reportDesc });
-      alert('举报已提交，感谢反馈');
+      toast.success('举报已提交，感谢反馈');
       setShowReport(false);
       setReportDesc('');
-    } catch {
-      alert('提交失败');
+    } catch (e: any) {
+      toast.error(e?.message || '提交失败');
     } finally {
       setReportSubmitting(false);
     }
@@ -165,56 +171,49 @@ function PostDetailContent() {
 
   // T-P1-02: handlePhone 改为按需调 contact API
   const handlePhone = async () => {
-    if (!getAccessToken()) {
-      // 未登录：跳登录页
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-      return;
-    }
+    if (!requireLogin()) return;
     if (contactInfo) {
-      // 已加载：直接拨号
       if (contactInfo.contactPhone) {
         window.location.href = `tel:${contactInfo.contactPhone}`;
+      } else {
+        toast.info('该信息发布者未留电话，请通过留言联系');
       }
       return;
     }
-    // 已登录 + 未加载：调 contact API
     setContactLoading(true);
     try {
       const data = await postApi.getContact(String(id));
-      // 后端响应格式: { code, message, data: { contactName, contactPhone, contactWechat } }
       const info = data?.data || data;
       setContactInfo(info);
       if (info?.contactPhone) {
         window.location.href = `tel:${info.contactPhone}`;
       } else {
-        alert('该信息发布者未留电话,请通过留言联系');
+        toast.info('该信息发布者未留电话，请通过留言联系');
       }
     } catch (e: any) {
-      alert(e?.message || '获取联系方式失败,请稍后再试');
+      toast.error(e?.message || '获取联系方式失败，请稍后再试');
     } finally {
       setContactLoading(false);
     }
   };
 
   if (loading) {
-    return (
-      <main className="container max-w-3xl py-12 text-center text-muted-foreground">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="mt-3 text-sm">加载中…</p>
-      </main>
-    );
+    return <PageLoading message="加载信息中…" />;
   }
   if (error || !post) {
     return (
-      <main className="container py-20 text-center">
-        <div className="text-6xl mb-4">😢</div>
-        <p className="text-destructive">{error || '信息不存在'}</p>
-        <Link href="/" className="text-primary underline mt-4 inline-block">返回首页</Link>
+      <main className="container py-20">
+        <ErrorState
+          title={error || '信息不存在'}
+          message="可能已被删除或链接错误"
+          onRetry={() => window.location.reload()}
+        />
       </main>
     );
   }
 
-  const meta = TYPE_META[post.type] || TYPE_META.secondhand;
+  const moduleMeta = MODULE_BY_CODE[post.type as keyof typeof MODULE_BY_CODE] || MODULE_BY_CODE.secondhand;
+  const meta = { label: moduleMeta.title.replace(/(出租|交易|求职|信息)/, ''), gradient: moduleMeta.cardGradient, emoji: moduleMeta.emoji };
   const isHouse = post.type === 'house' && post.house;
   const isJob = post.type === 'job' && post.job;
   const isSecondhand = post.type === 'secondhand' && post.secondhand;
@@ -233,7 +232,7 @@ function PostDetailContent() {
         <span className="text-foreground truncate max-w-[200px]">{post.title}</span>
       </nav>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-6 items-start">
         {/* Left: 主内容 */}
         <div className="md:col-span-2 space-y-5">
           {/* Hero 图（多图轮播 or 占位渐变）*/}
@@ -467,14 +466,16 @@ function PostDetailContent() {
         </div>
 
         {/* Right: 卖家卡 + 操作（sticky）*/}
-        <div className="space-y-4">
-          <div className="sticky top-20 space-y-4">
+        <div className="md:sticky md:top-20 space-y-4">
+          <div className="space-y-4">
             {/* 卖家卡 */}
             <div className="rounded-2xl border bg-card p-5 shadow-soft">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
-                  {post.user?.nickname?.[0] || post.contactName?.[0] || 'U'}
-                </div>
+                <Avatar
+                  src={post.user?.avatar}
+                  name={post.user?.nickname || post.contactName}
+                  size="lg"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold truncate flex items-center gap-1">
                     {post.user?.nickname || post.contactName || '匿名用户'}
@@ -636,55 +637,47 @@ function PostDetailContent() {
       </section>
 
       {/* 举报弹窗 */}
-      {showReport && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold">举报信息</h3>
-              <button onClick={() => setShowReport(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">举报原因</label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="spam">垃圾广告</option>
-                  <option value="fake">虚假信息</option>
-                  <option value="illegal">违法违规</option>
-                  <option value="duplicate">重复发布</option>
-                  <option value="other">其他</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">补充说明（可选）</label>
-                <textarea
-                  value={reportDesc}
-                  onChange={(e) => setReportDesc(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="请描述具体情况…"
-                  maxLength={500}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowReport(false)}>取消</Button>
-                <Button
-                  onClick={handleReportSubmit}
-                  disabled={reportSubmitting}
-                  className="bg-red-500 hover:bg-red-600"
-                >
-                  {reportSubmitting ? '提交中…' : '提交举报'}
-                </Button>
-              </div>
-            </div>
+      <Dialog
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        title="举报信息"
+        description="请选择举报原因，我们将在 24 小时内处理"
+        confirm={{
+          label: '提交举报',
+          variant: 'destructive',
+          loading: reportSubmitting,
+          onClick: handleReportSubmit,
+        }}
+        cancel={{ label: '取消' }}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">举报原因</label>
+            <select
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="spam">垃圾广告</option>
+              <option value="fake">虚假信息</option>
+              <option value="illegal">违法违规</option>
+              <option value="duplicate">重复发布</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">补充说明（可选）</label>
+            <textarea
+              value={reportDesc}
+              onChange={(e) => setReportDesc(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+              placeholder="请描述具体情况…"
+              maxLength={500}
+            />
           </div>
         </div>
-      )}
+      </Dialog>
 
       {/* Boost CTA — 显示条件: ?justPublished=1 */}
       {searchParams?.get('justPublished') === '1' && (

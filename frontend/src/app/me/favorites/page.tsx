@@ -4,15 +4,20 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { PostCard, type PostCardData } from '@/components/post/post-card';
+import { SearchInput } from '@/components/patterns/search-input';
+import { PostCardSkeleton, EmptyState } from '@/components/patterns/empty-state';
 import { favoriteApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { ArrowLeft, Heart, Search } from 'lucide-react';
 
 export default function MyFavoritesPage() {
   return (
-    <Suspense fallback={<div className="container py-20 text-center text-muted-foreground">加载中…</div>}>
+    <Suspense
+      fallback={
+        <div className="container py-20 text-center text-muted-foreground">加载中…</div>
+      }
+    >
       <MyFavoritesContent />
     </Suspense>
   );
@@ -34,7 +39,6 @@ function MyFavoritesContent() {
       .list()
       .then((r: any) => {
         const data = r?.data || r || [];
-        // 提取 post 字段
         const posts = Array.isArray(data) ? data.map((f: any) => f.post || f) : [];
         setList(posts.filter((p: any) => p && p.id));
       })
@@ -50,58 +54,54 @@ function MyFavoritesContent() {
 
   return (
     <main className="container max-w-6xl py-6 space-y-6">
-      <Link href="/me" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4 mr-1" /> 返回个人中心
+      <Link
+        href="/me"
+        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group"
+      >
+        <ArrowLeft className="h-4 w-4 mr-1 group-hover:-translate-x-0.5 transition-transform" />
+        返回个人中心
       </Link>
 
-      <div>
+      {/* 标题 + 统计 */}
+      <header>
         <h1 className="font-display text-3xl font-bold flex items-center gap-2">
-          <Heart className="h-7 w-7 text-pink-500 fill-pink-500" /> 我的收藏
+          <Heart className="h-7 w-7 text-pink-500 fill-pink-500" />
+          我的收藏
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           你收藏的房屋 / 二手 / 招聘 / 便民信息（共 {list.length} 条）
         </p>
-      </div>
+      </header>
 
       {/* 搜索 */}
       {list.length > 0 && (
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
+        <div className="max-w-md">
+          <SearchInput
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="搜索收藏的标题或描述…"
-            className="w-full h-10 pl-10 pr-3 rounded-full border border-input bg-background text-sm"
+            aria-label="搜索收藏"
           />
         </div>
       )}
 
+      {/* 内容 */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border bg-card overflow-hidden">
-              <div className="aspect-[16/9] bg-muted animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-muted rounded animate-pulse" />
-                <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <PostCardSkeleton count={8} />
       ) : list.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="text-6xl mb-4">💝</div>
-            <p className="text-muted-foreground mb-4">还没有收藏任何信息</p>
-            <Link href="/">
-              <Button>去发现感兴趣的</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="还没有收藏任何信息"
+          description="看到喜欢的信息，点一下❤️收藏起来，随时查看"
+          action={{ label: '去发现感兴趣的', href: '/' }}
+          secondaryAction={{ label: '发布新信息', href: '/posts/publish' }}
+        />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          没有找到匹配 &quot;{keyword}&quot; 的收藏
-        </div>
+        <EmptyState
+          icon={<Search className="h-16 w-16" strokeWidth={1.2} />}
+          title={`没有找到匹配「${keyword}」的收藏`}
+          description="试试其他关键词，或清空搜索条件"
+          action={{ label: '清空搜索', onClick: () => setKeyword('') }}
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {filtered.map((p, i) => (

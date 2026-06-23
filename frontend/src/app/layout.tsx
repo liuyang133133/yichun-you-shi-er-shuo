@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { AnnouncementBanner } from '@/components/layout/announcement-banner';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/toast/toaster';
 
 export const metadata: Metadata = {
   title: '伊春有事儿说 | 本地生活信息平台',
@@ -45,6 +46,7 @@ export default function RootLayout({
           <Header />
           <AnnouncementBanner />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

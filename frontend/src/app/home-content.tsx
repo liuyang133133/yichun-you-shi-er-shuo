@@ -1,57 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Tabs } from '@/components/ui/tabs';
 import { PostCard, type PostCardData } from '@/components/post/post-card';
+import { PostCardSkeleton, EmptyState } from '@/components/patterns/empty-state';
 import { postApi, categoryApi, areaApi, bannerApi, type BannerItem } from '@/lib/api';
-import {
-  Home, ShoppingBag, Briefcase, Megaphone, Plus, ArrowRight, Sparkles, ChevronLeft, ChevronRight,
-} from 'lucide-react';
-
-const MODULES = [
-  {
-    code: 'house',
-    title: '房屋出租',
-    subtitle: 'House Rental',
-    desc: '整租 / 合租 / 短租 / 商铺',
-    icon: Home,
-    gradient: 'from-blue-500 via-blue-600 to-indigo-700',
-    ring: 'ring-blue-500/20',
-    accent: 'bg-blue-50 text-blue-700',
-  },
-  {
-    code: 'secondhand',
-    title: '二手交易',
-    subtitle: 'Secondhand',
-    desc: '数码 / 家电 / 服饰 / 图书',
-    icon: ShoppingBag,
-    gradient: 'from-pink-500 via-rose-600 to-fuchsia-700',
-    ring: 'ring-pink-500/20',
-    accent: 'bg-pink-50 text-pink-700',
-  },
-  {
-    code: 'job',
-    title: '招聘求职',
-    subtitle: 'Job & Career',
-    desc: '销售 / 餐饮 / 技工 / 互联网',
-    icon: Briefcase,
-    gradient: 'from-emerald-500 via-teal-600 to-cyan-700',
-    ring: 'ring-emerald-500/20',
-    accent: 'bg-emerald-50 text-emerald-700',
-  },
-  {
-    code: 'lifebiz',
-    title: '便民信息',
-    subtitle: 'Local Services',
-    desc: '顺风车 / 家政 / 打听事 / 维修',
-    icon: Megaphone,
-    gradient: 'from-amber-500 via-orange-600 to-red-600',
-    ring: 'ring-amber-500/20',
-    accent: 'bg-amber-50 text-orange-700',
-  },
-];
+import { MODULES, MODULE_BY_CODE, type PostType } from '@/config/modules';
+import { Plus, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { value: 'latest', label: '最新发布' },
@@ -61,14 +20,29 @@ const SORT_OPTIONS = [
 ];
 
 export function HomeContent() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+          加载中…
+        </div>
+      }
+    >
+      <HomeContentInner />
+    </Suspense>
+  );
+}
+
+function HomeContentInner() {
   const router = useRouter();
   const search = useSearchParams();
-  const currentType = search.get('type');
+  const currentType = search.get('type') as PostType | null;
 
   const [list, setList] = useState<PostCardData[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string; parentId?: string | null }>>([]);
   const [areas, setAreas] = useState<Array<{ id: string; name: string; level: number }>>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedArea, setSelectedArea] = useState<string>('');
@@ -102,6 +76,7 @@ export function HomeContent() {
   useEffect(() => {
     if (!currentType) return;
     setLoading(true);
+    setLoadError(false);
     postApi
       .list({
         type: currentType,
@@ -114,7 +89,11 @@ export function HomeContent() {
         setList(r?.list || []);
         setTotal(r?.total || 0);
       })
-      .catch(() => setList([]))
+      .catch(() => {
+        setList([]);
+        setTotal(0);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, [currentType, selectedCategory, selectedArea, sort]);
 
@@ -124,10 +103,10 @@ export function HomeContent() {
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden">
-          {/* 渐变 mesh 背景 */}
+          {/* 渐变 mesh 背景（暗色下用更暗） */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-200/40 via-teal-100/30 to-transparent rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-orange-200/30 via-amber-100/30 to-transparent rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-200/40 via-teal-100/30 to-transparent dark:from-emerald-900/20 dark:via-teal-900/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-orange-200/30 via-amber-100/30 to-transparent dark:from-orange-900/15 dark:via-amber-900/10 rounded-full blur-3xl" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(15,122,94,0.06),transparent_50%)]" />
           </div>
 
@@ -144,35 +123,49 @@ export function HomeContent() {
                   <span className="text-foreground">说</span>
                 </h1>
                 <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                  房屋出租 · 二手交易 · 招聘求职 · 便民信息<br />
+                  房屋出租 · 二手交易 · 招聘求职 · 便民信息
+                  <br />
                   <span className="text-sm text-muted-foreground/80">本地人发布，本地人浏览，真实可靠</span>
                 </p>
                 <div className="flex flex-wrap gap-3 pt-2">
                   <Link href="/posts/publish">
-                    <Button size="lg" className="rounded-full shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-emerald-600 px-7 h-12 text-base">
+                    <Button
+                      size="lg"
+                      className="rounded-full shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-emerald-600 px-7 h-12 text-base"
+                    >
                       <Plus className="mr-1.5 h-5 w-5" />
                       立即发布
                     </Button>
                   </Link>
                   <Link href="/?type=house">
-                    <Button size="lg" variant="outline" className="rounded-full px-7 h-12 text-base border-2">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="rounded-full px-7 h-12 text-base border-2"
+                    >
                       浏览信息
                       <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
                   </Link>
                 </div>
                 <div className="flex items-center gap-6 pt-4 text-xs text-muted-foreground">
-                  <div><span className="text-2xl font-bold text-foreground">4</span> 大模块</div>
+                  <div>
+                    <span className="text-2xl font-bold text-foreground">4</span> 大模块
+                  </div>
                   <div className="h-6 w-px bg-border" />
-                  <div><span className="text-2xl font-bold text-foreground">29</span> 个分类</div>
+                  <div>
+                    <span className="text-2xl font-bold text-foreground">29</span> 个分类
+                  </div>
                   <div className="h-6 w-px bg-border" />
-                  <div><span className="text-2xl font-bold text-foreground">12</span> 个区县</div>
+                  <div>
+                    <span className="text-2xl font-bold text-foreground">12</span> 个区县
+                  </div>
                 </div>
               </div>
 
               {/* 装饰图：伊春地图 + 4 大模块浮动卡片 */}
               <div className="relative h-[400px] hidden md:block">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-orange-100/30 rounded-3xl rotate-3" />
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-orange-100/30 dark:from-emerald-900/30 dark:to-orange-900/20 rounded-3xl rotate-3" />
                 <div className="absolute inset-0 bg-card rounded-3xl shadow-soft border p-6 -rotate-1">
                   <div className="text-center space-y-2 mb-6">
                     <div className="text-5xl">🌲</div>
@@ -187,7 +180,7 @@ export function HomeContent() {
                         <Link
                           key={m.code}
                           href={`/?type=${m.code}`}
-                          className={`group relative p-4 rounded-2xl bg-gradient-to-br ${m.gradient} text-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 animate-fade-in`}
+                          className={`group relative p-4 rounded-2xl bg-gradient-to-br ${m.cardGradient} text-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 animate-fade-in`}
                           style={{ animationDelay: `${i * 100}ms` }}
                         >
                           <Icon className="h-6 w-6 mb-2" />
@@ -217,7 +210,9 @@ export function HomeContent() {
               <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
                 <div className="text-white">
                   <div className="text-xs text-white/80">📢 平台公告</div>
-                  <div className="font-bold text-lg line-clamp-1">{banners[bannerIdx]?.title}</div>
+                  <div className="font-bold text-lg line-clamp-1">
+                    {banners[bannerIdx]?.title}
+                  </div>
                 </div>
                 {banners[bannerIdx]?.linkTarget && (
                   <button
@@ -260,7 +255,9 @@ export function HomeContent() {
                       <button
                         key={i}
                         onClick={() => setBannerIdx(i)}
-                        className={`h-1.5 rounded-full transition-all ${i === bannerIdx ? 'bg-white w-5' : 'bg-white/50 w-1.5'}`}
+                        className={`h-1.5 rounded-full transition-all ${
+                          i === bannerIdx ? 'bg-white w-5' : 'bg-white/50 w-1.5'
+                        }`}
                         aria-label={`第${i + 1}张`}
                       />
                     ))}
@@ -286,12 +283,14 @@ export function HomeContent() {
                 <Link
                   key={m.code}
                   href={`/?type=${m.code}`}
-                  className={`group relative overflow-hidden rounded-2xl bg-card border shadow-soft hover:shadow-hover hover:-translate-y-1 transition-all duration-300 animate-slide-up`}
+                  className="group relative overflow-hidden rounded-2xl bg-card border shadow-soft hover:shadow-hover hover:-translate-y-1 transition-all duration-300 animate-slide-up"
                   style={{ animationDelay: `${i * 80}ms` }}
                 >
                   <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${m.gradient}`} />
                   <div className="p-6 space-y-3">
-                    <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${m.gradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                    <div
+                      className={`h-12 w-12 rounded-xl bg-gradient-to-br ${m.cardGradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}
+                    >
                       <Icon className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -320,19 +319,27 @@ export function HomeContent() {
   }
 
   // ====================== 列表页 ======================
-  const currentModule = MODULES.find((m) => m.code === currentType);
+  const currentModule = MODULE_BY_CODE[currentType];
   const Icon = currentModule?.icon;
-  // 只展示真正的子分类（排除父类"房屋出租/二手交易/招聘求职/便民信息"，
-  // 否则会出现 "全部" 和 "房屋出租" 两个看起来一样但实际过滤结果不同的 tab，
-  // 让用户困惑为什么 20 → 19 突然少 1 条）
   const subCategories = categories.filter(
     (c) => c.code === currentType && c.parentId != null && c.parentId !== '',
   );
 
+  // 构造筛选 Tab items（含"全部"）
+  const tabItems = [
+    { value: '', label: '全部', badge: total > 0 ? total : undefined },
+    ...subCategories.map((c) => ({
+      value: c.id,
+      label: c.name,
+    })),
+  ];
+
   return (
     <main className="container py-8 space-y-6">
       {/* 顶部 Banner */}
-      <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${currentModule?.gradient} text-white p-8 md:p-10 shadow-lg`}>
+      <div
+        className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${currentModule?.gradient} text-white p-8 md:p-10 shadow-lg`}
+      >
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -347,7 +354,10 @@ export function HomeContent() {
             <p className="text-white/85 mt-1.5 text-sm">{currentModule?.desc}</p>
           </div>
           <Link href={`/posts/publish?type=${currentType}`}>
-            <Button size="lg" className="rounded-full bg-white text-foreground hover:bg-white/90 shadow-md">
+            <Button
+              size="lg"
+              className="rounded-full bg-white text-foreground hover:bg-white/90 shadow-md"
+            >
               <Plus className="mr-1 h-4 w-4" />
               发布{currentModule?.title}
             </Button>
@@ -357,78 +367,64 @@ export function HomeContent() {
 
       {/* 粘性筛选条 */}
       <div className="sticky top-16 z-30 -mx-4 px-4 py-3 bg-background/85 backdrop-blur-md border-b">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setSelectedCategory('')}
-            className={`px-3.5 py-1.5 text-sm rounded-full font-medium transition-all ${
-              !selectedCategory
-                ? 'bg-foreground text-background shadow-md'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/70'
-            }`}
-          >
-            全部
-          </button>
-          {subCategories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCategory(c.id)}
-              className={`px-3.5 py-1.5 text-sm rounded-full font-medium transition-all ${
-                selectedCategory === c.id
-                  ? 'bg-foreground text-background shadow-md'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/70'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <Tabs
+            value={selectedCategory}
+            onChange={(v) => setSelectedCategory(v)}
+            items={tabItems}
+            variant="pill"
+            size="sm"
+            scrollable
+          />
           <div className="flex-1" />
-          <select
+          <Select
             value={selectedArea}
-            onChange={(e) => setSelectedArea(e.target.value)}
-            className="h-9 px-3 rounded-full border bg-background text-sm"
-          >
-            <option value="">📍 全部区域</option>
-            {areas.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-          <select
+            onChange={setSelectedArea}
+            options={[
+              { value: '', label: '📍 全部区域' },
+              ...areas.map((a) => ({ value: a.id, label: a.name })),
+            ]}
+            variant="pill"
+            aria-label="选择区域"
+          />
+          <Select
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="h-9 px-3 rounded-full border bg-background text-sm"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            onChange={setSort}
+            options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            variant="pill"
+            aria-label="排序方式"
+          />
         </div>
       </div>
 
       {/* 列表 */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border bg-card overflow-hidden">
-              <div className="aspect-[16/9] bg-muted animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-muted rounded animate-pulse" />
-                <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <PostCardSkeleton count={8} />
+      ) : loadError ? (
+        <EmptyState
+          title="加载失败"
+          description="请检查网络后重试"
+          action={{ label: '重新加载', onClick: () => window.location.reload() }}
+        />
       ) : list.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border-2 border-dashed bg-muted/30">
-          <div className="text-6xl mb-4 opacity-50">📭</div>
-          <p className="text-muted-foreground mb-4">暂无相关信息</p>
-          <Link href={`/posts/publish?type=${currentType}`}>
-            <Button>发布一条</Button>
-          </Link>
-        </div>
+        <EmptyState
+          title="暂无相关信息"
+          description={
+            selectedCategory || selectedArea
+              ? '当前筛选条件下没有帖子，试试调整筛选或发布一条'
+              : '这里还很安静，做第一个发布的人吧'
+          }
+          action={{
+            label: `发布${currentModule?.title || '信息'}`,
+            href: `/posts/publish?type=${currentType}`,
+          }}
+        />
       ) : (
         <>
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>共 <span className="font-bold text-foreground">{total}</span> 条</span>
+            <span>
+              共 <span className="font-bold text-foreground">{total}</span> 条
+            </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {list.map((p, i) => (

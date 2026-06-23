@@ -6,21 +6,12 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { authApi } from '@/lib/api';
+import { messagesApi, usersApi, type MessageItem } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { formatDateTime } from '@/lib/date';
 import { ArrowLeft, Mail, Inbox, Send, CheckCheck, MessageSquare } from 'lucide-react';
 
-interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  isRead: number;
-  createdAt: string;
-  sender?: { id: string; nickname: string; avatar?: string };
-  receiver?: { id: string; nickname: string; avatar?: string };
-}
+type Message = MessageItem;
 
 export default function MyMessagesPage() {
   return (
@@ -57,12 +48,9 @@ function MyMessagesContent() {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch('http://localhost:3001/api/v1/messages/inbox', {
-        headers: { Authorization: `Bearer ${getAccessToken()}` },
-      });
-      const j = await r.json();
-      setInbox(j?.data?.list || []);
-      setUnread(j?.data?.unreadCount || 0);
+      const r = await messagesApi.inbox({ page: 1, pageSize: 50 });
+      setInbox(r?.list || []);
+      setUnread(r?.unreadCount || 0);
     } catch (e) {
       setError('加载失败');
     } finally {
@@ -73,11 +61,8 @@ function MyMessagesContent() {
   async function loadOutbox() {
     setLoading(true);
     try {
-      const r = await fetch('http://localhost:3001/api/v1/messages/outbox', {
-        headers: { Authorization: `Bearer ${getAccessToken()}` },
-      });
-      const j = await r.json();
-      setOutbox(j?.data?.list || []);
+      const r = await messagesApi.outbox({ page: 1, pageSize: 50 });
+      setOutbox(r?.list || []);
     } catch (e) {
       setError('加载失败');
     } finally {
@@ -92,10 +77,7 @@ function MyMessagesContent() {
 
   async function markAllRead() {
     try {
-      await fetch('http://localhost:3001/api/v1/messages/read-all', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getAccessToken()}` },
-      });
+      await messagesApi.readAll();
       loadInbox();
     } catch {}
   }
@@ -108,12 +90,8 @@ function MyMessagesContent() {
     setSending(true);
     try {
       // 先查用户 ID（通过 phone）
-      const r = await fetch(
-        `http://localhost:3001/api/v1/users?keyword=${encodeURIComponent(receiverPhone)}`,
-        { headers: { Authorization: `Bearer ${getAccessToken()}` } },
-      );
-      const j = await r.json();
-      const target = (j?.data?.list || []).find(
+      const r = await usersApi.search(receiverPhone.trim());
+      const target = (r?.list || []).find(
         (u: any) => u.phone === receiverPhone.trim(),
       );
       if (!target) {
@@ -121,25 +99,13 @@ function MyMessagesContent() {
         return;
       }
       // 发消息
-      const sendR = await fetch('http://localhost:3001/api/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-        body: JSON.stringify({ receiverId: Number(target.id), content: content.trim() }),
-      });
-      if (!sendR.ok) {
-        const err = await sendR.json().catch(() => ({}));
-        alert('发送失败：' + (err?.message || sendR.status));
-        return;
-      }
+      await messagesApi.send({ receiverId: target.id, content: content.trim() });
       setShowCompose(false);
       setReceiverPhone('');
       setContent('');
       setTab('outbox');
-    } catch (e) {
-      alert('发送失败');
+    } catch (e: any) {
+      alert('发送失败：' + (e?.message || '请稍后再试'));
     } finally {
       setSending(false);
     }

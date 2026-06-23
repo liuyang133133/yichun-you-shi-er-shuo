@@ -1,66 +1,54 @@
+@import '../styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* shadcn 兼容 — 把 tokens 映射到 shadcn 变量名 */
   :root {
-    /* 主色调：伊春森林绿（绿松石） + 暖橙（点缀）*/
-    --background: 0 0% 100%;
-    --foreground: 158 35% 12%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 158 35% 12%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 158 35% 12%;
-
-    /* 主色：森林绿（淘宝/小红书风格但独特）*/
-    --primary: 158 64% 35%;
-    --primary-foreground: 0 0% 100%;
-
-    /* 强调色：暖橙（用于价格、CTA）*/
-    --accent-orange: 24 95% 53%;
-    --accent-amber: 38 92% 50%;
-
-    --secondary: 158 30% 95%;
-    --secondary-foreground: 158 64% 25%;
-
-    --muted: 158 15% 96%;
-    --muted-foreground: 158 12% 45%;
-
-    --accent: 158 30% 95%;
-    --accent-foreground: 158 64% 25%;
-
-    --destructive: 0 84% 60%;
+    --background: var(--color-bg);
+    --foreground: var(--color-fg);
+    --card: var(--color-card);
+    --card-foreground: var(--color-card-fg);
+    --popover: var(--color-popover);
+    --popover-foreground: var(--color-popover-fg);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-fg);
+    --secondary: var(--color-secondary);
+    --secondary-foreground: var(--color-secondary-fg);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-muted-fg);
+    --accent: var(--color-accent);
+    --accent-foreground: var(--color-accent-fg);
+    --destructive: var(--color-danger);
     --destructive-foreground: 0 0% 100%;
-
-    --border: 158 15% 90%;
-    --input: 158 15% 90%;
-    --ring: 158 64% 35%;
-
-    --radius: 0.75rem;
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --ring: var(--color-ring);
+    --radius: var(--radius-lg);
   }
 
   .dark {
-    --background: 158 35% 8%;
-    --foreground: 158 10% 95%;
-    --card: 158 30% 11%;
-    --card-foreground: 158 10% 95%;
-    --popover: 158 30% 11%;
-    --popover-foreground: 158 10% 95%;
-    --primary: 158 64% 50%;
-    --primary-foreground: 158 35% 8%;
-    --secondary: 158 25% 18%;
-    --secondary-foreground: 158 10% 95%;
-    --muted: 158 25% 15%;
-    --muted-foreground: 158 10% 65%;
-    --accent: 158 25% 18%;
-    --accent-foreground: 158 10% 95%;
-    --destructive: 0 70% 45%;
+    --background: var(--color-bg);
+    --foreground: var(--color-fg);
+    --card: var(--color-card);
+    --card-foreground: var(--color-card-fg);
+    --popover: var(--color-popover);
+    --popover-foreground: var(--color-popover-fg);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-fg);
+    --secondary: var(--color-secondary);
+    --secondary-foreground: var(--color-secondary-fg);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-muted-fg);
+    --accent: var(--color-accent);
+    --accent-foreground: var(--color-accent-fg);
+    --destructive: var(--color-danger);
     --destructive-foreground: 0 0% 100%;
-    --border: 158 25% 22%;
-    --input: 158 25% 22%;
-    --ring: 158 64% 50%;
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --ring: var(--color-ring);
   }
 }
 
@@ -81,7 +69,11 @@
   }
   /* 平滑滚动 + 更好的 focus */
   html { scroll-behavior: smooth; }
-  *:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; border-radius: 4px; }
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer components {
@@ -99,12 +91,17 @@
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
+  .dark .glass {
+    background: rgba(15, 35, 28, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
   /* 阴影（柔和 + 立体感） */
-  .shadow-soft { box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 4px 16px -4px rgba(0, 0, 0, 0.04); }
-  .shadow-hover { box-shadow: 0 8px 24px -6px rgba(15, 118, 110, 0.15), 0 4px 12px -4px rgba(0, 0, 0, 0.06); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-hover { box-shadow: var(--shadow-hover); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
   /* 微妙入场动画 */
-  .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
-  .animate-slide-up { animation: slideUp 0.5s ease-out both; }
+  .animate-fade-in { animation: fadeIn var(--duration-slow) var(--easing-standard) both; }
+  .animate-slide-up { animation: slideUp 500ms var(--easing-standard) both; }
   .animate-float { animation: float 6s ease-in-out infinite; }
 }
 
@@ -119,6 +116,14 @@
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(20px); }
 }
 
 /* 行数限制 */
