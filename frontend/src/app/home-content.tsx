@@ -322,7 +322,12 @@ export function HomeContent() {
   // ====================== 列表页 ======================
   const currentModule = MODULES.find((m) => m.code === currentType);
   const Icon = currentModule?.icon;
-  const subCategories = categories.filter((c) => c.code === currentType);
+  // 只展示真正的子分类（排除父类"房屋出租/二手交易/招聘求职/便民信息"，
+  // 否则会出现 "全部" 和 "房屋出租" 两个看起来一样但实际过滤结果不同的 tab，
+  // 让用户困惑为什么 20 → 19 突然少 1 条）
+  const subCategories = categories.filter(
+    (c) => c.code === currentType && c.parentId != null && c.parentId !== '',
+  );
 
   return (
     <main className="container py-8 space-y-6">

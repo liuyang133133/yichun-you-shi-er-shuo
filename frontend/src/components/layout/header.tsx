@@ -2,23 +2,35 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api';
 import { clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
-import { LogOut, Plus, ChevronDown } from 'lucide-react';
+import { LogOut, Plus, ChevronDown, Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  // 用 useSearchParams 代替 typeof window 检查 — 否则 SSR 时 active=false,
+  // 客户端渲染时 active=true, 触发 hydration mismatch 警告
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quickQ, setQuickQ] = useState('');
 
   useEffect(() => {
     setUser(getStoredUser());
     setMenuOpen(false);
   }, [pathname]);
+
+  function submitQuickSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = quickQ.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    setQuickQ('');
+  }
 
   async function handleLogout() {
     try { await authApi.logout(); } catch {}
@@ -61,7 +73,7 @@ export function Header() {
         {/* Nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm">
           {navItems.map((it) => {
-            const active = pathname === '/' && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('type') === it.type;
+            const active = pathname === '/' && searchParams.get('type') === it.type;
             return (
               <Link
                 key={it.type}
@@ -80,6 +92,26 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* 搜索框 */}
+          <form onSubmit={submitQuickSearch} className="hidden md:flex items-center gap-1.5 h-9 px-3 rounded-full bg-secondary/60 hover:bg-secondary transition-colors w-44 lg:w-64 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/30">
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <input
+              value={quickQ}
+              onChange={(e) => setQuickQ(e.target.value)}
+              placeholder="搜索信息 / 服务 / 商家…"
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground/70 outline-none min-w-0"
+            />
+          </form>
+
+          {/* 移动端搜索图标 */}
+          <Link
+            href="/search"
+            className="md:hidden h-9 w-9 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center"
+            aria-label="搜索"
+          >
+            <Search className="h-4 w-4" />
+          </Link>
+
           {/* SHOULD-23: 暗色模式切换 */}
           <ThemeToggle />
           {user ? (
