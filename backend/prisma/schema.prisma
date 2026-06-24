@@ -48,6 +48,7 @@ model User {
   loginLogs        LoginLog[]
   messagesSent     Message[]        @relation("MessageSender")
   messagesReceived Message[]        @relation("MessageReceiver")
+  userRoles        UserRole[]       @relation("UserRoles")
 
   @@index([status, createdAt])
   @@index([role, status])
@@ -719,4 +720,106 @@ model SitemapPushLog {
 
   @@index([target, pushedAt])
   @@map("sitemap_push_logs")
+}
+
+// =====================================================
+// T-002 RBAC — 角色 / 权限 / 关联表
+// 与 User.role 字符串字段并存（兼容期 1 个月，T-003 阶段统一切换）
+// =====================================================
+
+// 角色（admin 维度，区别于 User.role 字符串）
+model Role {
+  id          BigInt    @id @default(autoincrement())
+  code        String    @unique @db.VarChar(50) // 'super_admin' | 'content_auditor' | ...
+  name        String    @db.VarChar(50)
+  description String?   @db.VarChar(255)
+  isSystem    Boolean   @default(false) // 系统预置不可删
+  sortOrder   Int       @default(0) // 展示顺序
+  status      Int       @default(1) @db.TinyInt // 1=启用 0=停用
+  // T-001 软删字段
+  deletedAt   DateTime? @map("deleted_at") @db.DateTime(3)
+  createdBy   BigInt?   @map("created_by")
+  updatedBy   BigInt?   @map("updated_by")
+  deletedBy   BigInt?   @map("deleted_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@index([status, sortOrder])
+  @@index([deletedAt])
+  @@map("roles")
+}
+
+// 权限码（粒度到具体操作）
+model Permission {
+  id          BigInt    @id @default(autoincrement())
+  code        String    @unique @db.VarChar(100) // 'post.audit.pass' | 'user.ban' | ...
+  module      String    @db.VarChar(30) // 'post' | 'user' | 'role' | ...
+  action      String    @db.VarChar(30) // 'audit.pass' | 'ban' | 'create' | ...
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  // T-001
+  deletedAt   DateTime? @map("deleted_at") @db.DateTime(3)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  rolePermissions RolePermission[]
+
+  @@index([module, action])
+  @@index([deletedAt])
+  @@map("permissions")
+}
+
+// 用户 ↔ 角色 (N:N)
+model UserRole {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  roleId    BigInt    @map("role_id")
+  grantedBy BigInt?   @map("granted_by") // 哪个 admin 分配的
+  expiresAt DateTime? @map("expires_at") // 临时授权到期
+  // T-001
+  deletedAt DateTime? @map("deleted_at") @db.DateTime(3)
+  createdBy BigInt?   @map("created_by")
+  updatedBy BigInt?   @map("updated_by")
+  deletedBy BigInt?   @map("deleted_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  user User @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId]) // 防重复分配
+  @@index([userId, createdAt])
+  @@index([roleId])
+  @@index([deletedAt])
+  @@map("user_roles")
+}
+
+// 角色 ↔ 权限 (N:N)
+model RolePermission {
+  id           BigInt    @id @default(autoincrement())
+  roleId       BigInt    @map("role_id")
+  permissionId BigInt    @map("permission_id")
+  // T-001
+  deletedAt    DateTime? @map("deleted_at") @db.DateTime(3)
+  createdBy    BigInt?   @map("created_by")
+  updatedBy    BigInt?   @map("updated_by")
+  deletedBy    BigInt?   @map("deleted_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@index([deletedAt])
+  @@map("role_permissions")
 }

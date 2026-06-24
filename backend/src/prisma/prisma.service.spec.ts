@@ -25,7 +25,7 @@ describe('PrismaService 软删除中间件 (T-001)', () => {
   });
 
   describe('静态方法 getSoftDeleteModels', () => {
-    it('1) 应返回包含 Post、User、Category 的 18 个业务模型', () => {
+    it('1) 应返回包含 Post、User、Category 的业务模型 (T-001: 18 + T-002 RBAC: 4 = 22)', () => {
       const models = PrismaService.getSoftDeleteModels();
       expect(models).toContain('Post');
       expect(models).toContain('User');
@@ -33,7 +33,12 @@ describe('PrismaService 软删除中间件 (T-001)', () => {
       expect(models).toContain('Message');
       expect(models).toContain('Announcement');
       expect(models).toContain('Banner');
-      expect(models.length).toBe(18);
+      // T-002 RBAC
+      expect(models).toContain('Role');
+      expect(models).toContain('Permission');
+      expect(models).toContain('UserRole');
+      expect(models).toContain('RolePermission');
+      expect(models.length).toBe(22);
     });
 
     it('2) 不应包含日志/验证码表', () => {

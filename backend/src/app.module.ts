@@ -31,6 +31,8 @@ import { CronModule } from './cron/cron.module';
 import { ViewLogModule } from './modules/view-log/view-log.module';
 import { AnnouncementModule } from './modules/announcement/announcement.module';
 import { BannerModule } from './modules/banner/banner.module';
+// T-002: RBAC 全局模块
+import { RbacModule } from './modules/rbac/rbac.module';
 
 @Module({
   imports: [
@@ -89,6 +91,7 @@ import { BannerModule } from './modules/banner/banner.module';
     ViewLogModule,
     AnnouncementModule,
     BannerModule,
+    RbacModule, // T-002: 全局 RBAC（PermissionGuard + RbacService）
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

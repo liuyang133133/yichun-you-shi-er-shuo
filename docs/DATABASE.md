@@ -481,6 +481,47 @@ admin → POST /admin/posts/:id/restore → 写 deletedAt=null, deletedBy=null, 
 cron → POST /admin/posts/purge { daysOld: 30 } → deleteMany + AuditLog
 ```
 
+### 5.2 RBAC 表（T-002）
+
+T-002 新增 4 张表，构成完整的 RBAC 数据基础：
+
+| 表 | 字段 | 用途 |
+|---|---|---|
+| `roles` | code / name / isSystem / sortOrder / status | 角色定义 |
+| `permissions` | code / module / action / name | 权限码定义（粒度到具体操作） |
+| `user_roles` | userId / roleId / grantedBy / expiresAt | 用户 ↔ 角色 (N:N) |
+| `role_permissions` | roleId / permissionId | 角色 ↔ 权限 (N:N) |
+
+**预置数据**（seed）：
+
+- **5 个角色**（`isSystem=true`，不可删）：
+  - `super_admin` (32 权限，全部)
+  - `content_auditor` (12 权限，post.* + comment.* + report.* + dashboard.view)
+  - `customer_service` (7 权限，user.view + comment.* + report.* + dashboard.view)
+  - `finance` (2 权限，post.view + dashboard.view)
+  - `operator` (9 权限，announcement.* + banner.* + post.view + dashboard.view + aiUsage.view)
+- **32 个权限码**（按 12 模块分组）：post(8) / comment(2) / report(2) / user(5) / role(4) / permission(1) / announcement(3) / banner(3) / auditLog(1) / loginLog(1) / aiUsage(1) / dashboard(1)
+- **62 条角色-权限关联**
+
+**Prisma 中间件**：Role / Permission / UserRole / RolePermission 加入 `SOFT_DELETE_MODELS` 集合，列表查询自动过滤 `deletedAt: null`。
+
+**PermissionGuard 守卫**：
+
+```typescript
+@UseGuards(AdminGuard, PermissionGuard)
+@RequirePermission('post.audit.pass')
+@Post(':id/audit')
+audit() { ... }
+```
+
+行为：
+1. super_admin → 自动通过
+2. 其他用户 → 查 `UserRole → RolePermission → Permission` 链路
+3. 任一 role 拥有任一 permission code 即放行
+4. 否则 403 ForbiddenException
+
+**兼容期**：`User.role` 字符串字段保留 1 个月，与 `UserRole` 表并存。T-003 阶段统一切换。
+
 ---
 
 ## 6. Prisma 已知限制（运维注意）

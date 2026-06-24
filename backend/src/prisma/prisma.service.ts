@@ -9,6 +9,8 @@ import { PrismaClient, Prisma } from '@prisma/client';
  *   PostHouse, PostSecondhand, PostLifebiz, Company, PostJob, Resume,
  *   JobApplication, Message, Announcement, Banner
  *
+ * T-002 RBAC: 加上 Role / Permission / UserRole / RolePermission
+ *
  * 不应用软删除中间件的模型：
  *   - AuditLog / LoginLog / ViewLog / AiUsageLog / SitemapPushLog
  *     写多读少的日志表，物理删除或保留期清理
@@ -34,6 +36,11 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'Message',
   'Announcement',
   'Banner',
+  // T-002: RBAC
+  'Role',
+  'Permission',
+  'UserRole',
+  'RolePermission',
 ]);
 
 /**

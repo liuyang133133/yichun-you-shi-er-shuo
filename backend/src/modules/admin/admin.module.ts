@@ -8,24 +8,32 @@ import { AdminReportService } from './report/admin-report.service';
 import { AdminDashboardController } from './dashboard/admin-dashboard.controller';
 import { AdminDashboardService } from './dashboard/admin-dashboard.service';
 import { AdminCategoryController } from './category/admin-category.controller';
+import { AdminCompanyController } from './company/admin-company.controller';
+import { AdminCompanyService } from './company/admin-company.service';
 import { CategoryModule } from '../category/category.module';
 import { AdminGuard } from './guards/admin-auth.guard';
 import { AiUsageModule } from './ai-usage/ai-usage.module';
+// T-002: RBAC
+import { AdminRoleModule } from './role/admin-role.module';
+import { AdminPermissionModule } from './permission/admin-permission.module';
+import { RbacModule } from '../rbac/rbac.module';
 
 @Module({
-  imports: [CategoryModule, AiUsageModule],
+  imports: [CategoryModule, AiUsageModule, AdminRoleModule, AdminPermissionModule, RbacModule],
   controllers: [
     AdminPostController,
     AdminUserController,
     AdminReportController,
     AdminDashboardController,
     AdminCategoryController,
+    AdminCompanyController, // [P0-006] 公司认证
   ],
   providers: [
     AdminPostService,
     AdminUserService,
     AdminReportService,
     AdminDashboardService,
+    AdminCompanyService, // [P0-006]
     AdminGuard,
   ],
   exports: [AdminGuard],

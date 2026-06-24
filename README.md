@@ -48,6 +48,30 @@ T-001 已上线：18 张业务表统一添加 `deletedAt` / `createdBy` / `updat
 **Cron 清理**：
 - `POST /api/v1/admin/posts/purge` — 硬清 30 天前软删的 post（不可恢复）
 
+## RBAC（T-002）
+
+T-002 已上线：4 张 RBAC 表 + 5 预置角色 + 32 权限码 + 62 关联。
+
+**核心机制**：
+- `@RequirePermission('post.audit.pass')` 装饰器 + `PermissionGuard` 守卫
+- `RbacService.getUserPermissions(userId)` 查用户拥有的所有权限码
+- super_admin 短路：自动拥有全部 32 个权限
+- 兼容期 1 个月：`User.role` 字符串字段保留，与 `UserRole` 表并存
+
+**预置角色**：
+- `super_admin` — 全部权限
+- `content_auditor` — 帖子 / 评论 / 举报 (12 权限)
+- `customer_service` — 用户 / 评论 / 举报 (7 权限)
+- `finance` — post.view + dashboard.view (2 权限)
+- `operator` — Banner / 公告 / 推送 / 仪表盘 (9 权限)
+
+**Admin 端点**：
+- `GET /api/v1/admin/roles` — 角色列表
+- `PUT /api/v1/admin/roles/:id/permissions` — 全量替换角色权限
+- `GET /api/v1/admin/permissions` — 权限码列表
+- `POST /api/v1/admin/users/:id/roles` — 分配角色
+- `DELETE /api/v1/admin/users/:id/roles/:roleId` — 撤销角色
+
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/DATABASE.md](docs/DATABASE.md)。
 
 ## 文档
