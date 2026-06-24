@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PostService {
+  private readonly logger = new Logger(PostService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -46,9 +47,39 @@ export class PostService {
     } = query;
 
     const where: Prisma.PostWhereInput = { type, status };
-    if (categoryId) where.categoryId = BigInt(categoryId);
+    let categoryOrFilter: Prisma.PostWhereInput[] | undefined;
+    if (categoryId) {
+      // [Bug fix] 子类目过滤：兼容父类目直接挂的旧数据
+      // 若请求的是子分类（parentId 非空），同时匹配父分类下的所有帖子
+      // 这样历史 categoryId=父级 的帖子也能在子 tab 里展示
+      const cat = await this.prisma.category.findUnique({
+        where: { id: BigInt(categoryId) },
+        select: { id: true, parentId: true },
+      });
+      if (cat?.parentId) {
+        categoryOrFilter = [
+          { categoryId: cat.id },
+          { categoryId: cat.parentId },
+        ];
+      } else {
+        categoryOrFilter = [{ categoryId: cat?.id ?? BigInt(categoryId) }];
+      }
+    }
     if (areaId) where.areaId = BigInt(areaId);
-    if (keyword) {
+    // 合并 categoryId 子过滤和 keyword 子过滤
+    if (categoryOrFilter && keyword) {
+      where.AND = [
+        { OR: categoryOrFilter },
+        {
+          OR: [
+            { title: { contains: keyword } },
+            { description: { contains: keyword } },
+          ],
+        },
+      ];
+    } else if (categoryOrFilter) {
+      where.OR = categoryOrFilter;
+    } else if (keyword) {
       where.OR = [
         { title: { contains: keyword } },
         { description: { contains: keyword } },
@@ -240,11 +271,28 @@ export class PostService {
     if (post.status === 'expired' || post.status === 'sold') {
       throw new ForbiddenException(`该信息已${post.status === 'sold' ? '成交' : '过期'},无法查看联系方式`);
     }
-    // requesterId 必须是 bigint(由 controller 传 JWT 解析)
-    if (post.userId === requesterId) {
-      // 作者本人 — 直接返回(无需额外校验)
+
+    // [P0-004] 限频：同一用户查看同一 post 的联系方式，1 小时内最多 1 次
+    const rateKey = `contact:${requesterId}:${id}:1h`;
+    const isFirst = await this.redis.setNxEx(rateKey, '1', 3600);
+    // 仅首次记录（不阻断后续请求），并审计到 AuditLog
+    if (isFirst && post.userId !== requesterId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            adminUserId: requesterId, // 用 viewer userId 标记（非 admin）
+            module: 'post',
+            action: 'view_contact',
+            targetType: 'post',
+            targetId: id,
+            reason: `viewer=${requesterId} owner=${post.userId}`,
+          },
+        });
+      } catch (e) {
+        this.logger.warn(`[P0-004] audit log failed: ${(e as Error).message}`);
+      }
     }
-    // TODO V1.1: 记录 contact 行为到 AuditLog(谁看了谁的联系方式)
+
     return {
       id: post.id.toString(),
       contactName: post.contactName,
@@ -261,29 +309,13 @@ export class PostService {
    */
   async create(userId: bigint, dto: CreatePostDto) {
     // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
+    // [P1-007] 移到事务内，消除 read-then-write race window
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    const dup = await this.prisma.post.findFirst({
-      where: {
-        userId,
-        title: dto.title,
-        createdAt: { gte: oneDayAgo },
-      },
-      select: { id: true },
-    });
-    if (dup) {
-      throw new HttpException(
-        {
-          code: 'DUPLICATE_POST',
-          message: '1 天内已发过相同标题的帖子',
-          existingPostId: dup.id.toString(),
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     // ===== SHOULD-9: 新用户 24h 内仅能 POST 1 条 post =====
-    await this.registerThrottle.assertCanPost(userId);
+    // [P1-014] 先 check（不预占），事务成功后再 recordPostAttempt INCR
+    await this.registerThrottle.checkPostEligibility(userId);
 
     // ===== 预校验（事务外，避免无谓占连接） =====
     const category = await this.prisma.category.findUnique({
@@ -319,6 +351,29 @@ export class PostService {
     // ===== 事务：主表 + 4 type 之一子表 =====
     const { detail } = dto;
     const post = await this.prisma.$transaction(async (tx) => {
+      // [P1-007] 重复检测在事务内执行，杜绝并发竞态
+      const dup = await tx.post.findFirst({
+        where: {
+          userId,
+          title: dto.title,
+          createdAt: { gte: oneDayAgo },
+        },
+        select: { id: true },
+      });
+      if (dup) {
+        throw new HttpException(
+          {
+            code: 'DUPLICATE_POST',
+            message: '1 天内已发过相同标题的帖子',
+            existingPostId: dup.id.toString(),
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // [P1-014] post-success 配额占用（仅事务内创建后才 INCR；失败回滚无副作用）
+      await this.registerThrottle.recordPostAttempt(userId);
+
       const created = await tx.post.create({
         data: {
           userId,
@@ -482,7 +537,9 @@ export class PostService {
     });
 
     // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
-    this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+    this.redis.invalidatePattern('cache:posts:*').catch((e) =>
+      this.logger.warn(`[P1-019] invalidatePattern failed: ${e.message}`),
+    );
 
     // T-27: 异步触发 (不阻塞响应) — fire-and-forget score + seo
     setImmediate(() => {
@@ -501,7 +558,7 @@ export class PostService {
    * 由 setImmediate 触发, fire-and-forget, 错误不抛
    */
   private async triggerPostPublishAi(postId: bigint, userId: bigint, dto: any) {
-    // 1) 算质量分 → 写 Post.qualityScore
+    // 1) 算质量分 → 写 Post.qualityScore（[P1-011] 仅在解析成功时写库）
     try {
       const scoreResult = await this.aiService.score(userId, {
         type: dto.type,
@@ -509,25 +566,28 @@ export class PostService {
         description: dto.description,
         fields: dto.fields ?? {},
       });
-      await this.prisma.post.update({
-        where: { id: postId },
-        data: { qualityScore: scoreResult.score },
-      });
+      // [P1-011] parseScoreJson 解析失败时返回 null，AI service 已 throw；
+      // 这里仅在拿到有效分数时写库
+      if (scoreResult && typeof scoreResult.score === 'number') {
+        await this.prisma.post.update({
+          where: { id: postId },
+          data: { qualityScore: scoreResult.score },
+        });
+      } else {
+        this.logger.warn(`[P1-011] AI score parse failed for post ${postId}, skip DB write`);
+      }
     } catch (e: any) {
-      // eslint-disable-next-line no-console
-      console.warn(`score failed for post ${postId}:`, e?.message);
+      this.logger.warn(`[P1-011] score failed for post ${postId}: ${e?.message}`);
     }
 
-    // 2) 生成 SEO meta → 写 Post.seoMeta (SeoService 内部已 update)
+    // 2) 生成 SEO meta → 写 Post.seoMeta
     try {
       const seoResult = await this.seoService.generateSeoMeta(postId);
-      // eslint-disable-next-line no-console
-      console.log(
+      this.logger.log(
         `Post ${postId} 发布后 AI: score + seo="${seoResult.seoMeta?.metaTitle}"`,
       );
     } catch (e: any) {
-      // eslint-disable-next-line no-console
-      console.warn(`seo failed for post ${postId}:`, e?.message);
+      this.logger.warn(`[P1-011] seo failed for post ${postId}: ${e?.message}`);
     }
   }
 
@@ -581,13 +641,18 @@ export class PostService {
       },
     }).then((post) => {
       // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
-      this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+      this.redis.invalidatePattern('cache:posts:*').catch((e) =>
+      this.logger.warn(`[P1-019] invalidatePattern failed: ${e.message}`),
+    );
       return post;
     });
   }
 
   /**
-   * 软删除（status='deleted'）
+   * 软删除（status='deleted' + T-001 deletedAt）
+   * - 主表：写 status='deleted' + deletedAt=now() + deletedBy=userId + updatedBy=userId
+   * - 子表：硬删（house/secondhand/job/lifebiz/image 是 1:1 子表，删除后无意义保留）
+   * - 中间件会自动过滤掉 deletedAt 非空的记录，list 不再返回
    */
   async remove(userId: bigint, id: bigint) {
     const post = await this.prisma.post.findUnique({ where: { id } });
@@ -597,17 +662,33 @@ export class PostService {
     if (post.userId !== userId) {
       throw new ForbiddenException('只能删除自己的信息');
     }
-    await this.prisma.post.update({
-      where: { id },
-      data: { status: 'deleted' },
-    });
-    // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
-    this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+    // [P1-018] 事务：主表软删 + 4 个子表全部硬删 + 图片
+    await this.prisma.$transaction([
+      this.prisma.post.update({
+        where: { id },
+        data: {
+          status: 'deleted',
+          deletedAt: new Date(),
+          deletedBy: userId,
+          updatedBy: userId,
+        },
+      }),
+      this.prisma.postHouse.deleteMany({ where: { postId: id } }),
+      this.prisma.postSecondhand.deleteMany({ where: { postId: id } }),
+      this.prisma.postJob.deleteMany({ where: { postId: id } }),
+      this.prisma.postLifebiz.deleteMany({ where: { postId: id } }),
+      this.prisma.postImage.deleteMany({ where: { postId: id } }),
+    ]);
+    // SHOULD-7: 写操作清列表缓存
+    this.redis.invalidatePattern('cache:posts:*').catch((e) =>
+      this.logger.warn(`[P1-019] invalidatePattern failed: ${e.message}`),
+    );
     return { id: id.toString(), deleted: true };
   }
 
   /**
    * 改状态（在售 / 已售 / 过期 / 重新上架）
+   * [P1-009] 状态机白名单：拒绝 rejected/deleted 绕过审核直接 active
    */
   async changeStatus(userId: bigint, id: bigint, newStatus: 'active' | 'sold' | 'expired') {
     const post = await this.prisma.post.findUnique({ where: { id } });
@@ -617,12 +698,38 @@ export class PostService {
     if (post.userId !== userId) {
       throw new ForbiddenException('只能修改自己的信息状态');
     }
+
+    // [P1-009] 状态机白名单
+    const currentStatus = post.status as string;
+    const ALLOWED: Record<string, string[]> = {
+      pending: ['active'],          // 审核中 → 在售（审核通过由 admin 走）
+      active: ['active', 'sold', 'expired'],
+      sold: ['active'],              // 已售 → 重新上架
+      expired: ['active'],           // 过期 → 重新上架
+      rejected: [],                  // 拒绝后必须重新发布，不能直接 active
+      deleted: [],                   // 已删除不能恢复
+    };
+    const allowed = ALLOWED[currentStatus] || [];
+    if (!allowed.includes(newStatus)) {
+      throw new BadRequestException(
+        `状态 ${currentStatus} 不能转为 ${newStatus}；允许的转换: ${allowed.join('/') || '无'}`,
+      );
+    }
+    // 已通过的帖子才能上 active（已审核状态）
+    if (newStatus === 'active' && currentStatus !== 'active' && post.auditStatus !== 'passed') {
+      throw new BadRequestException(
+        `帖子未通过审核（当前审核状态: ${post.auditStatus}），无法上架`,
+      );
+    }
+
     return this.prisma.post.update({
       where: { id },
       data: { status: newStatus },
     }).then((post) => {
-      // SHOULD-7: 写操作清列表缓存，避免用户改完看到 stale 数据
-      this.redis.invalidatePattern('cache:posts:*').catch(() => {});
+      // SHOULD-7: 写操作清列表缓存
+      this.redis.invalidatePattern('cache:posts:*').catch((e) =>
+        this.logger.warn(`[P1-019] invalidatePattern failed: ${e.message}`),
+      );
       return post;
     });
   }
@@ -632,11 +739,12 @@ export class PostService {
    */
   async findMyPosts(
     userId: bigint,
-    options: { status?: string; page?: number; pageSize?: number } = {},
+    options: { status?: string; type?: string; page?: number; pageSize?: number } = {},
   ) {
-    const { status, page = 1, pageSize = 20 } = options;
+    const { status, type, page = 1, pageSize = 20 } = options;
     const where: Prisma.PostWhereInput = { userId };
     if (status) where.status = status;
+    if (type) where.type = type; // [P1-010] 支持按 type 过滤
 
     const skip = (page - 1) * pageSize;
     const [list, total] = await Promise.all([
@@ -654,6 +762,20 @@ export class PostService {
     ]);
 
     return { list, total, page, pageSize };
+  }
+
+  /**
+   * [P1-005/P1-013] 个人中心聚合统计 — 一次查询，无分页扫描
+   */
+  async getMyStats(userId: bigint) {
+    const [postsCount, commentsCount] = await Promise.all([
+      this.prisma.post.count({ where: { userId } }),
+      // 直接统计我所有 post 收到的留言数（不依赖分页 pageSize:100）
+      this.prisma.comment.count({
+        where: { post: { userId }, status: 0 },
+      }),
+    ]);
+    return { postsCount, commentsCount };
   }
 
   /**

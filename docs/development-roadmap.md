@@ -2,8 +2,26 @@
 
 > **项目**：伊春有事儿说（V1.0 MVP → V1.1 → V2）
 > **创建日期**：2026-06-11
-> **配套文档**：[audit-report-2026-06-11.md](./audit-report-2026-06-11.md) | [project-memory.md](./project-memory.md) | [ARCHITECTURE.md](./ARCHITECTURE.md)
+> **最后更新**：2026-06-24（T-001 软删除 + 审计字段 完成）
+> **配套文档**：
+> - [PRD.md](./PRD.md) — 产品需求
+> - [DATABASE.md](./DATABASE.md) — 数据库设计
+> - [TASKS.md](./TASKS.md) — 任务清单
+> - [CHANGELOG.md](../CHANGELOG.md) — 变更日志
+> - [TODO.md](../TODO.md) — 详细开发任务清单（52 项）
+> - [audit-report-2026-06-11.md](./audit-report-2026-06-11.md) — 审计快照
+> - [project-memory.md](./project-memory.md) — 项目记忆（最详尽）
+> - [ARCHITECTURE.md](./ARCHITECTURE.md) — 架构基线
+> - [index.md](./index.md) — 文档入口
 > **更新频率**：每完成一个 P0/P1 项，更新一次本表
+
+---
+
+## 最近完成（T-001）
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|---|---|---|---|
+| T-001 软删除 + 审计字段 | ✅ 完成 | 2026-06-24 | 18 张业务表 + 中间件 + admin UI + 17 单元测试 + 2 E2E |
 
 ---
 
@@ -161,7 +179,7 @@
 
 **上线标准**：
 - ✅ 25 项 P0 全部完成
-- 🟡 P1 关键 20 项:**已 20/20** 🎉(Sprint 1+2+3+4+5+6 共 22 任务 + 1 bugfix,全完成)
+- ✅ P1 关键 20 项：**已 20/20** 🎉（Sprint 1+2+3+4+5+6 共 22 任务 + 1 bugfix,全完成）
 - ✅ admin/ 后台可日常运营
 - ✅ 生产部署稳定
 - ✅ CAPTCHA / 注册限频 / 新用户 1 帖/24h
@@ -171,6 +189,17 @@
 - ⏳ 单元测试 / 真部署(后续 Sprint)
 
 > **2026-06-12 P1 关键 20/20 收官** 🎉:SHOULD-1/3/4/6/7/9/11/15/16/19/20/23/27/30/31/36/38/39/40/41/42 + MUST-25 = 20 项全完。Sprint 1+2+3+4+5+6 共 18 commit 全部 push origin/main。Sprint 4 修 1 历史 bug。Sprint 5 (SHOULD-9) 7/7 smoke PASS。Sprint 6 (SHOULD-20/23) 6/6 smoke PASS。
+
+### Week 12+：V1.0 收官手动阻塞（4 项运维动作）
+
+| ID | 任务 | 工时 | 阻塞点 | 操作文档 |
+|---|---|---|---|---|
+| **B-1** | MySQL 密码轮换 | 0.5h | 还在用初始 `yichun123456` | `openssl rand -hex 16` → 同步 .env → `down -v && up -d && migrate` |
+| **B-2** | 生产环境启动 | 1h | docker-compose.prod.yml 未实测 | `cp .env.prod.example .env.prod` 填值 → `compose -f prod up -d` → `migrate deploy` |
+| **B-3** | HTTPS 证书 | 1h | 443 server 块未启 | Let's Encrypt 签发 → 启用 nginx 443 block |
+| **B-4** | Admin 业务流端到端 | 1h | 未真实跑过 admin 登录 | seed admin 账号 → login → /admin/dashboard 200 → /admin/posts 审核 |
+
+> **2026-06-15 PM 评估**：4 项全部为运维操作，PM 出 Claude 任务书 + Codex 审查书。详见 [TASKS.md §6](./TASKS.md)。
 
 ---
 
@@ -327,5 +356,5 @@
 
 ---
 
-**最后更新**：2026-06-11（首版）
-**下次更新**：完成 MUST-1 后
+**最后更新**：2026-06-15（PM 文档体系补全：新增 PRD/DATABASE/TASKS/CHANGELOG；Week 12+ 收官手动阻塞节；状态评估同步到 6 月 15 日）
+**下次更新**：完成 B-1~B-4 任一项后

@@ -18,7 +18,7 @@ export class AdminPostController {
   /**
    * GET /api/v1/admin/posts
    * 帖子列表（带审核状态过滤）
-   *  query: auditStatus, type, page, pageSize
+   *  query: auditStatus, type, page, pageSize, includeDeleted
    */
   @Get()
   @ApiOperation({ summary: '管理后台-帖子列表' })
@@ -27,12 +27,14 @@ export class AdminPostController {
     @Query('type') type?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('includeDeleted') includeDeleted?: string,
   ) {
     return this.adminPostService.findAll({
       auditStatus,
       type,
       page: page ? parseInt(page, 10) : undefined,
       pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+      includeDeleted: includeDeleted === 'true' || includeDeleted === '1',
     });
   }
 
@@ -117,5 +119,18 @@ export class AdminPostController {
     @Body() body: { daysOld?: number } = {},
   ) {
     return this.adminPostService.purgeOldDeleted(BigInt(user.sub), body.daysOld ?? 30);
+  }
+
+  /**
+   * T-001: 恢复已软删的 post
+   * POST /api/v1/admin/posts/:id/restore
+   */
+  @Post(':id/restore')
+  @ApiOperation({ summary: '恢复已软删的帖子' })
+  restore(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.adminPostService.restore(BigInt(user.sub), BigInt(id));
   }
 }

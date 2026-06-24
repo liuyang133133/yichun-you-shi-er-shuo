@@ -9,15 +9,18 @@ export class AdminPostService {
   /**
    * 帖子列表（带审核状态过滤）
    * GET /api/v1/admin/posts
+   * T-001: 支持 includeDeleted=true 查看已软删的帖子
    */
   async findAll(query: {
     auditStatus?: string;
     type?: string;
     page?: number;
     pageSize?: number;
+    includeDeleted?: boolean;
   }) {
-    const { auditStatus, type, page = 1, pageSize = 20 } = query;
-    const where: Prisma.PostWhereInput = {};
+    const { auditStatus, type, page = 1, pageSize = 20, includeDeleted = false } = query;
+    // T-001: includeDeleted 会被中间件识别并删除（Prisma 类型系统未知此字段，故 as any）
+    const where: any = { includeDeleted: includeDeleted || undefined };
     if (auditStatus) where.auditStatus = auditStatus;
     if (type) where.type = type;
 
@@ -35,7 +38,50 @@ export class AdminPostService {
       }),
       this.prisma.post.count({ where }),
     ]);
-    return { list, total, page, pageSize };
+    return { list, total, page, pageSize, includeDeleted };
+  }
+
+  /**
+   * T-001: 恢复已软删的帖子
+   * POST /api/v1/admin/posts/:id/restore
+   * - 仅当 deletedAt 非空时才能恢复
+   * - 恢复后 status 回到 'active'（业务状态）
+   * - 写 AuditLog
+   */
+  async restore(adminId: bigint, postId: bigint) {
+    // 1) 预查：需绕过中间件，includeDeleted=true
+    const post = await this.prisma.post.findFirst({
+      where: { id: postId, includeDeleted: true } as any,
+    });
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
+    if (!post.deletedAt) {
+      throw new BadRequestException('该信息未被软删，无需恢复');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.post.update({
+        where: { id: postId },
+        data: {
+          deletedAt: null,
+          deletedBy: null,
+          status: 'active',
+          updatedBy: adminId,
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          adminUserId: adminId,
+          module: 'post',
+          action: 'restore',
+          targetType: 'post',
+          targetId: postId,
+          reason: `从 ${post.deletedAt.toISOString()} 软删恢复`,
+          metadata: { previousDeletedBy: post.deletedBy?.toString() ?? null },
+        },
+      }),
+    ]);
+
+    return this.prisma.post.findUnique({ where: { id: postId } });
   }
 
   /**
@@ -111,7 +157,7 @@ export class AdminPostService {
   }
 
   /**
-   * 强制下架（MUST-25 修复：单事务 + AuditLog）
+   * 强制下架（MUST-25 修复：单事务 + AuditLog + T-001 软删）
    */
   async offline(adminId: bigint, postId: bigint, reason: string) {
     if (!reason) throw new BadRequestException('下架时必须填写理由');
@@ -125,7 +171,15 @@ export class AdminPostService {
         where: { id: postId },
         // 修复:offline 应设 status=deleted (PRD §4.2), 30 天后硬清 cron (line 266) 才能匹配
         // 此前写 'rejected' 会让强制下架的帖子永远不被清理
-        data: { status: 'deleted', auditStatus: 'rejected', auditReason: reasonText },
+        // T-001: 同时写 deletedAt/deletedBy/updatedBy 走软删除中间件
+        data: {
+          status: 'deleted',
+          auditStatus: 'rejected',
+          auditReason: reasonText,
+          deletedAt: new Date(),
+          deletedBy: adminId,
+          updatedBy: adminId,
+        },
       }),
       this.prisma.auditLog.create({
         data: {
@@ -230,9 +284,13 @@ export class AdminPostService {
       where: { id: { in: targetIds } },
       data: {
         // 同 offline 单条修复:status=deleted 让 30 天硬清 cron 命中
+        // T-001: 同时写 deletedAt/deletedBy/updatedBy
         status: 'deleted',
         auditStatus: 'rejected',
         auditReason: `[强制下架] ${reason}`,
+        deletedAt: new Date(),
+        deletedBy: adminId,
+        updatedBy: adminId,
       },
     });
 
