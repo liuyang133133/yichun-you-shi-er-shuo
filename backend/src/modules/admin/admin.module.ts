@@ -19,12 +19,15 @@ import { AdminPermissionModule } from './permission/admin-permission.module';
 import { RbacModule } from '../rbac/rbac.module';
 // T-005: 操作日志
 import { AdminAuditLogModule } from './audit-log/admin-audit-log.module';
+// T-006: 登录日志
+import { AdminLoginLogModule } from './login-log/admin-login-log.module';
 
 @Module({
   imports: [
     CategoryModule, AiUsageModule,
     AdminRoleModule, AdminPermissionModule,
     AdminAuditLogModule, // T-005
+    AdminLoginLogModule, // T-006
     RbacModule,
   ],
   controllers: [

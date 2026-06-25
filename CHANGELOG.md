@@ -2,7 +2,31 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] — T-005 后台操作日志查询页
+## [Unreleased] — T-006 后台登录日志查询页
+
+### Added
+- T-006: 新模块 `AdminLoginLogModule`：
+  - `AdminLoginLogService.findAll` - 6 筛选（userId/phone/ip/status/from/to）
+  - `AdminLoginLogService.findOne` - 详情
+  - `AdminLoginLogService.listOptions` - 下拉数据（status 分组）
+  - `AdminLoginLogService.detectAbnormalIps` - 异常 IP 检测（1h 内失败 ≥ 5 次）
+  - `AdminLoginLogService.exportCsv` - CSV 导出（10000 行限 + BOM + 10 字段）
+- T-006: API 端点：
+  - `GET /admin/login-logs` - 列表
+  - `GET /admin/login-logs/options` - 下拉数据
+  - `GET /admin/login-logs/abnormal-ips` - 异常 IP 列表
+  - `GET /admin/login-logs/export` - CSV 导出
+  - `GET /admin/login-logs/:id` - 详情
+- T-006: 后台新页面 `/admin/login-logs`（系统管理菜单）+ 6 筛选 + 异常 IP 红框高亮 + 失败行红色背景 + CSV 导出
+- T-006: 单元测试 `admin-login-log.service.spec.ts`（19 case：findAll / 6 筛选 / findOne / listOptions / detectAbnormalIps / exportCsv）
+- T-006: Playwright E2E `admin/e2e/admin-login-logs.spec.ts`（8 case：列表 / 6 筛选 / 异常 IP / 详情 / CSV / 登录失败触发）
+
+### Notes
+- 异常 IP 检测：默认窗口 1 小时，阈值 5 次失败
+- 前端每 60s 自动刷新异常 IP 列表
+- 失败行用红色背景 + 红框区分；成功行正常样式
+
+## [T-005] 后台操作日志查询页 (2026-06-25)
 
 ### Added
 - T-005: 数据库 `AuditLog` 加 5 字段：

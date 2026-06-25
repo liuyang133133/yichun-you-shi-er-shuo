@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare, Image as ImageIcon, Shield, KeyRound, UserCog, ClipboardList, ScrollText } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare, Image as ImageIcon, Shield, KeyRound, UserCog, ClipboardList, ScrollText, LogIn } from 'lucide-react';
 import { getUser, clearAuth, getToken, apiFetch } from '@/lib/api';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -17,12 +17,13 @@ const NAV = [
   { href: '/banners', label: 'Banner 运营', icon: ImageIcon },
 ];
 
-// T-004 + T-005: 系统管理子菜单
+// T-004 + T-005 + T-006: 系统管理子菜单
 const SYSTEM_NAV = [
   { href: '/roles', label: '角色管理', icon: Shield },
   { href: '/permissions', label: '权限管理', icon: KeyRound },
   { href: '/admin-users', label: '管理员列表', icon: UserCog },
   { href: '/audit-logs', label: '操作日志', icon: ClipboardList },
+  { href: '/login-logs', label: '登录日志', icon: LogIn },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
