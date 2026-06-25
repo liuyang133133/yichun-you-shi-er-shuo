@@ -21,12 +21,14 @@ export class AdminUserController {
 
   @Get()
   @RequirePermission('user.view')
+  @ApiOperation({ summary: '用户列表（T-004: withRoles=true 同时返回 RBAC 角色）' })
   findAll(
     @Query('keyword') keyword?: string,
     @Query('status') status?: string,
     @Query('role') role?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('withRoles') withRoles?: string,
   ) {
     return this.adminUserService.findAll({
       keyword,
@@ -34,6 +36,7 @@ export class AdminUserController {
       role,
       page: page ? parseInt(page, 10) : undefined,
       pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+      withRoles: withRoles === 'true' || withRoles === '1',
     });
   }
 

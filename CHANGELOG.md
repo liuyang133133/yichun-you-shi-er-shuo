@@ -2,7 +2,26 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] — T-003 RBAC 守卫改造（@Roles → @RequirePermission）
+## [Unreleased] — T-004 RBAC 后台 UI（角色 / 权限 / 管理员列表）
+
+### Added
+- T-004: 后台 3 个新页面 + 系统管理菜单分组
+  - `/admin/roles` - 角色管理（CRUD + 权限分配抽屉）
+  - `/admin/permissions` - 权限管理（只读视图，按模块分组）
+  - `/admin/admin-users` - 管理员列表（含 RBAC 角色展示 + 分配 / 撤销）
+- T-004: API 扩展 `GET /admin/users?withRoles=true` 一次性返回用户 RBAC 角色（避免 N+1）
+- T-004: 单元测试 `admin-user.service.spec.ts`（11 case，含 withRoles / ban / unban / AuditLog）
+- T-004: Playwright E2E `admin/e2e/admin-rbac-ui.spec.ts`（7 case，4 旅程 + 边界）
+
+### Changed
+- T-004: `admin-shell.tsx` 侧边栏加"系统管理"分组（roles / permissions / admin-users）
+- T-004: admin-users 页面用 `withRoles=true` 替代 N+1 fetch
+
+### Notes
+- 系统预置角色（isSystem=true）不可删除
+- 分配角色支持可选过期时间（V1.1 用：客服试用期）
+
+## [T-003] RBAC 守卫改造（@Roles → @RequirePermission） (2026-06-25)
 
 ### Added
 - T-003: 8 个新权限码 seed（共 40 个）：

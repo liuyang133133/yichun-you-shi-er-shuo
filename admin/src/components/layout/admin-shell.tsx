@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare } from 'lucide-react';
-import { getUser, clearAuth, getToken } from '@/lib/api';
+import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare, Image as ImageIcon, Shield, KeyRound, UserCog } from 'lucide-react';
+import { getUser, clearAuth, getToken, apiFetch } from '@/lib/api';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -14,6 +14,14 @@ const NAV = [
   { href: '/users', label: '用户管理', icon: Users },
   { href: '/reports', label: '举报处理', icon: Flag },
   { href: '/companies', label: '公司管理', icon: Building2 },
+  { href: '/banners', label: 'Banner 运营', icon: ImageIcon },
+];
+
+// T-004: 系统管理子菜单
+const SYSTEM_NAV = [
+  { href: '/roles', label: '角色管理', icon: Shield },
+  { href: '/permissions', label: '权限管理', icon: KeyRound },
+  { href: '/admin-users', label: '管理员列表', icon: UserCog },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -60,8 +68,32 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <div className="text-[10px] text-muted-foreground">管理后台</div>
           </div>
         </div>
-        <nav className="flex-1 px-2 py-3 space-y-0.5">
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
           {NAV.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href || pathname?.startsWith(item.href + '/');
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={clsx(
+                  'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors',
+                  active
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+
+          {/* T-004: 系统管理 分组 */}
+          <div className="pt-3 pb-1.5 px-3 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+            系统管理
+          </div>
+          {SYSTEM_NAV.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname?.startsWith(item.href + '/');
             return (
@@ -88,7 +120,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
+              // [P1-002] 先调后端 logout 把 token 加入黑名单，再清本地
+              try {
+                await apiFetch('/auth/logout', { method: 'POST' });
+              } catch {
+                // 失败也继续清本地（不影响 UX）
+              }
               clearAuth();
               router.replace('/login');
             }}
