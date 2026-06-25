@@ -2,7 +2,37 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] — T-004 RBAC 后台 UI（角色 / 权限 / 管理员列表）
+## [Unreleased] — T-005 后台操作日志查询页
+
+### Added
+- T-005: 数据库 `AuditLog` 加 5 字段：
+  - `beforeSnapshot` (Json) — 变更前快照
+  - `afterSnapshot` (Json) — 变更后快照
+  - `requestId` (VarChar 64) — 请求 ID（从 header `x-request-id` 或生成 UUID）
+  - `ip` (VarChar 45) — 客户端 IP（从 `x-forwarded-for` 或 socket）
+  - `userAgent` (VarChar 500) — User-Agent
+  - `@@index([createdAt])` — 按时间查询性能
+- T-005: 新模块 `AdminAuditLogModule`：
+  - `AdminAuditLogService.findAll` — 7 筛选 + 列表 + 排序
+  - `AdminAuditLogService.findOne` — 详情
+  - `AdminAuditLogService.listModules` — 下拉数据（modules/actions/targetTypes）
+  - `AdminAuditLogService.exportCsv` — CSV 导出（含 BOM + 16 字段 + 10000 行限）
+- T-005: `AuditLogWriter` 服务 — 自动从 `@Inject(REQUEST)` 填充 ip/userAgent/requestId
+- T-005: 后台新页面 `/admin/audit-logs`（系统管理菜单）+ 7 筛选 + 详情抽屉 + CSV 导出
+- T-005: API 端点：
+  - `GET /admin/audit-logs` — 列表
+  - `GET /admin/audit-logs/options` — 下拉数据
+  - `GET /admin/audit-logs/export` — CSV
+  - `GET /admin/audit-logs/:id` — 详情
+- T-005: 单元测试 `admin-audit-log.service.spec.ts`（17 case：findAll / 7 筛选 / findOne / listModules / exportCsv）
+- T-005: Playwright E2E `admin/e2e/admin-audit-logs.spec.ts`（8 case：列表 + 7 筛选 + 详情 + CSV）
+
+### Notes
+- 现有 AuditLog 写入点（~12 处）暂未迁移到 AuditLogWriter，新字段对历史数据为 NULL
+- CSV 导出限 10000 行（防 OOM），超出会被截断
+- BOM (`﻿`) 让 Excel 正确识别 UTF-8 编码
+
+## [T-004] RBAC 后台 UI（角色 / 权限 / 管理员列表） (2026-06-25)
 
 ### Added
 - T-004: 后台 3 个新页面 + 系统管理菜单分组

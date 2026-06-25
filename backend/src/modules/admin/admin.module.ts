@@ -17,23 +17,30 @@ import { AiUsageModule } from './ai-usage/ai-usage.module';
 import { AdminRoleModule } from './role/admin-role.module';
 import { AdminPermissionModule } from './permission/admin-permission.module';
 import { RbacModule } from '../rbac/rbac.module';
+// T-005: 操作日志
+import { AdminAuditLogModule } from './audit-log/admin-audit-log.module';
 
 @Module({
-  imports: [CategoryModule, AiUsageModule, AdminRoleModule, AdminPermissionModule, RbacModule],
+  imports: [
+    CategoryModule, AiUsageModule,
+    AdminRoleModule, AdminPermissionModule,
+    AdminAuditLogModule, // T-005
+    RbacModule,
+  ],
   controllers: [
     AdminPostController,
     AdminUserController,
     AdminReportController,
     AdminDashboardController,
     AdminCategoryController,
-    AdminCompanyController, // [P0-006] 公司认证
+    AdminCompanyController,
   ],
   providers: [
     AdminPostService,
     AdminUserService,
     AdminReportService,
     AdminDashboardService,
-    AdminCompanyService, // [P0-006]
+    AdminCompanyService,
     AdminGuard,
   ],
   exports: [AdminGuard],

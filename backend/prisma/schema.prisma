@@ -552,21 +552,28 @@ model Message {
 // 操作审计日志（MUST-16）
 // =====================================================
 model AuditLog {
-  id          BigInt   @id @default(autoincrement())
-  adminUserId BigInt   @map("admin_user_id")
-  module      String   @db.VarChar(50)
-  action      String   @db.VarChar(50)
-  targetType  String   @map("target_type") @db.VarChar(30)
-  targetId    BigInt?  @map("target_id")
-  reason      String?  @db.VarChar(500)
-  metadata    Json?
-  createdAt   DateTime @default(now()) @map("created_at")
+  id             BigInt   @id @default(autoincrement())
+  adminUserId    BigInt   @map("admin_user_id")
+  module         String   @db.VarChar(50)
+  action         String   @db.VarChar(50)
+  targetType     String   @map("target_type") @db.VarChar(30)
+  targetId       BigInt?  @map("target_id")
+  reason         String?  @db.VarChar(500)
+  metadata       Json?
+  // T-005: 请求上下文 + 变更快照
+  beforeSnapshot Json?    @map("before_snapshot")
+  afterSnapshot  Json?    @map("after_snapshot")
+  requestId      String?  @map("request_id") @db.VarChar(64)
+  ip             String?  @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at")
 
   admin User @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
 
   @@index([adminUserId, createdAt])
   @@index([module, action, createdAt])
   @@index([targetType, targetId])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 

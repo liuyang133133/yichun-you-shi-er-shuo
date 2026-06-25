@@ -139,7 +139,7 @@
 
 ---
 
-## T-005 后台 — 操作日志查询页
+## T-005 后台 — 操作日志查询页 [x] ✅ 2026-06-25
 
 | 字段 | 内容 |
 |---|---|
@@ -147,10 +147,10 @@
 | 优先级 | P0 |
 | 依赖 | T-002 |
 | 阻塞 | — |
-| 影响数据库 | `AuditLog` 加 `beforeSnapshot` `afterSnapshot` `requestId` `ip` `userAgent` |
-| 影响 API | `GET /admin/audit-logs?module=&action=&adminUserId=&targetType=&targetId=&from=&to=&page=&pageSize=` + 导出 CSV |
+| 影响数据库 | `AuditLog` 加 `beforeSnapshot` `afterSnapshot` `requestId` `ip` `userAgent` + `@@index([createdAt])` |
+| 影响 API | `GET /admin/audit-logs` (7 筛选) + `GET /admin/audit-logs/:id` + `GET /admin/audit-logs/options` + `GET /admin/audit-logs/export` (CSV) |
 | 影响前端 | 无 |
-| 影响后台 | 新菜单"操作日志"（列表 + 筛选 + 详情抽屉 + 导出按钮） |
+| 影响后台 | 新菜单"操作日志"（列表 + 7 筛选 + 详情抽屉 + CSV 导出） |
 | 风险等级 | 🟠 高（合规要求） |
 | 预计开发 | 2 PD |
 | 预计测试 | 1 PD |
