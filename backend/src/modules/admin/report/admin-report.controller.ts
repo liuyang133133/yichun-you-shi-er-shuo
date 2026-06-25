@@ -3,14 +3,22 @@ import { AdminReportService } from './admin-report.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user.decorator';
 import { AdminGuard } from '../guards/admin-auth.guard';
+import { PermissionGuard } from '../../rbac/guards/permission.guard';
+import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
 
+/**
+ * T-003: @RequirePermission 装饰
+ * - report.view (GET)
+ * - report.handle (POST handle)
+ */
 @Controller('admin/reports')
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, PermissionGuard)
 @Roles('admin')
 export class AdminReportController {
   constructor(private readonly adminReportService: AdminReportService) {}
 
   @Get()
+  @RequirePermission('report.view')
   findAll(
     @Query('status') status?: string,
     @Query('page') page?: string,
@@ -24,6 +32,7 @@ export class AdminReportController {
   }
 
   @Post(':id/handle')
+  @RequirePermission('report.handle')
   handle(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,

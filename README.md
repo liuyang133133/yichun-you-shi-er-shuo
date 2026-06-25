@@ -72,6 +72,63 @@ T-002 已上线：4 张 RBAC 表 + 5 预置角色 + 32 权限码 + 62 关联。
 - `POST /api/v1/admin/users/:id/roles` — 分配角色
 - `DELETE /api/v1/admin/users/:id/roles/:roleId` — 撤销角色
 
+## RBAC 守卫改造（T-003）
+
+T-003 已上线：所有 `/admin/*` 端点加细粒度 `@RequirePermission` 装饰器 + 双层守卫（`AdminGuard` + `PermissionGuard`）。
+
+**核心机制**：
+- 每个端点必须显式声明 `@RequirePermission('post.audit.pass')` 才能被调用
+- super_admin 短路：自动通过任意端点（不查 DB）
+- 无权限 → 抛 403，前端 `api.ts` 显示 `[403] 需要权限: post.audit.pass`
+
+**40 个权限码**（T-002 32 + T-003 新增 8）：
+- 帖子 (8) / 评论 (2) / 举报 (2) / 用户 (5)
+- 角色 (4) / 权限 (1)
+- 公告 (4) / Banner (3)
+- **分类 (4) T-003 新增** / **公司 (3) T-003 新增**
+- 日志 (3) / 仪表盘 (1)
+
+**兼容期**：`@Roles('admin')` 装饰器保留 1 个月（2026-07-25 截止），便于旧代码平滑迁移。
+
+**端点权限码速查**：
+
+| 模块 | 端点 | 权限码 |
+|---|---|---|
+| 帖子 | GET /admin/posts | `post.view` |
+| 帖子 | POST /admin/posts/:id/audit | `post.audit.pass` / `post.audit.reject` |
+| 帖子 | POST /admin/posts/:id/offline | `post.offline` |
+| 帖子 | POST /admin/posts/audit-batch | `post.audit.batch` |
+| 帖子 | POST /admin/posts/offline-batch | `post.offline.batch` |
+| 帖子 | POST /admin/posts/purge | `post.purge` |
+| 帖子 | POST /admin/posts/:id/restore | `post.restore` |
+| 举报 | GET /admin/reports | `report.view` |
+| 举报 | POST /admin/reports/:id/handle | `report.handle` |
+| 用户 | GET /admin/users | `user.view` |
+| 用户 | POST /admin/users/:id/ban | `user.ban` |
+| 用户 | POST /admin/users/:id/unban | `user.unban` |
+| 用户 | GET /admin/users/:id/roles | `user.viewRoles` |
+| 用户 | POST /admin/users/:id/roles | `user.assignRole` |
+| 用户 | DELETE /admin/users/:id/roles/:roleId | `user.assignRole` |
+| 角色 | GET /admin/roles | `role.view` |
+| 角色 | POST /admin/roles | `role.create` |
+| 角色 | PATCH /admin/roles/:id | `role.update` |
+| 角色 | DELETE /admin/roles/:id | `role.delete` |
+| 角色 | PUT /admin/roles/:id/permissions | `role.update` |
+| 权限 | GET /admin/permissions | `permission.view` |
+| 公告 | GET /admin/announcements | `announcement.view` |
+| 公告 | POST /admin/announcements | `announcement.create` |
+| 公告 | PATCH /admin/announcements/:id | `announcement.update` |
+| 公告 | DELETE /admin/announcements/:id | `announcement.delete` |
+| 分类 | GET /admin/categories | `category.view` |
+| 分类 | POST /admin/categories | `category.create` |
+| 分类 | PATCH /admin/categories/:id | `category.update` |
+| 分类 | DELETE /admin/categories/:id | `category.delete` |
+| 公司 | GET /admin/companies | `company.view` |
+| 公司 | POST /admin/companies/:id/verify | `company.verify` |
+| 公司 | POST /admin/companies/:id/unverify | `company.unverify` |
+| 仪表盘 | GET /admin/dashboard | `dashboard.view` |
+| AI 用量 | GET /admin/ai-usage/stats | `aiUsage.view` |
+
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/DATABASE.md](docs/DATABASE.md)。
 
 ## 文档

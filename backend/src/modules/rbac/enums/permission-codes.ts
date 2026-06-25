@@ -37,6 +37,7 @@ export const PermissionCodes = {
   // 权限
   PERMISSION_VIEW: 'permission.view',
   // 公告
+  ANNOUNCEMENT_VIEW: 'announcement.view',
   ANNOUNCEMENT_CREATE: 'announcement.create',
   ANNOUNCEMENT_UPDATE: 'announcement.update',
   ANNOUNCEMENT_DELETE: 'announcement.delete',
@@ -44,6 +45,15 @@ export const PermissionCodes = {
   BANNER_CREATE: 'banner.create',
   BANNER_UPDATE: 'banner.update',
   BANNER_DELETE: 'banner.delete',
+  // 分类 (T-003 新增)
+  CATEGORY_VIEW: 'category.view',
+  CATEGORY_CREATE: 'category.create',
+  CATEGORY_UPDATE: 'category.update',
+  CATEGORY_DELETE: 'category.delete',
+  // 公司 (T-003 新增)
+  COMPANY_VIEW: 'company.view',
+  COMPANY_VERIFY: 'company.verify',
+  COMPANY_UNVERIFY: 'company.unverify',
   // 日志
   AUDIT_LOG_VIEW: 'auditLog.view',
   LOGIN_LOG_VIEW: 'loginLog.view',

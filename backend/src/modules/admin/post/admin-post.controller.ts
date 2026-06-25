@@ -6,11 +6,18 @@ import { AdminPostService } from './admin-post.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user.decorator';
 import { AdminGuard } from '../guards/admin-auth.guard';
+import { PermissionGuard } from '../../rbac/guards/permission.guard';
+import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
 
+/**
+ * T-003: 所有端点已加 @RequirePermission 细粒度权限
+ * - @Roles('admin') 兼容保留 1 个月
+ * - super_admin 角色自动通过（PermissionGuard 短路）
+ */
 @ApiTags('admin')
 @ApiBearerAuth('JWT')
 @Controller('admin/posts')
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, PermissionGuard)
 @Roles('admin')
 export class AdminPostController {
   constructor(private readonly adminPostService: AdminPostService) {}
@@ -21,6 +28,7 @@ export class AdminPostController {
    *  query: auditStatus, type, page, pageSize, includeDeleted
    */
   @Get()
+  @RequirePermission('post.view')
   @ApiOperation({ summary: '管理后台-帖子列表' })
   findAll(
     @Query('auditStatus') auditStatus?: string,
@@ -40,10 +48,11 @@ export class AdminPostController {
 
   /**
    * POST /api/v1/admin/posts/:id/audit
-   * 审核通过
-   * body: { reason?: string }
+   * 审核通过 / 拒绝（任一权限满足即可）
+   * body: { action: 'pass' | 'reject'; reason?: string }
    */
   @Post(':id/audit')
+  @RequirePermission('post.audit.pass', 'post.audit.reject')
   @ApiOperation({ summary: '审核通过/拒绝帖子' })
   audit(
     @CurrentUser() user: JwtPayload,
@@ -64,6 +73,7 @@ export class AdminPostController {
    * body: { reason: string }
    */
   @Post(':id/offline')
+  @RequirePermission('post.offline')
   @ApiOperation({ summary: '强制下架帖子' })
   offline(
     @CurrentUser() user: JwtPayload,
@@ -79,6 +89,7 @@ export class AdminPostController {
    * body: { ids: string[]; action: 'pass' | 'reject'; reason?: string }
    */
   @Post('audit-batch')
+  @RequirePermission('post.audit.batch')
   @ApiOperation({ summary: '批量审核帖子(pass/reject)' })
   auditBatch(
     @CurrentUser() user: JwtPayload,
@@ -99,6 +110,7 @@ export class AdminPostController {
    * body: { ids: string[]; reason: string }
    */
   @Post('offline-batch')
+  @RequirePermission('post.offline.batch')
   @ApiOperation({ summary: '批量强制下架帖子' })
   offlineBatch(
     @CurrentUser() user: JwtPayload,
@@ -113,6 +125,7 @@ export class AdminPostController {
    * 硬清 N 天前软删的 post(body: { daysOld?: number })
    */
   @Post('purge')
+  @RequirePermission('post.purge')
   @ApiOperation({ summary: '硬清 30 天前软删的 post' })
   purge(
     @CurrentUser() user: JwtPayload,
@@ -126,6 +139,7 @@ export class AdminPostController {
    * POST /api/v1/admin/posts/:id/restore
    */
   @Post(':id/restore')
+  @RequirePermission('post.restore')
   @ApiOperation({ summary: '恢复已软删的帖子' })
   restore(
     @CurrentUser() user: JwtPayload,

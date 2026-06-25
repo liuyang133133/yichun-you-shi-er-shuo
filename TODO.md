@@ -83,7 +83,23 @@
 
 ---
 
-## T-003 RBAC — 守卫改造（@Roles → @RequirePermission）
+## T-003 RBAC — 守卫改造（@Roles → @RequirePermission） [x] ✅ 2026-06-25
+
+| 字段 | 内容 |
+|---|---|
+| 任务ID | T-003 |
+| 优先级 | P0 |
+| 依赖 | T-002 |
+| 阻塞 | — |
+| 影响数据库 | 无（仅 seed 扩 8 个权限码 + operator 角色多 5 个码） |
+| 影响 API | 10 个 admin controller 全部加 `@RequirePermission`；`@Roles('admin')` 兼容保留 1 个月 |
+| 影响前端 | api.ts 加 403 错误处理（`[403] 权限不足`） |
+| 影响后台 | 配合 T-004 才能完整生效 |
+| 风险等级 | 🔴 极高 |
+| 预计开发 | 2 PD |
+| 预计测试 | 1 PD |
+| 回归测试 | ✅ 必做（35+ admin 端点） |
+| 验收标准 | (1) 所有 `/admin/*` 端点加 `@RequirePermission`；(2) 无权限返回 403；(3) 旧 `@Roles` 仍可用（兼容期 1 个月） |
 
 | 字段 | 内容 |
 |---|---|

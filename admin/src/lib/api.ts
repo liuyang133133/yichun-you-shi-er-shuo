@@ -60,6 +60,15 @@ export async function apiFetch<T = any>(
     }
     throw new Error('登录已过期，请重新登录');
   }
+
+  // T-003: 403 权限不足 — 抛带前缀的错误，让页面 .catch 显示
+  // 不重定向（已登录用户仅缺权限）
+  if (res.status === 403) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err?.message || '权限不足';
+    throw new Error(`[403] ${msg}`);
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message || `HTTP ${res.status}`);

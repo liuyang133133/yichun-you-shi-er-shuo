@@ -6,8 +6,8 @@ import { test, expect } from '@playwright/test';
  * 流程：
  *   1. 登录 admin
  *   2. 调 /admin/roles API 验证返回 5 预置角色
- *   3. 调 /admin/permissions 验证 32 个权限码
- *   4. 调 /admin/roles/1/permissions 验证 super_admin 拥有全部 32 个
+ *   3. 调 /admin/permissions 验证 40 个权限码 (T-003 新增 8 个)
+ *   4. 调 /admin/roles/1/permissions 验证 super_admin 拥有全部 40 个
  *   5. 调 /admin/users/1/roles 验证 admin 用户的角色
  *   6. POST /admin/users/1/roles { roleId: 2 } 给 admin 加 content_auditor
  *   7. 再次 GET 应见 2 个角色
@@ -48,13 +48,13 @@ test.describe('T-002 管理后台 - RBAC 角色 / 权限', () => {
     expect(codes).toContain('operator');
   });
 
-  test('2) GET /admin/permissions 返回 32 个权限码 + 12 个模块', async ({ request }) => {
+  test('2) GET /admin/permissions 返回 40 个权限码 (T-003 新增 8 个: category/company/announcement.view)', async ({ request }) => {
     const r = await request.get('/api/v1/admin/permissions', {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(r.ok()).toBeTruthy();
     const data = await r.json();
-    expect(data.data.total).toBe(32);
+    expect(data.data.total).toBe(40);
   });
 
   test('3) GET /admin/permissions/modules 分组', async ({ request }) => {
@@ -66,13 +66,13 @@ test.describe('T-002 管理后台 - RBAC 角色 / 权限', () => {
     expect(modules.data.length).toBeGreaterThanOrEqual(10);
   });
 
-  test('4) GET /admin/roles/1/permissions super_admin 有 32 个', async ({ request }) => {
+  test('4) GET /admin/roles/1/permissions super_admin 有 40 个', async ({ request }) => {
     const r = await request.get('/api/v1/admin/roles/1/permissions', {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(r.ok()).toBeTruthy();
     const data = await r.json();
-    expect(data.data.count).toBe(32);
+    expect(data.data.count).toBe(40);
   });
 
   test('5) GET /admin/users/1/roles admin 用户有 super_admin', async ({ request }) => {

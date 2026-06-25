@@ -391,6 +391,7 @@ async function seedRbac() {
     // 权限（permission）
     { code: 'permission.view',    module: 'permission', action: 'view', name: '查看权限' },
     // 公告（announcement）
+    { code: 'announcement.view',   module: 'announcement', action: 'view',   name: '查看公告' },
     { code: 'announcement.create', module: 'announcement', action: 'create', name: '创建公告' },
     { code: 'announcement.update', module: 'announcement', action: 'update', name: '更新公告' },
     { code: 'announcement.delete', module: 'announcement', action: 'delete', name: '删除公告' },
@@ -398,6 +399,15 @@ async function seedRbac() {
     { code: 'banner.create',      module: 'banner', action: 'create',   name: '创建 Banner' },
     { code: 'banner.update',      module: 'banner', action: 'update',   name: '更新 Banner' },
     { code: 'banner.delete',      module: 'banner', action: 'delete',   name: '删除 Banner' },
+    // 分类 (T-003)
+    { code: 'category.view',      module: 'category', action: 'view',    name: '查看分类' },
+    { code: 'category.create',    module: 'category', action: 'create',  name: '创建分类' },
+    { code: 'category.update',    module: 'category', action: 'update',  name: '更新分类' },
+    { code: 'category.delete',    module: 'category', action: 'delete',  name: '删除分类' },
+    // 公司 (T-003)
+    { code: 'company.view',       module: 'company',  action: 'view',    name: '查看公司' },
+    { code: 'company.verify',     module: 'company',  action: 'verify',  name: '认证公司' },
+    { code: 'company.unverify',   module: 'company',  action: 'unverify', name: '取消公司认证' },
     // 日志
     { code: 'auditLog.view',      module: 'auditLog', action: 'view',   name: '查看操作日志' },
     { code: 'loginLog.view',      module: 'loginLog', action: 'view',   name: '查看登录日志' },
@@ -442,8 +452,9 @@ async function seedRbac() {
     ],
     operator: [
       'post.view',
-      'announcement.create', 'announcement.update', 'announcement.delete',
+      'announcement.view', 'announcement.create', 'announcement.update', 'announcement.delete',
       'banner.create', 'banner.update', 'banner.delete',
+      'category.view', 'category.create', 'category.update', 'category.delete',
       'dashboard.view',
       'aiUsage.view',
     ],
