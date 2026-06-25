@@ -2,7 +2,39 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] — T-006 后台登录日志查询页
+## [Unreleased] — T-007 通知系统 — 数据库 + 后端服务
+
+### Added
+- T-007: 数据库 4 新表
+  - `NotificationTemplate` - 通知模板（含变量占位符 / enabled / priority）
+  - `Notification` - 用户通知（site 渠道 / readAt / 软删）
+  - `UserNotificationSetting` - 用户偏好（按 event 开关 / 静默时段 quietHours）
+  - `DeviceToken` - 推送设备 Token（platform / token / deviceId）
+- T-007: `NotificationService.emit()` — 8 类事件模板（comment / audit / order / auth / system / appeal / follow / invite）
+- T-007: 偏好降级：enabled=false 跳过；quietHours 内 priority < 4 自动降级到 1
+- T-007: `UserNotificationSettingService` - 8 类事件偏好增删改查
+- T-007: `DeviceTokenService` - register / unregister / list（V1.1 用于推送）
+- T-007: `NotificationModule` (@Global) — 其他模块可注入 `NotificationService.emit()`
+- T-007: 9 用户端 API：
+  - `GET /notifications/me` - 列表（unreadOnly + 分页）
+  - `GET /notifications/unread-count` - 未读数
+  - `POST /notifications/:id/read` - 标记已读
+  - `POST /notifications/read-all` - 全部已读
+  - `DELETE /notifications/:id` - 软删
+  - `GET /notifications/settings` - 偏好列表（8 类）
+  - `PUT /notifications/settings/:event` - 更新偏好
+  - `POST /devices/register` - 注册推送 Token
+  - `DELETE /devices/:token` - 注销 Token
+- T-007: 单元测试 `notification.service.spec.ts`（19 case：emit / 8 事件 / 偏好 / 静默时段 / 设备 Token）
+- T-007: Playwright E2E `notifications.spec.ts`（10 case：9 API + 401）
+
+### Notes
+- V1 简化：emit 同步写库（无 Bull Queue），启动性能足够
+- T-010 WebSocket 接入后扩展 Redis Pub/Sub 实时推送
+- `NotificationTemplate` 表预留字段（V1.1 实现模板编辑后台）
+- 8 类事件中 `order` / `follow` 占位（T-029 / T-044 实现）
+
+## [T-006] 后台登录日志查询页 (2026-06-25)
 
 ### Added
 - T-006: 新模块 `AdminLoginLogModule`：

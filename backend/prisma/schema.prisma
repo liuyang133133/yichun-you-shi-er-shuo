@@ -49,6 +49,10 @@ model User {
   messagesSent     Message[]        @relation("MessageSender")
   messagesReceived Message[]        @relation("MessageReceiver")
   userRoles        UserRole[]       @relation("UserRoles")
+  // T-007: 通知系统
+  notifications    Notification[]
+  notificationSettings UserNotificationSetting[]
+  deviceTokens     DeviceToken[]
 
   @@index([status, createdAt])
   @@index([role, status])
@@ -829,4 +833,113 @@ model RolePermission {
   @@index([permissionId])
   @@index([deletedAt])
   @@map("role_permissions")
+}
+
+// =====================================================
+// T-007: 通知系统
+// =====================================================
+
+/// 通知模板（admin 可编辑；含变量占位符 {{userName}}）
+model NotificationTemplate {
+  id         BigInt   @id @default(autoincrement())
+  /// 事件 code：comment / audit / order / auth / system / appeal / follow / invite
+  event      String   @db.VarChar(50)
+  /// 渠道：site（站内信）/ email / sms / push
+  channel    String   @db.VarChar(20)
+  /// 模板 key（unique within event+channel）
+  key        String   @db.VarChar(50)
+  title      String   @db.VarChar(200)
+  body       String   @db.Text
+  /// 变量定义（JSON: [{key, label, required}])
+  variables  Json?
+  /// 是否启用
+  enabled    Boolean  @default(true)
+  /// 默认优先级 1-5（5 最高）
+  priority   Int      @default(3)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  createdBy  BigInt?  @map("created_by")
+  updatedBy  BigInt?  @map("updated_by")
+  deletedBy  BigInt?  @map("deleted_by")
+
+  @@unique([event, channel, key], map: "uniq_event_channel_key")
+  @@index([event, channel])
+  @@index([deletedAt])
+  @@map("notification_templates")
+}
+
+/// 用户通知（写库即发）
+model Notification {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  /// 事件 code（8 类）
+  event       String   @db.VarChar(50)
+  /// 渠道（默认 site）
+  channel     String   @default("site") @db.VarChar(20)
+  title       String   @db.VarChar(200)
+  body        String   @db.Text
+  /// 关联资源（JSON: {type, id, url}）可空
+  payload     Json?
+  /// 1-5 优先级
+  priority    Int      @default(3)
+  /// 已读时间
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  /// T-001: 软删（用户主动删除通知）
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   BigInt? @map("deleted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+  @@index([deletedAt])
+  @@map("notifications")
+}
+
+/// 用户通知偏好（按 event 维度开关）
+model UserNotificationSetting {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  /// event code
+  event      String   @db.VarChar(50)
+  /// 是否启用该类通知（默认 true）
+  enabled    Boolean  @default(true)
+  /// 静默时段（JSON: {start: "22:00", end: "08:00", timezone: "Asia/Shanghai"}）可空
+  quietHours Json?    @map("quiet_hours")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, event], map: "uniq_user_event")
+  @@index([userId])
+  @@map("user_notification_settings")
+}
+
+/// 推送设备 Token（V1.1 用于推送通知，先建表）
+model DeviceToken {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  /// 平台：ios / android / web
+  platform   String   @db.VarChar(20)
+  /// 推送 token（FCM / APNs / Web Push）
+  token      String   @db.VarChar(500)
+  /// 设备 ID（用于去重 / 注销）
+  deviceId   String?  @map("device_id") @db.VarChar(200)
+  /// 最后活跃时间
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  /// T-001: 软删（注销设备）
+  deletedAt  DateTime? @map("deleted_at")
+  deletedBy  BigInt? @map("deleted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token], map: "uniq_user_token")
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("device_tokens")
 }

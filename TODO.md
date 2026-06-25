@@ -179,7 +179,7 @@
 
 ---
 
-## T-007 通知系统 — 数据库 + 后端服务
+## T-007 通知系统 — 数据库 + 后端服务 [x] ✅ 2026-06-25
 
 | 字段 | 内容 |
 |---|---|
@@ -188,14 +188,14 @@
 | 依赖 | T-001 |
 | 阻塞 | T-008, T-009 |
 | 影响数据库 | 新增 `Notification` `NotificationTemplate` `UserNotificationSetting` `DeviceToken` 4 张表 |
-| 影响 API | `GET /notifications/me` `GET /notifications/unread-count` `POST /notifications/:id/read` `POST /notifications/read-all` `POST /devices/register` 内部 `NotificationService.emit(event, payload)` |
+| 影响 API | 9 用户端（notifications + settings + devices） + 内部 `NotificationService.emit(event, payload)` |
 | 影响前端 | — |
 | 影响后台 | — |
 | 风险等级 | 🟠 高 |
 | 预计开发 | 3 PD |
 | 预计测试 | 1.5 PD |
 | 回归测试 | ⚠️ 部分 |
-| 验收标准 | (1) 4 张表迁移成功；(2) 8 类事件（评论/审核/订单/认证/系统/申诉/关注/邀请）触发通知；(3) Redis Stream/Bull Queue 异步消费 |
+| 验收标准 | (1) 4 张表迁移成功；(2) 8 类事件触发通知；(3) 同步写库（V1 简化，V1.1 接 Bull Queue） |
 
 ---
 
