@@ -10,6 +10,8 @@ import { RegisterThrottleService } from '../captcha/register-throttle.service';
 // T-27: 发布后自动 AI (score + seo 异步)
 import { AiService } from '../ai/ai.service';
 import { SeoService } from '../seo/seo.service';
+// T-013: 标签系统
+import { TagService } from '../tag/tag.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -23,6 +25,8 @@ export class PostService {
     // T-27: 发布后自动 AI (score + seo 异步)
     private readonly aiService: AiService,
     private readonly seoService: SeoService,
+    // T-013: 标签系统（attach/detach PostTag）
+    private readonly tagService: TagService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -30,7 +34,7 @@ export class PostService {
 
   /**
    * 列表查询（统一入口，type 必填）
-   * 支持：分类/区域/关键词/价格区间/排序/分页
+   * 支持：分类/区域/关键词/价格区间/标签/排序/分页
    */
   async findAll(query: ListPostQueryDto) {
     const {
@@ -44,6 +48,8 @@ export class PostService {
       sort = 'latest',
       page = 1,
       pageSize = 20,
+      tagIds,
+      tagSlugs,
     } = query;
 
     const where: Prisma.PostWhereInput = { type, status };
@@ -66,6 +72,28 @@ export class PostService {
       }
     }
     if (areaId) where.areaId = BigInt(areaId);
+
+    // T-013: 标签过滤（AND 语义 — post 必须关联**所有**指定 tagId）
+    // 优先 tagIds；其次 tagSlugs（查表得 ids）
+    let resolvedTagIds: bigint[] | undefined;
+    if (tagIds && tagIds.length > 0) {
+      resolvedTagIds = tagIds.map((n) => BigInt(n));
+    } else if (tagSlugs && tagSlugs.length > 0) {
+      const tagRows = await this.prisma.tag.findMany({
+        where: { slug: { in: tagSlugs }, deletedAt: null },
+        select: { id: true },
+      });
+      resolvedTagIds = tagRows.map((t) => t.id);
+    }
+    if (resolvedTagIds && resolvedTagIds.length > 0) {
+      // 用 some + every 模拟 AND：每个 tagId 都要在 postTags 中存在
+      // Prisma 不直接支持 every over relation，简单做法：每个 tagId 一次 some
+      const tagFilter: Prisma.PostWhereInput[] = resolvedTagIds.map((tid) => ({
+        postTags: { some: { tagId: tid } },
+      }));
+      const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+      where.AND = [...existingAnd, ...tagFilter];
+    }
     // 合并 categoryId 子过滤和 keyword 子过滤
     if (categoryOrFilter && keyword) {
       where.AND = [
@@ -111,7 +139,7 @@ export class PostService {
     const skip = (page - 1) * pageSize;
 
     // ===== T10.2 Redis 缓存：列表 5 分钟 =====
-    const cacheKey = `cache:posts:${type}:${JSON.stringify({ areaId, categoryId, status, keyword, minPrice, maxPrice, sort, page, pageSize, aiRank: process.env.AI_RANK_ENABLED })}`;
+    const cacheKey = `cache:posts:${type}:${JSON.stringify({ areaId, categoryId, status, keyword, minPrice, maxPrice, sort, page, pageSize, tagIds: resolvedTagIds?.map(String), tagSlugs, aiRank: process.env.AI_RANK_ENABLED })}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       try {
@@ -549,6 +577,18 @@ export class PostService {
         console.warn(`Post ${post.id} 发布后 AI 处理失败: ${e?.message}`);
       });
     });
+
+    // T-013: 同步 PostTag 关联（事务外，失败仅 warn）
+    if (dto.tagIds && dto.tagIds.length > 0) {
+      try {
+        await this.tagService.attachToPost(
+          post.id,
+          dto.tagIds.map((n) => BigInt(n)),
+        );
+      } catch (e: any) {
+        this.logger.warn(`postId=${post.id} 关联标签失败: ${e?.message ?? e}`);
+      }
+    }
 
     return result;
   }

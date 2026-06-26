@@ -2,6 +2,33 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-013 标签系统 — 数据库 + 迁移
+
+### Added
+- T-013: 数据库 2 新表
+  - `Tag` - 标签字典（slug unique / name / description / useCount 冗余 / isHot / sortOrder / 软删）
+  - `PostTag` - 帖子-标签多对多关联（uniq_post_tag 防重复打标 / FK CASCADE）
+- T-013: `TagService`
+  - `findAll` / `findBySlug` / `findHot` - 公开 API
+  - `create` / `update` / `delete` - 后台（slug 冲突自动 -2/-3 后缀，update 不允许改 slug）
+  - `attachToPost` / `detachFromPost` - 事务内 insert/delete PostTag + 维护 tag.useCount
+  - `findPostsByTag` - 标签详情页用（带分页）
+  - `migrateFromJson` - 一次性从 Post.tags JSON 字段迁移到 PostTag
+- T-013: `TagController` 公开 4 API + `AdminTagController` 后台 4 API（含 migrate-from-json）
+- T-013: `PostModule` import `TagModule`；`PostService.create` 调用 `attachToPost` 同步 PostTag
+- T-013: `PostService.findAll` 支持 `tagIds` / `tagSlugs` 过滤（AND 语义）
+- T-013: `ListPostQueryDto` 加 `tagIds`（逗号分隔） + `tagSlugs` 字段
+- T-013: `CreatePostDto` 加 `tagIds: number[]`（最多 5 个）
+- T-013: seed 30 个伊春本地标签（4 季节频道 + 6 本地特产 + 4 房屋 + 4 二手 + 4 招聘 + 4 便民 + 4 综合）
+
+### Notes
+- 单测 20/20 通过（findAll 3 / findBySlug 2 / findHot 2 / create 3 / update 2 / delete 2 / PostTag 3 / findPostsByTag 1 / migrate 2）
+- 后端 tsc 0 错误（T-013 模块本身）；4 预存在错误（T-018 已知：admin/company + Throttle）
+- `Post.tags` JSON 字段保留 1 个月（2026-07-26 后单独 PR 删除）
+- `useCount` 是冗余字段：attachToPost 时 +1，detachFromPost 时 -1（简化：重复 P2002 跳过 +1）
+- slug 唯一冲突：service 自动加 `-2` / `-3` / ... 后缀（admin 提示）
+- AND 过滤通过 `where.AND = [{postTags:{some:{tagId:t1}}}, {postTags:{some:{tagId:t2}}}]` 实现（Prisma 不支持 every over relation）
+
 ## [Unreleased] — T-008 通知前端 — Header 红点 + 通知中心
 
 ### Added

@@ -34,6 +34,8 @@ import { BannerModule } from './modules/banner/banner.module';
 // T-002: RBAC 全局模块
 import { RbacModule } from './modules/rbac/rbac.module';
 import { NotificationModule } from './modules/notification/notification.module';
+// T-013: 标签系统（Tag 字典 + PostTag 关联）
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -94,6 +96,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     BannerModule,
     RbacModule, // T-002: 全局 RBAC（PermissionGuard + RbacService）
     NotificationModule, // T-007: 通知系统（@Global，全模块可注入 NotificationService.emit()）
+    TagModule, // T-013: 标签系统（公开 tags API + 后台 admin/tags）
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
