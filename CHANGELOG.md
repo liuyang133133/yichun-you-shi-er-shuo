@@ -2,6 +2,35 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-015 标签后台管理
+
+### Added
+- **T-015 数据库迁移（20260627000000_add_tag_status_and_aliases）**：
+  - `tags.status` TINYINT NOT NULL DEFAULT 1（1=启用 0=禁用）— 区分"停用"和"已删"
+  - `tags.aliases` VARCHAR(500) NULL — 别名（CSV，用于 TagSelector 搜索联想）
+  - `idx_tag_status` 索引
+- **T-015 后端 API**：
+  - `GET /admin/tags?q=&includeDeleted=&includeDisabled=&page=&pageSize=` — admin 全列表（支持 q 多字段 OR 搜索 + 2 维度过滤 + 分页）
+  - `POST /admin/tags/:id/merge` body `{ targetId }` — 合并 source → target（事务内，source 软删+停用）
+  - `CreateTagDto` / `UpdateTagDto` 加 `aliases` / `status` 字段
+- **T-015 公开 API 行为变更**：
+  - `GET /tags` / `GET /tags/:slug` / `GET /tags/hot` 加 `status: 1` 过滤 — 停用标签对前台隐藏（验收 ②）
+- **T-015 admin UI**：
+  - `/admin/tags` 标签管理页 — 列表 + 表格 + 搜索 + 包含已删/已停用 2 复选框 + 状态 chip 三态（启用/停用/已删）+ 操作图标（⭐热门 / ✏编辑 / ⚡停用 / 🔀合并 / 🗑删除）
+  - 创建/编辑模态：slug / name / description / aliases / sortOrder / status / isHot
+  - 合并模态：源预览 + 目标搜索下拉 + 二次确认 + 不可恢复警告
+- **T-015 admin 侧边栏**：系统管理子菜单加"标签管理"项（Tag 图标）
+- **T-015 admin API 客户端**：`adminTagApi.list / create / update / remove / merge` 5 方法 + `AdminTag` 类型
+- **T-015 测试**：
+  - 后端 tag.service 单测 20 → 30（+10 新用例：findAllForAdmin 4 + merge 6）
+  - 现有 4 个单测更新 status: 1 断言
+
+### Notes
+- 后端 tsc 4 个预存在错误（admin/company + Throttle）依然存在，与 T-015 无关
+- admin tsc 0 错
+- admin build 失败：pre-existing 问题（`admin/src/app/globals.css` 引用 `../../../../frontend/src/styles/tokens.css` 4 级相对路径在 worktree 嵌套目录无法解析；主 worktree 因 webpack 缓存可通过），需独立任务修复
+- 30 seed 标签全部 status=1 默认启用，公开 API 行为对前台无变化
+
 ## [Unreleased] — T-014 标签前端
 
 ### Added

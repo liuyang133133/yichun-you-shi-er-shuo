@@ -167,6 +167,29 @@ T-014 已上线：标签公开页 + TagSelector + 过滤 chip + 帖子/详情页
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-014-tag-frontend.md](docs/t-014-tag-frontend.md)。
 
+## 标签后台管理（T-015）
+
+T-015 已上线：admin 端标签治理（CRUD + 合并 + 停用 + 别名）。
+
+**核心机制**：
+- 数据库迁移：`tags.status`（1=启用 0=禁用）+ `tags.aliases`（CSV 别名）
+- 后端 API：
+  - `GET /admin/tags?q=&includeDeleted=&includeDisabled=` — admin 列表（2 维度过滤）
+  - `POST /admin/tags/:id/merge` — 合并 source → target（事务内，source 软删+停用）
+  - 公开 `/tags` / `/tags/hot` / `/tags/:slug` 加 `status: 1` 过滤（停用标签对前台隐藏）
+- admin UI `/admin/tags`：
+  - 列表 + 搜索 + 包含已删/已停用 复选框
+  - 状态 chip 三态（启用/停用/已删）
+  - 操作：⭐热门 / ✏编辑 / ⚡停用 / 🔀合并 / 🗑删除
+  - 合并模态：源预览 + 目标搜索下拉 + 二次确认
+- 侧边栏"系统管理"子菜单加"标签管理"项
+
+**测试**：
+- 后端 tag.service 单测 20 → 30（+10 新用例）
+- admin tsc 0 错
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-015-tag-admin.md](docs/t-015-tag-admin.md)。
+
 ## License
 
 MIT

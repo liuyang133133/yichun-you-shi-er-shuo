@@ -76,3 +76,47 @@ export async function apiFetch<T = any>(
   const json = await res.json();
   return json.data !== undefined ? json.data : json;
 }
+
+/**
+ * T-015: admin 端标签管理 API 封装
+ *  - list 支持 includeDeleted / includeDisabled / q / page / pageSize
+ *  - merge 接收 sourceId (Path) + targetId (Body)
+ */
+export interface AdminTag {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  aliases: string | null;
+  useCount: number;
+  isHot: boolean;
+  sortOrder: number;
+  status: number; // 1=启用 0=禁用
+  deletedAt: string | null;
+  createdAt: string;
+}
+
+export const adminTagApi = {
+  list: (params: {
+    q?: string;
+    includeDeleted?: boolean;
+    includeDisabled?: boolean;
+    page?: number;
+    pageSize?: number;
+  } = {}) =>
+    apiFetch<{ list: AdminTag[]; total: number; page: number; pageSize: number }>(
+      '/admin/tags',
+      { params: params as any },
+    ),
+  create: (body: Partial<AdminTag>) =>
+    apiFetch<AdminTag>('/admin/tags', { method: 'POST', body }),
+  update: (id: string | number, body: Partial<AdminTag>) =>
+    apiFetch<AdminTag>(`/admin/tags/${id}`, { method: 'PATCH', body }),
+  remove: (id: string | number) =>
+    apiFetch<{ id: number; deleted: true }>(`/admin/tags/${id}`, { method: 'DELETE' }),
+  merge: (sourceId: string | number, targetId: string | number) =>
+    apiFetch<{ sourceId: number; targetId: number; merged: true }>(
+      `/admin/tags/${sourceId}/merge`,
+      { method: 'POST', body: { targetId } },
+    ),
+};
