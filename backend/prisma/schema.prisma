@@ -964,12 +964,16 @@ model Tag {
   name        String    @db.VarChar(50)
   /// 标签描述（详情页 + SEO description）
   description String?   @db.VarChar(500)
+  /// 别名（CSV，如 "山野菜,野菜,山菜"），用于 TagSelector 搜索联想（T-015）
+  aliases     String?   @db.VarChar(500) @map("aliases")
   /// 关联的 PostTag 数（冗余，写入时事务内维护）
   useCount    Int       @default(0) @map("use_count")
   /// 是否热门标签（首页"热门标签云"用）
   isHot       Boolean   @default(false) @map("is_hot")
   /// 排序权重（asc；同 useCount 时按 sortOrder 升序，再按 id）
   sortOrder   Int       @default(0) @map("sort_order")
+  /// 1=启用 0=禁用（T-015，停用 = status=0 + deletedAt=null；已删 = deletedAt 非空）
+  status      Int       @default(1) @map("status")
   createdBy   BigInt?   @map("created_by")
   updatedBy   BigInt?   @map("updated_by")
   deletedBy   BigInt?   @map("deleted_by")
@@ -981,6 +985,7 @@ model Tag {
 
   @@index([useCount])
   @@index([isHot])
+  @@index([status])
   @@index([deletedAt])
   @@map("tags")
 }
