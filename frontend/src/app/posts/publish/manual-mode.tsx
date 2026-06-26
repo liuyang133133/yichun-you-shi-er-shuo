@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { RewritePopover } from '@/components/ai/rewrite-popover';
+import { TagSelector } from '@/components/post/tag-selector';
 import { postApi, categoryApi, areaApi, uploadApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
-import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2 } from 'lucide-react';
+import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2, Hash } from 'lucide-react';
 
 const TYPE_OPTIONS = [
   { code: 'house', title: '房屋出租', icon: Home, gradient: 'from-blue-500 to-indigo-600' },
@@ -43,6 +44,14 @@ function ManualPublishForm() {
   const prefillPrice = search.get('prefill_price') || '';
   const prefillAreaName = search.get('prefill_areaName') || '';
   const prefillDescription = search.get('prefill_description') || '';
+  // T-014: AI 模式传来的预选 tagIds（CSV "1,2,3" → [1,2,3]）
+  const prefillTagIdsCsv = search.get('prefill_tagIds') || '';
+  const prefillTagIds = prefillTagIdsCsv
+    ? prefillTagIdsCsv
+        .split(',')
+        .map((s) => Number(s))
+        .filter((n) => Number.isFinite(n) && n > 0)
+    : [];
 
   const [loggedIn, setLoggedIn] = useState(false);
   const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([]);
@@ -103,6 +112,9 @@ function ManualPublishForm() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // T-014: 标签选择（最多 5 个，AI prefill 来的优先）
+  const [tagIds, setTagIds] = useState<number[]>(prefillTagIds);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -276,6 +288,8 @@ function ManualPublishForm() {
         contactPhone: contactPhone || undefined,
         detail,
         images: imageUrls.length > 0 ? imageUrls : undefined,
+        // T-014: 标签关联（后端 CreatePostDto Max=5，事务内 attachToPost）
+        tagIds: tagIds.length > 0 ? tagIds : undefined,
       } as any);
       router.push(`/posts/${post.id}`);
     } catch (e: any) {
@@ -505,6 +519,15 @@ function ManualPublishForm() {
                   className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed"
                 />
                 <div className="text-xs text-muted-foreground text-right">{description.length}/5000</div>
+              </div>
+
+              {/* T-014: 标签选择（最多 5 个，AI prefill 来的优先） */}
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex items-center gap-1.5">
+                  <Hash className="h-4 w-4 text-emerald-600" />
+                  <Label className="text-sm">标签（可选）</Label>
+                </div>
+                <TagSelector value={tagIds} onChange={setTagIds} max={5} />
               </div>
 
               {/* 房屋专属字段 */}

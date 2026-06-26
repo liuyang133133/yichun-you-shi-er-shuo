@@ -2,6 +2,36 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-014 标签前端
+
+### Added
+- **T-013b（前置）**：补全 `PostService.findOne / findAll / findMyPosts / create` 5 处 `include: { postTags: { include: { tag: { select: { id, slug, name } } } } }` — 让前端 PostCard / 详情页 / /me/posts 列表能拿到 tags
+- **T-014 公开页**：
+  - `/tags` 列表页 — 热门标签云（20 个）+ 全部标签 grid（100 个，按 useCount 排序）+ 实时搜索（按 name/slug）
+  - `/tags/[slug]` 详情页 — 标签 Hero（name + description + useCount）+ 关联帖子分页列表（复用 PostCard）
+- **T-014 组件**：
+  - `TagSelector` — 标签多选选择器（搜索 + 热门联想 + 已选 pill + max=5 限制 + ARIA combobox）
+- **T-014 集成点**：
+  - 发布页（手动模式）step 2 加 TagSelector + 提交 body 加 `tagIds: number[]`
+  - AI 模式 goToManual 预填 tagIds（CSV "1,2,3" → number[]，T-015 之后 AI 会传具体标签）
+  - 首页/列表页 sticky 筛选条下方加热门标签 chip 条（最多 12 个，水平滚动）
+  - 选中标签后 URL 自动同步 `?tag=<slug>`，列表自动按 tagSlugs 过滤
+  - PostCard 显示前 3 个标签 chip（`#标签名` 风格，emerald 色）
+  - 帖子详情页底部加标签 chip 行（带链接跳 /tags/[slug]）
+- **T-014 前端 API 客户端**：
+  - `tagApi.list / hot / get / posts` — 4 个公开 API
+  - `postApi.list` 增 `tagIds?: number[]; tagSlugs?: string[]` 参数（逗号分隔传递）
+- **T-014 测试**：
+  - frontend 首次引入 Playwright（`@playwright/test` devDep）
+  - `frontend/playwright.config.ts` + `frontend/e2e/tag-flow.spec.ts`（4 个用例：列表 / 详情 / 过滤 / 发布 selector 渲染）
+  - 后端 post.service 补 3 个 T-013b 单测（findOne include / findAll include / findAll tagIds AND），单测从 2 → 5 通过
+
+### Notes
+- 后端 tsc 仅剩 4 个预存在错误（admin/company 缺失文件 + post.service.RegisterThrottleService 方法缺失），与 T-014 无关
+- jest.config 启用 `diagnostics: false` + `isolatedModules: true` 跳过预存在类型错误
+- API 响应体积略增（每个 post 多一个 ≤5 元素的 postTags 数组），缓存 key 不变
+- `dynamic = 'force-dynamic'` 加到 `/tags` 和 `/tags/[slug]` page（避免 useSearchParams CSR bailout）
+
 ## [Unreleased] — T-013 标签系统 — 数据库 + 迁移
 
 ### Added

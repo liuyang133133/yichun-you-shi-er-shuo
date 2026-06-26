@@ -60,3 +60,4 @@ admin/.next/
 
 # Git worktrees (isolation)
 .worktrees/
+test-results/

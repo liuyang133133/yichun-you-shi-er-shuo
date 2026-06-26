@@ -5,6 +5,10 @@ import { AnnouncementBanner } from '@/components/layout/announcement-banner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/toast/toaster';
 
+// T-014: Header 用 useSearchParams → 全 layout 加 force-dynamic，
+// 避免 build 阶段 prerender 触发 CSR bailout。
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: '伊春有事儿说 | 本地生活信息平台',
   description: '面向伊春本地居民的信息发布平台 — 房屋出租 · 二手交易 · 招聘求职 · 便民信息',

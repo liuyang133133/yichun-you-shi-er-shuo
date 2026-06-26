@@ -19,7 +19,7 @@ import { MODULE_BY_CODE } from '@/config/modules';
 import {
   MapPin, Eye, Heart, MessageCircle, User as UserIcon,
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
-  Sparkles, BadgeCheck, X, ChevronLeft,
+  Sparkles, BadgeCheck, X, ChevronLeft, Hash,
 } from 'lucide-react';
 
 function Field({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
@@ -346,6 +346,23 @@ function PostDetailContent() {
                 <MessageCircle className="h-3.5 w-3.5" /> {post.commentCount} 留言
               </span>
             </div>
+
+            {/* T-014: 标签 chips（带链接跳 /tags/[slug]） */}
+            {post.postTags && post.postTags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-1.5 pt-3 border-t border-dashed">
+                <span className="text-xs text-muted-foreground mr-1 self-center">标签：</span>
+                {post.postTags.map((pt: any) => pt.tag).filter(Boolean).map((t: any) => (
+                  <Link
+                    key={t.id}
+                    href={`/tags/${t.slug}`}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Hash className="h-3 w-3 mr-0.5" />
+                    {t.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 描述 */}
