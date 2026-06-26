@@ -8,9 +8,10 @@ import { Avatar } from '@/components/patterns/avatar';
 import { authApi } from '@/lib/api';
 import { clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
 import {
-  LogOut, Plus, ChevronDown, Search, Menu, X, Home, FileText, Heart, MessageCircle,
+  LogOut, Plus, ChevronDown, Search, Menu, X, Home, FileText, Heart, MessageCircle, Bell,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationBell } from './notification-bell';
 
 export function Header() {
   const router = useRouter();
@@ -134,6 +135,10 @@ export function Header() {
                     <span className="hidden lg:inline">发布信息</span>
                   </Button>
                 </Link>
+
+                {/* T-008: 通知铃铛（仅登录用户） */}
+                <NotificationBell />
+
                 {/* 用户菜单 (desktop) */}
                 <div className="relative hidden md:block">
                   <button
@@ -288,6 +293,13 @@ export function Header() {
                   <MessageCircle className="h-4 w-4" />
                   站内信
                 </Link>
+                <Link
+                  href="/me/notifications"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary text-sm font-medium"
+                >
+                  <Bell className="h-4 w-4" />
+                  通知中心
+                </Link>
                 <div className="pt-2 mt-2 border-t">
                   <button
                     onClick={handleLogout}
@@ -356,6 +368,14 @@ function UserDropdown({ onClose, onLogout }: { onClose: () => void; onLogout: ()
       >
         <MessageCircle className="h-4 w-4 text-muted-foreground" />
         站内信
+      </Link>
+      <Link
+        href="/me/notifications"
+        onClick={onClose}
+        className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-md hover:bg-secondary transition-colors"
+      >
+        <Bell className="h-4 w-4 text-muted-foreground" />
+        通知中心
       </Link>
       <div className="my-1 border-t" />
       <button

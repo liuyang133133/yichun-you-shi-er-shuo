@@ -2,7 +2,24 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] — T-007 通知系统 — 数据库 + 后端服务
+## [Unreleased] — T-008 通知前端 — Header 红点 + 通知中心
+
+### Added
+- T-008: `lib/notifications.ts` — 通知 API 客户端（list / unreadCount / markRead / markAllRead / remove / listSettings / upsertSetting / registerDevice / unregisterDevice）
+- T-008: `lib/use-unread-count.ts` — 未读数 Hook（30s 自动轮询 + 路由切换刷新 + 401 静默停止）
+- T-008: `components/layout/notification-bell.tsx` — Header 铃铛组件（未读红点 + >99 显示 99+）
+- T-008: `app/me/notifications/page.tsx` — 通知中心列表（全部 / 未读 tabs + 分页 + 全部已读 + 单条删除 + payload.url 跳转）
+- T-008: `app/me/notifications/settings/page.tsx` — 偏好设置页（8 事件开关 + 全局开关 + 静默时段 quietHours）
+- T-008: Header 加 `NotificationBell`（登录用户可见）+ 移动端抽屉 / 桌面下拉菜单加「通知中心」入口
+- T-008: `lib/api.ts` 加 `put<T>` 方法（用于 PUT /notifications/settings/:event）
+
+### Notes
+- 30s 轮询可在 Network 面板验证；V1.2 接 WebSocket（T-010）后改为推送
+- 紧急通知（priority ≥ 4）不受 quietHours 降级影响
+- `useUnreadCount` 在 401 时静默停止轮询，避免错误日志噪音
+- 通知中心点击 payload.url 跳转（如评论通知跳帖子详情页）
+
+## [T-007] 通知系统 — 数据库 + 后端服务 (2026-06-25)
 
 ### Added
 - T-007: 数据库 4 新表

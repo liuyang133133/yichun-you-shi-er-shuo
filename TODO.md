@@ -199,7 +199,7 @@
 
 ---
 
-## T-008 通知 — 前端通知中心 + Header 红点
+## T-008 通知 — 前端通知中心 + Header 红点 [x] ✅ 2026-06-26
 
 | 字段 | 内容 |
 |---|---|
@@ -208,8 +208,8 @@
 | 依赖 | T-007 |
 | 阻塞 | — |
 | 影响数据库 | 无 |
-| 影响 API | — |
-| 影响前端 | Header 铃铛 + 红点（轮询 30s 或 WebSocket）；`/me/notifications` 列表页（分页 + 全部已读）；`/me/notifications/settings` 偏好设置 |
+| 影响 API | 无（复用 T-007）|
+| 影响前端 | Header 铃铛 + 红点（30s 轮询）；`/me/notifications` 列表页（tabs + 分页 + 全部已读 + 跳转）；`/me/notifications/settings` 8 事件 + quietHours |
 | 影响后台 | — |
 | 风险等级 | 🟠 高 |
 | 预计开发 | 2 PD |
