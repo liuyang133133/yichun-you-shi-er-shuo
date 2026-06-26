@@ -190,6 +190,28 @@ T-015 已上线：admin 端标签治理（CRUD + 合并 + 停用 + 别名）。
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-015-tag-admin.md](docs/t-015-tag-admin.md)。
 
+## 公告后台管理（T-016）
+
+T-016 已上线：admin 端公告治理（列表 + CRUD + 启用/停用 + 删除）。
+
+**核心机制**：
+- 后端无变更：沿用现有 `AnnouncementService`（findActive / findAll / create / update / remove）+ `AdminAnnouncementController`（5 endpoint）+ 4 个 RBAC 权限码
+- 后端单测：`announcement.service.spec.ts` 新增 12 用例（findActive 2 + findAll 3 + create 2 + update 3 + remove 2）
+- admin UI `/admin/announcements`：
+  - 列表 + 状态过滤（全部/启用/停用）+ 客户端 title 模糊搜索
+  - 表格列：ID / 标题（含内容预览） / 状态 chip / 优先级 chip / 生效时段 / 创建时间 / 操作
+  - 操作：⚡ 启用停用 / ✏ 编辑 / 🗑 删除（含"不可恢复"警告）
+  - 创建/编辑模态：title (1-100) / content (1-2000) / status / priority / startsAt (datetime-local) / endsAt (datetime-local)
+- admin 侧边栏："运营"组加"公告管理"项（Megaphone 图标），位置：Banners 之后
+
+**已知问题**：
+- `remove` 当前硬删，与 T-001 软删规范不一致（banner 同款；T-019+ 修复）
+- admin tsc 0 错；admin build 仍受 pre-existing globals.css 4 级相对路径影响
+
+**关联**：T-007 通知 / T-008 通知前端 / SHOULD-30 公告后端 + 前端 banner
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-016-announcement-admin.md](docs/t-016-announcement-admin.md)。
+
 ## License
 
 MIT

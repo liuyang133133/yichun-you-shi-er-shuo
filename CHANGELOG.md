@@ -2,6 +2,29 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-016 公告后台管理
+
+### Added
+- **T-016 后端单测**：`AnnouncementService` 新增 12 个用例 — findActive 2 + findAll 3 + create 2 + update 3 + remove 2
+- **T-016 admin UI**：
+  - `/admin/announcements` 公告管理页 — 列表 + 状态过滤（全部/启用/停用）+ 客户端搜索（title 模糊）+ 表格（ID/标题/状态/优先级/生效时段/创建时间/操作）+ 创建/编辑模态（含 title/content/status/priority/startsAt/endsAt）+ 操作（⚡启用停用 / ✏编辑 / 🗑删除）
+  - 状态 chip 二态：启用（emerald）/ 停用（gray）
+  - 优先级 chip 二态：置顶（amber）/ 普通（secondary）
+  - 删除二次确认含「不可恢复」警告
+- **T-016 admin 侧边栏**："运营"组（NAV 数组）Banners 之后加"公告管理"项（Megaphone 图标）
+- **T-016 admin API 客户端**：`adminAnnouncementApi.list / create / update / remove` 4 方法 + `AdminAnnouncement` 类型（10 字段）
+- **T-016 已知问题（独立任务）**：
+  - `announcement.service.remove` 用 `prisma.delete()` **硬删**（与 T-001 软删规范不一致；banner 也有同款问题）
+  - 单测 #12 断言当前 `prisma.delete` 行为，PR 描述已加 "Known issue" 注释
+  - admin UI 删除按钮带「不可恢复」警告
+
+### Notes
+- 后端 tsc 4 个预存在错误（admin/company + Throttle）依然存在，与 T-016 无关
+- admin tsc 0 错
+- admin build 失败：pre-existing 问题（`admin/src/app/globals.css` 引用 `../../../../frontend/src/styles/tokens.css` 4 级相对路径在 worktree 嵌套目录无法解析），需独立任务修复
+- 后端服务无变更 — T-016 沿用现有 5 个 endpoint（GET / POST / PATCH :id / DELETE :id）+ 公开 1 个 `/announcements/active`
+- 前端 `AnnouncementBanner` 已存在（SHOULD-30 commit `37c08cd`），T-016 不修改
+
 ## [Unreleased] — T-015 标签后台管理
 
 ### Added
