@@ -34,6 +34,7 @@ import { BannerModule } from './modules/banner/banner.module';
 // T-002: RBAC 全局模块
 import { RbacModule } from './modules/rbac/rbac.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { AgreementModule } from './modules/agreement/agreement.module'; // T-018: 用户协议 / 隐私政策 / 关于我们
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     BannerModule,
     RbacModule, // T-002: 全局 RBAC（PermissionGuard + RbacService）
     NotificationModule, // T-007: 通知系统（@Global，全模块可注入 NotificationService.emit()）
+    AgreementModule, // T-018: 用户协议 / 隐私政策 / 关于我们（公开 GET 接口）
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

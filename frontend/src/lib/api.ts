@@ -463,3 +463,28 @@ export const announcementApi = {
     api.patch<Announcement>(`/admin/announcements/${id}`, data),
   remove: (id: string) => api.delete<{ id: string; deleted: boolean }>(`/admin/announcements/${id}`),
 };
+
+// =====================================================
+// T-018: 用户协议 / 隐私政策 / 关于我们
+// =====================================================
+
+export interface Agreement {
+  id: string;
+  key: 'terms' | 'privacy' | 'about';
+  version: number;
+  title: string;
+  /** Markdown 内容 */
+  content: string;
+  effectiveAt: string;
+  isCurrent: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const agreementApi = {
+  /** 公开:获取全部当前生效协议（用于首登确认列表） */
+  list: () => api.get<Agreement[]>('/agreements'),
+  /** 公开:按 key 获取当前生效协议 */
+  byKey: (key: 'terms' | 'privacy' | 'about') =>
+    api.get<Agreement>(`/agreements/${key}`),
+};

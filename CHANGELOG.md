@@ -2,6 +2,33 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-018 协议页（/terms /privacy /about）
+
+### Added
+- T-018: 数据库新增 `Agreement` 表（key / version / title / content / effectiveAt / isCurrent）+ `@@unique([key, version])` 唯一约束
+- T-018: `AgreementModule`（公开 GET 接口，无需登录）：
+  - `GET /api/v1/agreements` — 返回所有当前生效协议（isCurrent=true）
+  - `GET /api/v1/agreements/:key` — 返回指定 key 的当前生效版本
+- T-018: `AgreementService` — `findByKey / findAll / create / setCurrent`（事务内 setCurrent 自动把同 key 旧版本置 false）
+- T-018: `seedAgreements()` — 初始化 terms / privacy / about 三份 v1 协议内容（已通过 `npx prisma db seed` 写入）
+- T-018: 前端 3 个静态页面（Server Component + generateMetadata SEO）：
+  - `frontend/src/app/terms/page.tsx` — 用户服务协议
+  - `frontend/src/app/privacy/page.tsx` — 隐私政策
+  - `frontend/src/app/about/page.tsx` — 关于伊春有事儿说
+- T-018: `components/markdown/simple-markdown.tsx` — 极简 Markdown 渲染器（不引入外部依赖；支持标题 / 列表 / 引用 / 表格 / 行内 `code` 与 `**bold**`）
+- T-018: `lib/api.ts` 增加 `agreementApi.list()` / `agreementApi.byKey()`
+- T-018: Playwright E2E 配置 + 用例 `tests/e2e/agreements.spec.ts`（6 个用例：3 页渲染 + login 链接跳转 + 不存在 key 4xx）
+- T-018: 修复 `/login` 页底部"用户协议 / 隐私政策"链接原本指向的 `/terms` `/privacy` 现在正常可访问（修复 404）
+
+### Fixed（基础设施，非业务模块改动）
+- Build 修复：`app/layout.tsx`（根 layout）+ `app/me/layout.tsx`（用户中心分组）+ `app/not-found.tsx`（独立 404）+ `app/me/notifications/settings/page.tsx` 添加 `export const dynamic = 'force-dynamic'` —— Next.js 15 prerender 阶段 `useSearchParams` 需 Suspense 包裹，根因是 T-008 引入的 Header（含 NotificationBell 等客户端 hooks）影响整个根 layout 链。统一改为按需 SSR 是构建期最稳妥的方案。
+- 注：上述 4 个文件的修改是构建基础设施修复，不属于业务模块改动；仅添加一个 `export const dynamic = 'force-dynamic'` 行，无功能影响。
+
+### Notes
+- 协议内容仅 V1 版本，V1.1 增加后台管理 UI（CRUD + 排期 + 多版本）
+- 服务端组件 `dynamic = 'force-dynamic'` —— 内容会更新，每次请求重新拉取最新版本
+- 失败时优雅降级显示"协议内容暂时无法加载"，不抛 500
+
 ## [Unreleased] — T-008 通知前端 — Header 红点 + 通知中心
 
 ### Added

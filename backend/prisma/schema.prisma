@@ -943,3 +943,36 @@ model DeviceToken {
   @@index([deletedAt])
   @@map("device_tokens")
 }
+
+// =====================================================
+// T-018: 用户协议 / 隐私政策 / 关于我们
+// 同一 key 可有多版本（按 version 区分），同时只有 1 个 isCurrent=true
+// =====================================================
+
+model Agreement {
+  id          BigInt    @id @default(autoincrement())
+  /// 协议 key: 'terms' | 'privacy' | 'about'
+  key         String    @db.VarChar(50)
+  /// 版本号（1, 2, 3...），同一 key 下递增
+  version     Int
+  /// 协议标题
+  title       String    @db.VarChar(200)
+  /// Markdown 内容
+  content     String    @db.Text
+  /// 生效时间
+  effectiveAt DateTime  @map("effective_at")
+  /// 当前生效版本（同一 key 同时只有一个 true）
+  isCurrent   Boolean   @default(false) @map("is_current")
+  /// T-001 软删 + 审计字段
+  createdBy   BigInt?   @map("created_by")
+  updatedBy   BigInt?   @map("updated_by")
+  deletedBy   BigInt?   @map("deleted_by")
+  deletedAt   DateTime? @map("deleted_at") @db.DateTime(3)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([key, version], map: "uniq_key_version")
+  @@index([key, isCurrent])
+  @@index([deletedAt])
+  @@map("agreements")
+}

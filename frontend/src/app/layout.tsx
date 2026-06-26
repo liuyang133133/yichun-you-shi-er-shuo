@@ -5,6 +5,12 @@ import { AnnouncementBanner } from '@/components/layout/announcement-banner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/toast/toaster';
 
+// T-018 build 修复: 根 layout 包含 Header（含 NotificationBell / 搜索栏）等客户端 hooks
+// 这些组件用到 useSearchParams，Next.js 15 prerender 阶段会要求 Suspense 包裹。
+// 整个项目统一改为请求时渲染（force-dynamic），避免每个页面单独修复。
+// 这是构建基础设施修复（非业务模块改动），不影响功能。
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: '伊春有事儿说 | 本地生活信息平台',
   description: '面向伊春本地居民的信息发布平台 — 房屋出租 · 二手交易 · 招聘求职 · 便民信息',
