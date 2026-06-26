@@ -2,6 +2,32 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-010 WebSocket 网关 + 实时通知
+
+### Added
+- T-010: 后端依赖 `@nestjs/websockets` `@nestjs/platform-socket.io` `socket.io` `@socket.io/redis-adapter`
+- T-010: 前端依赖 `socket.io-client@^4.7.5`
+- T-010: 新模块 `WsModule` (@Global)
+  - `NotificationGateway` — namespace `/ws` + JWT 握手鉴权 + join `user:<sub>` room + ping/pong
+  - `WsAuthGuard` — 提取 token（auth.token / Bearer header）+ JwtService.verifyAsync + 黑名单 + 拒绝 refresh
+  - `NotificationWsService` — sendToUser 通过 WS_EMITTER（gateway 实例）解耦注入
+  - `RedisIoAdapter` — 包装 IoAdapter + createAdapter(pub, sub) 多实例广播
+- T-010: `NotificationService.emit()` 集成 ws 推送（写库后 sendToUser，容错不阻塞业务）
+- T-010: `app.module.ts` 注册 `WsModule`；`main.ts` 注入 `RedisIoAdapter`
+- T-010: 前端 `lib/use-ws.ts` — socket.io-client 单例封装，自动重连 + token 变化重连
+- T-010: 前端 `lib/use-realtime-notifications.ts` — 包装 useWs，收到 `notification` 事件触发回调
+- T-010: NotificationBell 升级 — ws 推送立即 +1 + refresh 兜底 + 连接状态指示绿/灰点；ws 断开降级 30s 轮询
+
+### Notes
+- 单测 20/20 通过（WsAuthGuard 7 + NotificationWsService 6 + NotificationGateway 7）
+- 前端 E2E `frontend/tests/e2e/websocket.spec.ts` 占位（真实 ws E2E 需后端运行 + Redis）
+- 手动验证：双 tab 登录同一用户 → A 调用 emit 接口 → B 红点 1s 内 +1，Bell 绿点
+- Redis Adapter 让多实例后端能跨进程推送（V1 简化先不上 Bull Queue）
+- Bell 升级：右下小圆点 绿=ws 已连 / 灰=30s 轮询中
+
+### Fixed
+- Build fix：`src/app/layout.tsx` 加 `export const dynamic = 'force-dynamic'`，新建独立 `src/app/not-found.tsx`，避免 Header 中 `useSearchParams()` 触发 CSR bailout 导致 build 失败（与 T-018 同根因）
+
 ## [Unreleased] — T-008 通知前端 — Header 红点 + 通知中心
 
 ### Added

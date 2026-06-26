@@ -1,23 +1,28 @@
 /**
  * T-007: NotificationService
+ * T-010: 接入 ws 推送（@Global WsModule 注入 NotificationWsService）
  *
- * emit() - 业务侧调用，写入 notifications 表 + 检查 user preference
- * 暂用同步写库；T-010 WebSocket 接入后扩展为 Redis Pub/Sub 实时推送
+ * emit() - 业务侧调用，写入 notifications 表 + 检查 user preference + 通过 ws 推送
+ * 流程：偏好检查 → 静默时段 → 写库 → ws sendToUser(用户 room)
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmitInput } from './notification-event';
+import { NotificationWsService } from '../ws/notification-ws.service';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ws: NotificationWsService,
+  ) {}
 
   /**
    * 发送通知
    * 检查用户偏好（enabled=false 跳过）+ 静默时段（quietHours 内可降级）
-   * 实际发送逻辑：直接 INSERT 到 notifications 表（site 渠道）
+   * 实际发送逻辑：直接 INSERT 到 notifications 表（site 渠道）+ 通过 ws 实时推送
    * 扩展点：channel='email'/'sms'/'push' 时调用对应发送器（V1.1）
    */
   async emit(input: EmitInput) {
@@ -60,9 +65,16 @@ export class NotificationService {
       `通知 #${notification.id} ${input.event} → user=${input.userId} priority=${priority}`,
     );
 
-    // 4) 扩展点：channel !== 'site' 时调用对应发送器
-    // V1 仅 site；V1.1 加 email / sms / push
-    // await this.dispatch(notification);
+    // 4) T-010: ws 实时推送（容错：失败仅 warn，不影响业务）
+    await this.ws.sendToUser(input.userId, {
+      id: notification.id.toString(),
+      event: notification.event,
+      title: notification.title,
+      body: notification.body,
+      priority: notification.priority,
+      payload: notification.payload,
+      createdAt: notification.createdAt.toISOString(),
+    });
 
     return notification;
   }
