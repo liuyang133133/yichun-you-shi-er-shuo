@@ -36,6 +36,8 @@ import { RbacModule } from './modules/rbac/rbac.module';
 import { NotificationModule } from './modules/notification/notification.module';
 // T-010: WebSocket 网关（@Global，全模块可注入 NotificationWsService.sendToUser）
 import { WsModule } from './modules/ws/ws.module';
+// T-013: 标签系统（Tag 字典 + PostTag 关联）
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -97,6 +99,7 @@ import { WsModule } from './modules/ws/ws.module';
     RbacModule, // T-002: 全局 RBAC（PermissionGuard + RbacService）
     NotificationModule, // T-007: 通知系统（@Global，全模块可注入 NotificationService.emit()）
     WsModule, // T-010: WebSocket 网关（@Global，NotificationWsService.sendToUser）
+    TagModule, // T-013: 标签系统（公开 tags API + 后台 admin/tags）
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

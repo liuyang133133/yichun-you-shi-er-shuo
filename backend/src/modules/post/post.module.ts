@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 // T-27: 发布后自动 AI (score + seo 异步)
 import { AiModule } from '../ai/ai.module';
 import { SeoModule } from '../seo/seo.module';
+// T-013: 标签系统（PostService.create/update 同步 PostTag）
+import { TagModule } from '../tag/tag.module';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { SeoModule } from '../seo/seo.module';
     // T-27: 发布后自动 AI (score + seo 异步)
     AiModule,
     SeoModule,
+    TagModule, // T-013: 注入 TagService.attachToPost/detachFromPost
   ],
   controllers: [PostController, PostBoostController],
   providers: [PostService, PostBoostService],

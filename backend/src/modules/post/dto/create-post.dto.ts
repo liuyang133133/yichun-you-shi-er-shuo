@@ -327,4 +327,15 @@ export class CreatePostDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  /**
+   * T-013: 标签 ID 数组（可选，最多 5 个）
+   * 后端在主表创建后调用 TagService.attachToPost 同步 PostTag
+   */
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  @Max(5, { each: false })
+  tagIds?: number[];
 }

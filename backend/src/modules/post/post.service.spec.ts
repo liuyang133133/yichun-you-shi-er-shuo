@@ -49,6 +49,8 @@ describe('PostService.create - 重复检测', () => {
       mockRegisterThrottle,
       mockAiService,
       mockSeoService,
+      // T-013: TagService (attachToPost mock)
+      { attachToPost: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 

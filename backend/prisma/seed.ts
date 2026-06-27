@@ -334,6 +334,74 @@ async function main() {
   // T-002: 6. RBAC 角色 / 权限 / 关联
   // ============================================
   await seedRbac();
+
+  // ============================================
+  // T-013: 7. 标签字典（30 个伊春本地常用标签）
+  // ============================================
+  await seedTags();
+}
+
+/**
+ * T-013: 种子 30 个伊春本地常用标签
+ * 幂等：多次运行不会重复插入
+ */
+async function seedTags() {
+  console.log('  🏷️  创建标签字典...');
+
+  const tags = [
+    // 季节频道（4）
+    { slug: 'shan-ye-cai', name: '山野菜', description: '春季山野菜：蕨菜、刺老芽、猴腿等', isHot: true, sortOrder: 1 },
+    { slug: 'xue-di-tai', name: '雪地胎', description: '冬季雪地胎 / 防滑链', isHot: true, sortOrder: 2 },
+    { slug: 'bi-shu-fang', name: '避暑房', description: '夏季避暑房 / 短期出租', isHot: true, sortOrder: 3 },
+    { slug: 'dong-jiang-yu', name: '冬江鱼', description: '冬季黑龙江冰下捕鱼', isHot: true, sortOrder: 4 },
+
+    // 本地特产（6）
+    { slug: 'hei-zhong-cai', name: '黑尊菜', description: '伊春特有山野菜', sortOrder: 10 },
+    { slug: 'hong-song-jie', name: '红松节', description: '伊春红松松子 / 松塔', sortOrder: 11 },
+    { slug: 'ma-mao-jiu', name: '马毛酒', description: '东北鹿茸 / 林下参酒', sortOrder: 12 },
+    { slug: 'lin-quan-shui', name: '林泉水', description: '山泉水 / 矿泉水', sortOrder: 13 },
+    { slug: 'bei-yao-cao', name: '北药草', description: '刺五加 / 五味子 / 黄芪', sortOrder: 14 },
+    { slug: 'shan-lin-te-chan', name: '山林特产', description: '伊春本地山林特产合集', isHot: true, sortOrder: 15 },
+
+    // 房屋出租（4）
+    { slug: 'zheng-zu', name: '整租', description: '整套出租', sortOrder: 20 },
+    { slug: 'he-zu', name: '合租', description: '合租 / 拼房', sortOrder: 21 },
+    { slug: 'duan-zu', name: '短租', description: '周租 / 月租', sortOrder: 22 },
+    { slug: 'dian-shang', name: '店商', description: '商铺 / 门面出租', sortOrder: 23 },
+
+    // 二手交易（4）
+    { slug: 'jia-dian', name: '家电', description: '二手家电', sortOrder: 30 },
+    { slug: 'shu-zi', name: '数码', description: '手机 / 电脑 / 相机', sortOrder: 31 },
+    { slug: 'jia-ju', name: '家具', description: '二手家具', sortOrder: 32 },
+    { slug: 'er-tong-yong-pin', name: '儿童用品', description: '母婴 / 儿童用品', sortOrder: 33 },
+
+    // 招聘（4）
+    { slug: 'lin-ye', name: '林业', description: '林业相关岗位', sortOrder: 40 },
+    { slug: 'lv-you', name: '旅游', description: '导游 / 酒店 / 餐饮', sortOrder: 41 },
+    { slug: 'jia-jiao', name: '家教', description: '中小学家教', sortOrder: 42 },
+    { slug: 'jian-zhi', name: '兼职', description: '兼职 / 钟点工', sortOrder: 43 },
+
+    // 便民（4）
+    { slug: 'shou-jiang', name: '收江', description: '收购山产品', sortOrder: 50 },
+    { slug: 'qi-che', name: '汽车', description: '二手车 / 二手车 / 汽修', sortOrder: 51 },
+    { slug: 'chong-wu', name: '宠物', description: '宠物交易 / 寄养', sortOrder: 52 },
+    { slug: 'shi-zhong', name: '失物', description: '失物招领', sortOrder: 53 },
+
+    // 综合（4）
+    { slug: 'yu-le', name: '娱乐', description: 'K歌 / 桌游 / 密室', sortOrder: 60 },
+    { slug: 'ti-yu', name: '体育', description: '健身 / 球类 / 游泳', sortOrder: 61 },
+    { slug: 'jiao-yu', name: '教育', description: '培训 / 考证 / 留学', sortOrder: 62 },
+    { slug: 'yi-liao', name: '医疗', description: '门诊 / 药店 / 健康', sortOrder: 63 },
+  ];
+
+  let created = 0;
+  for (const t of tags) {
+    const exists = await prisma.tag.findUnique({ where: { slug: t.slug } });
+    if (exists) continue;
+    await prisma.tag.create({ data: { ...t, useCount: 0, isHot: t.isHot ?? false } });
+    created++;
+  }
+  console.log(`  - 标签: 总 ${tags.length} 个 / 新增 ${created} 个`);
 }
 
 /**

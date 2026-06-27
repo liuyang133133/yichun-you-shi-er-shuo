@@ -155,6 +155,23 @@ T-010 已上线：Socket.IO Gateway + Redis Adapter + 前端实时通知。
 - `server → client`:  `pong` payload `{ ts, serverTs }`
 - `server → client`:  `notification` payload `{ event, data: { id, title, body, payload, priority, createdAt } }`
 
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-010-websocket.md](docs/t-010-websocket.md)。
+
+## 标签系统（T-013）
+
+T-013 已上线：`Tag` 字典表 + `PostTag` 关联表 + 30 个伊春本地标签 seed。
+
+**核心机制**：
+- 公开 API：`GET /tags` / `GET /tags/hot` / `GET /tags/:slug` / `GET /tags/:slug/posts`
+- 后台 API：`POST /admin/tags` / `PATCH /admin/tags/:id` / `DELETE /admin/tags/:id`
+- 数据迁移：`POST /admin/tags/migrate-from-json` 把 `Post.tags` JSON 灌进 `PostTag`
+- Post 端点：`POST /posts` body 加 `tagIds: number[]`（最多 5 个）
+- Post 列表过滤：`GET /posts?tagIds=1,2,3` 或 `?tagSlugs=shanlin,xueshan`（AND 语义）
+- `useCount` 冗余字段：事务内 +1/-1，避免 `count(PostTag)`
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-013-tags.md](docs/t-013-tags.md)。
+>>>>>>> feature/T-013-tags
+
 ## License
 
 MIT
