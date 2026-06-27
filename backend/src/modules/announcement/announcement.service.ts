@@ -38,6 +38,63 @@ export class AnnouncementService {
     return { list, total, page, pageSize };
   }
 
+  /**
+   * T-017: 公开 - 分页公告列表（仅生效中 + select 裁剪）
+   * 用于前端 /announcements 公开页
+   * - where: status=1 + 时间窗 + deletedAt=null（公开数据隔离已删/已下架）
+   * - select: 不返回 content 全文（节省 payload，详情页单独取）
+   */
+  async findList(query: FilterAnnouncementDto) {
+    const { page = 1, pageSize = 20 } = query;
+    const now = new Date();
+    const where = {
+      status: 1,
+      deletedAt: null,
+      OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+      AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
+    };
+    const skip = (page - 1) * pageSize;
+    const [list, total] = await Promise.all([
+      this.prisma.announcement.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          priority: true,
+          startsAt: true,
+          endsAt: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.announcement.count({ where }),
+    ]);
+    return { list, total, page, pageSize };
+  }
+
+  /**
+   * T-017: 公开 - 单条公告详情
+   * - 三重过滤：status=1 + deletedAt=null + 时间窗
+   * - 不命中统一抛 NotFoundException（不区分"已下架"和"不存在"，防信息泄露）
+   */
+  async findOne(id: bigint) {
+    const now = new Date();
+    const item = await this.prisma.announcement.findFirst({
+      where: {
+        id,
+        status: 1,
+        deletedAt: null,
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
+      },
+    });
+    if (!item) throw new NotFoundException(`公告不存在或已下架`);
+    return item;
+  }
+
   async create(adminId: bigint, dto: CreateAnnouncementDto) {
     return this.prisma.announcement.create({
       data: {
