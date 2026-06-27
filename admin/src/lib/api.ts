@@ -212,3 +212,55 @@ export const adminBannerApi = {
     apiFetch<{ id: string; restored: true }>(`/admin/banners/${id}/restore`, { method: "POST" }),
 };
 
+
+// T-021: 公司后台管理
+export interface AdminCompany {
+  id: string;
+  creatorUserId: string;
+  name: string;
+  logo: string | null;
+  industry: string | null;
+  scale: string | null;
+  nature: string | null;
+  address: string | null;
+  description: string | null;
+  verified: number; // 1=已认证 0=未认证
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // T-021: 软删字段
+  deletedAt: string | null;
+  deletedBy: string | null;
+  updatedBy: string | null;
+  // 关联
+  creator?: { id: string; phone: string; nickname: string; avatar: string | null };
+  _count?: { jobs: number };
+}
+
+export const adminCompanyApi = {
+  list: (
+    params: {
+      keyword?: string;
+      verified?: number;
+      page?: number;
+      pageSize?: number;
+      includeDeleted?: boolean; // T-021
+    } = {},
+  ) =>
+    apiFetch<{ list: AdminCompany[]; total: number; page: number; pageSize: number }>(
+      "/admin/companies",
+      { params: params as any },
+    ),
+  findOne: (id: string | number) =>
+    apiFetch<AdminCompany>(`/admin/companies/${id}`),
+  verify: (id: string | number) =>
+    apiFetch<AdminCompany>(`/admin/companies/${id}/verify`, { method: "POST" }),
+  unverify: (id: string | number) =>
+    apiFetch<AdminCompany>(`/admin/companies/${id}/unverify`, { method: "POST" }),
+  remove: (id: string | number) =>
+    apiFetch<{ id: string; deleted: true }>(`/admin/companies/${id}`, { method: "DELETE" }),
+  // T-021: 恢复已软删公司
+  restore: (id: string | number) =>
+    apiFetch<{ id: string; restored: true }>(`/admin/companies/${id}/restore`, { method: "POST" }),
+};
+

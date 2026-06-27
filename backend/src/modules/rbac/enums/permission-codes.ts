@@ -52,10 +52,12 @@ export const PermissionCodes = {
   CATEGORY_CREATE: 'category.create',
   CATEGORY_UPDATE: 'category.update',
   CATEGORY_DELETE: 'category.delete',
-  // 公司 (T-003 新增)
+  // 公司 (T-003 新增 + T-021 补 company.delete + company.restore)
   COMPANY_VIEW: 'company.view',
   COMPANY_VERIFY: 'company.verify',
   COMPANY_UNVERIFY: 'company.unverify',
+  COMPANY_DELETE: 'company.delete',
+  COMPANY_RESTORE: 'company.restore',
   // 日志
   AUDIT_LOG_VIEW: 'auditLog.view',
   LOGIN_LOG_VIEW: 'loginLog.view',

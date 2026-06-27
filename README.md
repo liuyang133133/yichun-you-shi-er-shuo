@@ -328,6 +328,41 @@ T-020 已上线：修复 T-016/T-019 遗留的 banner `remove()` 硬删问题 + 
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-020-banner-hard-delete.md](docs/t-020-banner-hard-delete.md)。
 
+## 公司后台管理升级（T-021）
+
+T-021 已上线：升级 admin `/admin/companies`（58 行 placeholder → 完整表格 UI）+ 后端补 `service.remove` 软删 + `service.restore` 事务双写 + DTO 拆分 + 权限码。
+
+**核心机制**：
+- 后端 `service.remove` 改用 `prisma.update` 写 `deletedAt/deletedBy/updatedBy`（与 T-019/T-020 一致）
+- 后端新增 `service.restore` 方法（事务双写 update + `auditLog.create({ action: 'restore' })`）
+- 后端 `service.findAll` 改用 `FilterCompanyDto` + 加 `includeDeleted` 过滤参数
+- 后端 controller 新增 2 endpoint：`DELETE /admin/companies/:id`（`company.delete`）+ `POST /admin/companies/:id/restore`（`company.restore`）
+- 后端 DTO 拆分：filter / update / index 独立文件（沿用 T-020 banner 模式）
+- 后端单测：新建 `admin-company.service.spec.ts` 8 用例（findAll 2 + findOne 1 + verify 2 + unverify 2 + remove 1）
+- 后端 seed：新加 `company.delete + company.restore` 权限码（**operator 不绑**，仅 super_admin）
+- admin UI **58 行 placeholder → ~390 行表格**：搜索(name/industry/address) + 认证过滤 + `includeDeleted` 复选框 + 认证 chip 三态 + 认证切换按钮 + 软删/恢复
+- admin UI 表格列：ID / 公司(logo+name+industry+address) / 认证 / 规模 / 职位数 / 创建人 / 创建时间 / [删除时间（仅 includeDeleted）] / 操作
+- admin API 客户端：`adminCompanyApi` 6 方法（含 restore）+ `AdminCompany` interface 含软删字段
+
+**关键设计**：
+- Company 无 `status` 字段（只有 `verified`），restore **不强制重置状态**；保留原 verified 状态由 admin 自行决定是否需要重新认证
+- 操作按钮根据 `verified` 切换显示：已认证 → 取消认证（XCircle 灰）/ 未认证 → 认证（CheckCircle2 emerald）
+- 公开 API 行为不变（T-001 中间件自动过滤 `deletedAt: null`，前台永远不显示已软删）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+- 不含创建/编辑公司模态（用户确认：最小可用 + 与 T-020 banner 范围一致）
+- operator 角色不绑任何 `company.*` 权限（沿用 `admin-company.controller.ts:11` 注释「默认仅 super_admin」）
+
+**已知问题（独立任务）**：
+- admin build 仍受 pre-existing globals.css 4 级相对路径影响
+- 不含公司创建/编辑模态（V1.1 / T-022+ 留）
+
+**测试**：
+- 后端 admin-company.service 单测 8/8
+- 后端 banner + announcement + tag 单测无回归（71/71）
+- admin tsc 0 错（T-021b 自身）
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-021-company-admin.md](docs/t-021-company-admin.md)。
+
 ## License
 
 MIT
