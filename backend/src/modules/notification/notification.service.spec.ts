@@ -19,19 +19,23 @@ import { UserNotificationSettingService } from './user-notification-setting.serv
 import { DeviceTokenService } from './device-token.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationEvent } from './notification-event';
+import { NotificationWsService } from '../ws/notification-ws.service';
 
-describe('NotificationService (T-007)', () => {
+describe('NotificationService (T-007 + T-010)', () => {
   let prisma: PrismaService;
   let service: NotificationService;
   let settingService: UserNotificationSettingService;
   let deviceService: DeviceTokenService;
+  let wsMock: NotificationWsService;
   let testUserId: bigint;
   let adminUserId: bigint;
 
   beforeAll(async () => {
     prisma = new PrismaService();
     await prisma.$connect();
-    service = new NotificationService(prisma);
+    // T-010: 用 mock NotificationWsService（单测不发 ws 推送）
+    wsMock = { sendToUser: jest.fn().mockResolvedValue(undefined) } as any;
+    service = new NotificationService(prisma, wsMock);
     settingService = new UserNotificationSettingService(prisma);
     deviceService = new DeviceTokenService(prisma);
 

@@ -11,6 +11,8 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { join } from 'path';
+// T-010: Redis Adapter 让 ws 广播跨实例生效
+import { RedisIoAdapter } from './modules/ws/redis-io.adapter';
 
 // Node 18 兼容：`@nestjs/schedule` 在 Node 19+ 才有 global crypto
 if (typeof (globalThis as any).crypto === 'undefined') {
@@ -188,7 +190,12 @@ async function bootstrap() {
   // 9. 全局响应拦截器
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // 10. Swagger 文档 (SHOULD-40)
+  // 10. WebSocket Redis Adapter (T-010): 跨实例广播
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.init(app);
+  app.useWebSocketAdapter(redisIoAdapter);
+
+  // 11. Swagger 文档 (SHOULD-40)
   const swaggerConfig = new DocumentBuilder()
     .setTitle('伊春有事儿说 API')
     .setDescription('V1.0 分类信息平台后端 API')
