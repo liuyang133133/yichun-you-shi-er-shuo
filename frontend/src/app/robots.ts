@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
   return {
     rules: [
       {
@@ -9,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/me/', '/admin/'],
       },
     ],
-    sitemap: 'https://example.com/sitemap.xml', // TODO: 上线时改为真实域名
+    sitemap: `${base}/sitemap.xml`,
+    host: base,
   };
 }

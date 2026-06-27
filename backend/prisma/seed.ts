@@ -5,6 +5,131 @@
  */
 import { PrismaClient } from '@prisma/client';
 
+// =====================================================
+// T-P15-02 V1: SEO TDK 种子数据（独立常量，便于 PM 调整文案）
+// =====================================================
+
+/** 顶级分类 SEO（4 条） */
+const TOP_CATEGORY_SEO = [
+  {
+    code: 'house',
+    slug: 'house',
+    seoTitle: '伊春房屋出租 - 整租/合租/短租/商铺真实房源 | 伊春有事儿说',
+    seoKeywords: '伊春租房,伊春房屋出租,伊春合租,伊春短租,小兴安岭租房,伊美区租房',
+    seoDescription:
+      '伊春本地房屋出租信息平台，提供伊美区、南岔县、友好区、铁力市等区县整租、合租、短租、商铺写字楼真实房源，每日更新，免费看房电话。',
+  },
+  {
+    code: 'secondhand',
+    slug: 'secondhand',
+    seoTitle: '伊春二手交易 - 二手家电/数码/家具/母婴玩具转让 | 伊春有事儿说',
+    seoKeywords:
+      '伊春二手,伊春二手市场,二手家电,二手数码,二手家具,伊春二手物品',
+    seoDescription:
+      '伊春本地二手交易平台，手机数码、家居家电、服饰鞋包、母婴玩具等二手物品本地免费转让，本地当面交易，避免运费纠纷。',
+  },
+  {
+    code: 'job',
+    slug: 'job',
+    seoTitle: '伊春招聘求职 - 销售/餐饮/IT/家政/司机真实岗位 | 伊春有事儿说',
+    seoKeywords:
+      '伊春招聘,伊春找工作,伊春求职,小兴安岭招聘,伊春兼职,伊春企业直招',
+    seoDescription:
+      '伊春本地招聘信息，涵盖销售客服、餐饮酒店、IT互联网、家政保洁、司机物流、教育培训等岗位，本地企业直招，简历置顶提升面试率。',
+  },
+  {
+    code: 'lifebiz',
+    slug: 'lifebiz',
+    seoTitle: '伊春便民信息 - 顺风车/家政/装修/宠物/邻里互助 | 伊春有事儿说',
+    seoKeywords:
+      '伊春便民,伊春顺风车,伊春家政,伊春装修,伊春宠物,伊春邻里,伊春寻人',
+    seoDescription:
+      '伊春本地便民服务平台，提供顺风车、家政、装修、宠物、寻人寻物、邻里互助等社区生活信息，伊春人自己的邻里圈。',
+  },
+] as const;
+
+/**
+ * 子分类 slug 映射（21 条；TDK 运行时由父分类拼装）
+ */
+const SUB_CATEGORY_SLUGS: Record<string, Record<string, string>> = {
+  house: {
+    '整租': 'house-zhengzu',
+    '合租': 'house-hezu',
+    '短租/日租': 'house-duanzu',
+    '商铺/写字楼': 'house-shangpu',
+  },
+  secondhand: {
+    '数码电器': 'secondhand-shuma',
+    '家居日用': 'secondhand-jiaju',
+    '服饰鞋包': 'secondhand-fushi',
+    '图书音像': 'secondhand-tushu',
+    '母婴玩具': 'secondhand-muying',
+    '其他': 'secondhand-qita',
+  },
+  job: {
+    '销售/客服': 'job-xiaoshou',
+    '餐饮/酒店': 'job-canyin',
+    '家政/保洁': 'job-jiazheng',
+    '司机/物流': 'job-siji',
+    'IT/互联网': 'job-it',
+    '教育/培训': 'job-jiaoyu',
+    '其他': 'job-qita',
+  },
+  lifebiz: {
+    '顺风车': 'lifebiz-shunfengche',
+    '打听事': 'lifebiz-dating',
+    '寻人寻物': 'lifebiz-xunren',
+    '家政服务': 'lifebiz-jiazheng-fw',
+    '装修维修': 'lifebiz-zhuangxiu',
+    '宠物': 'lifebiz-chongwu',
+    '婚恋交友': 'lifebiz-hunlian',
+    '小区互助': 'lifebiz-xiaoqu',
+    '邻居拼车': 'lifebiz-linju-pc',
+    '本地爆料': 'lifebiz-boliao',
+    '季节特产': 'lifebiz-techan',
+    '其他': 'lifebiz-qita',
+  },
+};
+
+/** 区县 SEO（伊春市 + 12 区县 = 13 条） */
+const AREA_SEO = [
+  { name: '伊春市', slug: 'yichun', level: 1 },
+  { name: '伊美区', slug: 'yimei', level: 2 },
+  { name: '南岔县', slug: 'nancha', level: 2 },
+  { name: '友好区', slug: 'youhao', level: 2 },
+  { name: '红星区', slug: 'hongxing', level: 2 },
+  { name: '西林区', slug: 'xilin', level: 2 },
+  { name: '金林区', slug: 'jinlin', level: 2 },
+  { name: '乌翠区', slug: 'wucui', level: 2 },
+  { name: '汤旺县', slug: 'tangwang', level: 2 },
+  { name: '嘉荫县', slug: 'jiayin', level: 2 },
+  { name: '大箐山县', slug: 'daqingshan', level: 2 },
+  { name: '丰林县', slug: 'fenglin', level: 2 },
+  { name: '铁力市', slug: 'tieli', level: 2 },
+] as const;
+
+/** 拼装区县 SEO TDK */
+function buildAreaSeoTdk(areaName: string) {
+  return {
+    seoTitle: `${areaName}房屋出租/二手/招聘/便民信息 | 伊春有事儿说`,
+    seoKeywords: `${areaName}信息,${areaName}租房,${areaName}二手,${areaName}招聘,${areaName}便民,伊春${areaName}`,
+    seoDescription: `伊春${areaName}本地分类信息平台，提供${areaName}房屋出租、二手交易、招聘求职、便民信息，每日更新，本地真实可靠。`,
+  };
+}
+
+/** 拼装子分类 SEO TDK */
+function buildSubCategorySeoTdk(
+  parentName: string,
+  subName: string,
+  parentKeywords: string,
+) {
+  return {
+    seoTitle: `伊春${parentName}-${subName}频道 | 伊春有事儿说`,
+    seoKeywords: `伊春${subName},${parentKeywords},伊春${parentName}${subName}`,
+    seoDescription: `伊春本地${parentName}频道下的${subName}分类，汇集伊春各区县${subName}信息，每日更新。`,
+  };
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -26,19 +151,25 @@ async function main() {
   const createdTopCats: Record<string, bigint> = {};
 
   for (const cat of topCategories) {
+    const seo = TOP_CATEGORY_SEO.find((s) => s.code === cat.code);
     const existing = await prisma.category.findFirst({
-      where: { code: cat.code, parentId: 0 },
+      where: { code: cat.code, parentId: null },
     });
-    const created = existing ?? (await prisma.category.create({
-      data: {
-        parentId: null,
-        code: cat.code,
-        name: cat.name,
-        icon: cat.icon,
-        sortOrder: cat.sortOrder,
-        status: 1,
-      },
-    }));
+    const data = {
+      parentId: null,
+      code: cat.code,
+      name: cat.name,
+      icon: cat.icon,
+      sortOrder: cat.sortOrder,
+      status: 1,
+      slug: seo?.slug ?? cat.code,
+      seoTitle: seo?.seoTitle ?? null,
+      seoKeywords: seo?.seoKeywords ?? null,
+      seoDescription: seo?.seoDescription ?? null,
+    };
+    const created = existing
+      ? await prisma.category.update({ where: { id: existing.id }, data })
+      : await prisma.category.create({ data });
     createdTopCats[cat.code] = created.id;
   }
 
@@ -85,20 +216,32 @@ async function main() {
   };
 
   for (const [code, subs] of Object.entries(subCategories)) {
+    const slugMap = SUB_CATEGORY_SLUGS[code] ?? {};
+    const parentSeo = TOP_CATEGORY_SEO.find((s) => s.code === code);
+    const parentName = topCategories.find((c) => c.code === code)?.name ?? code;
     for (const sub of subs) {
       const existing = await prisma.category.findFirst({
         where: { code, name: sub.name, parentId: createdTopCats[code] },
       });
-      if (!existing) {
-        await prisma.category.create({
-          data: {
-            parentId: createdTopCats[code],
-            code,
-            name: sub.name,
-            sortOrder: sub.sortOrder,
-            status: 1,
-          },
-        });
+      const subSlug = slugMap[sub.name] ?? `${code}-${sub.name}`;
+      const subTdk = parentSeo
+        ? buildSubCategorySeoTdk(parentName, sub.name, parentSeo.seoKeywords)
+        : null;
+      const data = {
+        parentId: createdTopCats[code],
+        code,
+        name: sub.name,
+        sortOrder: sub.sortOrder,
+        status: 1,
+        slug: subSlug,
+        seoTitle: subTdk?.seoTitle ?? null,
+        seoKeywords: subTdk?.seoKeywords ?? null,
+        seoDescription: subTdk?.seoDescription ?? null,
+      };
+      if (existing) {
+        await prisma.category.update({ where: { id: existing.id }, data });
+      } else {
+        await prisma.category.create({ data });
       }
     }
   }
@@ -216,9 +359,16 @@ async function main() {
   console.log('  🗺️  创建区域...');
 
   // 顶级：伊春市
+  const yichunSeo = AREA_SEO.find((a) => a.name === '伊春市');
+  const yichunTdk = yichunSeo ? buildAreaSeoTdk('伊春市') : null;
   const yichunCity = await prisma.area.upsert({
     where: { id: BigInt(1) }, // 第一次靠 upsert by id；如果非空则跳过
-    update: {},
+    update: {
+      slug: yichunSeo?.slug ?? 'yichun',
+      seoTitle: yichunTdk?.seoTitle ?? null,
+      seoKeywords: yichunTdk?.seoKeywords ?? null,
+      seoDescription: yichunTdk?.seoDescription ?? null,
+    },
     create: {
       id: BigInt(1),
       parentId: null,
@@ -226,6 +376,10 @@ async function main() {
       level: 1,
       adCode: '230700',
       sortOrder: 1,
+      slug: yichunSeo?.slug ?? 'yichun',
+      seoTitle: yichunTdk?.seoTitle ?? null,
+      seoKeywords: yichunTdk?.seoKeywords ?? null,
+      seoDescription: yichunTdk?.seoDescription ?? null,
     },
   }).catch(async () => {
     return prisma.area.create({
@@ -235,6 +389,10 @@ async function main() {
         level: 1,
         adCode: '230700',
         sortOrder: 1,
+        slug: yichunSeo?.slug ?? 'yichun',
+        seoTitle: yichunTdk?.seoTitle ?? null,
+        seoKeywords: yichunTdk?.seoKeywords ?? null,
+        seoDescription: yichunTdk?.seoDescription ?? null,
       },
     });
   });
@@ -257,18 +415,25 @@ async function main() {
 
   const createdDistricts: Record<string, bigint> = {};
   for (const d of districts) {
+    const seo = AREA_SEO.find((a) => a.name === d.name);
+    const tdk = seo ? buildAreaSeoTdk(d.name) : null;
     const existing = await prisma.area.findFirst({
       where: { parentId: yichunCity.id, name: d.name },
     });
-    const created = existing ?? (await prisma.area.create({
-      data: {
-        parentId: yichunCity.id,
-        name: d.name,
-        level: 2,
-        adCode: d.adCode,
-        sortOrder: d.sortOrder,
-      },
-    }));
+    const data = {
+      parentId: yichunCity.id,
+      name: d.name,
+      level: 2,
+      adCode: d.adCode,
+      sortOrder: d.sortOrder,
+      slug: seo?.slug ?? null,
+      seoTitle: tdk?.seoTitle ?? null,
+      seoKeywords: tdk?.seoKeywords ?? null,
+      seoDescription: tdk?.seoDescription ?? null,
+    };
+    const created = existing
+      ? await prisma.area.update({ where: { id: existing.id }, data })
+      : await prisma.area.create({ data });
     createdDistricts[d.name] = created.id;
   }
 
@@ -336,10 +501,14 @@ async function main() {
   await seedRbac();
 
   // ============================================
-<<<<<<< HEAD
   // T-013: 7. 标签字典（30 个伊春本地常用标签）
   // ============================================
   await seedTags();
+
+  // ============================================
+  // T-018: 7. 协议（terms / privacy / about）
+  // ============================================
+  await seedAgreements();
 }
 
 /**
@@ -403,11 +572,6 @@ async function seedTags() {
     created++;
   }
   console.log(`  - 标签: 总 ${tags.length} 个 / 新增 ${created} 个`);
-=======
-  // T-018: 7. 协议（terms / privacy / about）
-  // ============================================
-  await seedAgreements();
->>>>>>> feature/T-018-agreements
 }
 
 /**
