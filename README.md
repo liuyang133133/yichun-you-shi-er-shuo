@@ -263,6 +263,37 @@ T-017 已上线：公告公开页 + 详情页 + SEO。
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-017-announcement-frontend.md](docs/t-017-announcement-frontend.md)。
 
+## 公告硬删 → 软删修复（T-019）
+
+T-019 已上线：修复 T-016 遗留的 announcement `remove()` 硬删问题（T-001 软删规范一致性）。
+
+**核心机制**：
+- 后端 `service.remove` 改用 `prisma.update` 写 `deletedAt/deletedBy/updatedBy`（移除硬删 `prisma.delete`）
+- 后端新增 `service.restore` 方法（事务双写 update + `auditLog.create({ action: 'restore' })`）
+- 后端 `service.update` 仅在 `status/startsAt/endsAt`（破坏性字段）变更时写 `updatedBy`
+- 后端新增 `POST /api/v1/admin/announcements/:id/restore` 端点 + `announcement.restore` 权限码
+- 后端 `findAll` 加 `includeDeleted` 过滤参数
+- 后端单测 12 → 16（覆盖软删 + restore + 破坏性字段 updatedBy）
+- admin UI 状态 chip 三态（启用/停用/**已删除**），加"包含已删除"复选框 + 恢复按钮 + `deletedAt` 列
+- admin UI 移除"硬删警告"条（已修复）
+
+**关键设计**：
+- 公开 API 行为不变（T-001 中间件自动过滤 `deletedAt: null`，前台永远不显示已软删）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+- `update()` 写 `updatedBy` 仅破坏性字段（与 `post.offline` 规范一致）
+- `restore` 后 status 自动 = 1（启用），避免管理员忘记启用
+
+**已知问题（独立任务）**：
+- `banner.service.remove` 同样硬删（T-020+ 修）
+- admin build 仍受 pre-existing globals.css 4 级相对路径影响
+
+**测试**：
+- 后端 announcement.service 单测 16/16
+- 后端 announcement.service + findList + tag.service 无回归
+- admin tsc 0 错（T-019b 自身）
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-019-fix-announcement-hard-delete.md](docs/t-019-fix-announcement-hard-delete.md)。
+
 ## License
 
 MIT

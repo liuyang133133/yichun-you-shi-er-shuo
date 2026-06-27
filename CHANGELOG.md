@@ -2,6 +2,34 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-019 公告硬删 → 软删修复 + restore
+
+### Added
+- **T-019 后端 service**：
+  - `announcement.service.remove(adminId, id)` — 改用 `prisma.update` 写 `deletedAt / deletedBy / updatedBy`（移除硬删 `prisma.delete`）
+  - `announcement.service.restore(adminId, id)` — 新增，事务双写 update（`deletedAt: null / deletedBy: null / status: 1 / updatedBy: adminId`）+ `auditLog.create({ action: 'restore' })`
+  - `announcement.service.update(adminId, id, dto)` — 仅 `status/startsAt/endsAt`（破坏性字段）变更时写 `updatedBy`
+  - `announcement.service.findAll(query)` — 加 `includeDeleted: boolean` 过滤
+- **T-019 后端 controller**：
+  - 新增 `POST /api/v1/admin/announcements/:id/restore` + `@RequirePermission('announcement.restore')`
+  - `PATCH :id` / `DELETE :id` 传 `adminId` 到 service
+- **T-019 DTO**：`FilterAnnouncementDto.includeDeleted?: string` 字段
+- **T-019 seed**：新加 `announcement.restore` 权限码 + operator 角色绑定
+- **T-019 单测**：12 → 16 用例（`#12` 改软删 + 新增 `#13/#14/#15/#16`）
+- **T-019 admin UI**：
+  - 删除"硬删警告"条（已修复）
+  - 新增"包含已删除"复选框（透传 `includeDeleted=true`）
+  - 状态 chip 三态：启用（emerald）/ 停用（gray）/ **已删除**（red opacity）
+  - 操作列：未删显"删除"/已删显"恢复"
+  - 表格加 `deletedAt` 列（仅 includeDeleted=true 时显示）
+  - `AdminAnnouncement` interface 加 `deletedAt / deletedBy` 字段
+
+### Notes
+- 公开 API `findActive / findList / findOne` 行为不变（T-001 中间件自动过滤 `deletedAt: null`，已软删公告对前台仍不可见）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+- `update()` 仅写"破坏性字段"的 `updatedBy`，与 `post.offline` 规范一致；`title/content` 修订不写
+- admin build 仍受 pre-existing globals.css 4 级相对路径问题影响（独立任务修）
+
 ## [Unreleased] — T-010 WebSocket 网关 + 实时通知
 
 ### Added
