@@ -2,6 +2,41 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-021 公司后台管理升级 + 软删规范统一
+
+### Added
+- **T-021 后端 service**：
+  - `admin-company.service.remove(adminId, id)` — 改用 `prisma.update` 写 `deletedAt / deletedBy / updatedBy`（移除硬删风险）
+  - `admin-company.service.restore(adminId, id)` — 新增，事务双写 update（`deletedAt: null / deletedBy: null / updatedBy: adminId`）+ `auditLog.create({ action: 'restore' })`
+  - 注意：Company 无 status 字段，restore 不强制重置状态；保留原 verified 状态
+  - `admin-company.service.findAll(query)` — 改用 `FilterCompanyDto` + 加 `includeDeleted: string` 过滤
+- **T-021 后端 controller**：
+  - 新增 `DELETE /api/v1/admin/companies/:id`（`company.delete`）
+  - 新增 `POST /api/v1/admin/companies/:id/restore`（`company.restore`）
+  - 已有端点保留：`GET /admin/companies`（`company.view`）、`GET /admin/companies/:id`、`POST /admin/companies/:id/verify`、`POST /admin/companies/:id/unverify`
+- **T-021 DTO 拆分**：
+  - 新增 `filter-company.dto.ts`（keyword/verified/page/pageSize/includeDeleted）
+  - 新增 `update-company.dto.ts`（全字段 Optional；scale/nature 用 `@IsIn` 验证）
+  - 新增 `dto/index.ts` 聚合导出
+- **T-021 seed**：新加 `company.delete + company.restore` 权限码（operator 不绑，仅 super_admin）
+- **T-021 permission-codes**：新加 `COMPANY_DELETE + COMPANY_RESTORE` 常量
+- **T-021 单测**：新建 `admin-company.service.spec.ts` 8 用例（findAll 2 + findOne 1 + verify 2 + unverify 2 + remove 1；restore 沿用 T-020 banner 测试策略暂不单测）
+- **T-021 admin UI**：
+  - `/admin/companies` **58 行 placeholder → 390 行表格**（仿 `/admin/announcements` / `/admin/banners` 模式）
+  - 工具条：name/industry/address 搜索 + 认证过滤（全部/已认证/未认证）+ `includeDeleted` 复选框
+  - 认证 chip 三态：已认证（emerald）/ 未认证（gray）/ **已删除**（red opacity）
+  - 表格列：ID / 公司（logo + name + industry + address） / 认证 / 规模 / 职位数 / 创建人 / 创建时间 / [删除时间（仅 includeDeleted）] / 操作
+  - 操作列：未删两按钮（认证/取消认证切换 + 删除），已删单按钮（恢复）
+  - 表格加 `deletedAt` 列（仅 includeDeleted=true 时显示）
+  - `AdminCompany` interface 加 `deletedAt / deletedBy / updatedBy + creator + _count.jobs` 字段
+- **T-021 admin api**：`adminCompanyApi` 6 方法（list / findOne / verify / unverify / remove / restore）
+
+### Notes
+- 不含创建/编辑公司模态（用户确认：最小可用 + 与 T-020 banner 范围一致）
+- operator 角色不绑任何 `company.*` 权限（沿用 `admin-company.controller.ts:11` 注释「默认仅 super_admin」）
+- 公开 API 行为不变（T-001 中间件自动过滤 `deletedAt: null`）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+
 ## [Unreleased] — T-020 Banner 硬删 → 软删修复 + PermissionGuard 改造
 
 ### Added
