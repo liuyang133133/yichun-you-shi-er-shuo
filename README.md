@@ -294,6 +294,40 @@ T-019 已上线：修复 T-016 遗留的 announcement `remove()` 硬删问题（
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-019-fix-announcement-hard-delete.md](docs/t-019-fix-announcement-hard-delete.md)。
 
+## Banner 硬删 → 软删修复（T-020）
+
+T-020 已上线：修复 T-016/T-019 遗留的 banner `remove()` 硬删问题 + PermissionGuard 改造 + admin UI 重写（卡片→表格）。
+
+**核心机制**：
+- 后端 `service.remove` 改用 `prisma.update` 写 `deletedAt/deletedBy/updatedBy`（移除硬删 `prisma.delete`）
+- 后端新增 `service.restore` 方法（事务双写 update + `auditLog.create({ action: 'restore' })`）
+- 后端 `service.update` 仅在 `status/startsAt/endsAt`（破坏性字段）变更时写 `updatedBy`
+- 后端 `service.findAll` 加 `includeDeleted` 过滤参数
+- 后端 controller 拆分：原 `banner.controller.ts` 仅保留公开 active；新增 `admin-banner.controller.ts` 用 AdminGuard + PermissionGuard + 5 个 `@RequirePermission`
+- 后端 DTO 拆分：filter / update / index 独立文件
+- 后端单测：新建 `banner.service.spec.ts` 17 用例（覆盖 banner 特有字段 position/sortOrder/linkType/linkTarget）
+- 后端 seed：新加 `banner.view + banner.restore` 权限码 + operator 角色绑定
+- admin UI **卡片 → 表格**重写：搜索 + 位置过滤 + 状态过滤 + `includeDeleted` 复选框 + 状态 chip 三态 + 恢复按钮
+- admin UI 表格列：ID / Banner（含图片缩略）/ 位置 / 状态 / 排序 / 生效时段 / 创建时间 / [删除时间（仅 includeDeleted）] / 操作
+- admin API 客户端：`adminBannerApi` 5 方法（含 restore）+ `AdminBanner` interface 含软删字段
+
+**关键设计**：
+- Controller 拆分后路由路径**完全等价**改造前（`@Controller('admin/banners')` + 全局 `/api/v1` 前缀）
+- 公开 API 行为不变（T-001 中间件自动过滤 `deletedAt: null`，前台永远不显示已软删）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+- `update()` 写 `updatedBy` 仅破坏性字段（与 `post.offline` / `announcement.update` 规范一致）
+- `restore` 后 status 自动 = 1（启用），避免管理员忘记启用
+
+**已知问题（独立任务）**：
+- admin build 仍受 pre-existing globals.css 4 级相对路径影响
+
+**测试**：
+- 后端 banner.service 单测 17/17
+- 后端 announcement + tag 单测无回归（54/54）
+- admin tsc 0 错（T-020b 自身）
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-020-banner-hard-delete.md](docs/t-020-banner-hard-delete.md)。
+
 ## License
 
 MIT

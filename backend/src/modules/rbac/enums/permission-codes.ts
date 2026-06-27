@@ -41,10 +41,12 @@ export const PermissionCodes = {
   ANNOUNCEMENT_CREATE: 'announcement.create',
   ANNOUNCEMENT_UPDATE: 'announcement.update',
   ANNOUNCEMENT_DELETE: 'announcement.delete',
-  // Banner
+  // Banner (T-020 补 banner.view + banner.restore)
+  BANNER_VIEW: 'banner.view',
   BANNER_CREATE: 'banner.create',
   BANNER_UPDATE: 'banner.update',
   BANNER_DELETE: 'banner.delete',
+  BANNER_RESTORE: 'banner.restore',
   // 分类 (T-003 新增)
   CATEGORY_VIEW: 'category.view',
   CATEGORY_CREATE: 'category.create',

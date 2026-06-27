@@ -2,6 +2,39 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-020 Banner 硬删 → 软删修复 + PermissionGuard 改造
+
+### Added
+- **T-020 后端 service**：
+  - `banner.service.remove(adminId, id)` — 改用 `prisma.update` 写 `deletedAt / deletedBy / updatedBy`（移除硬删 `prisma.delete`）
+  - `banner.service.restore(adminId, id)` — 新增，事务双写 update（`deletedAt: null / deletedBy: null / status: 1 / updatedBy: adminId`）+ `auditLog.create({ action: 'restore' })`
+  - `banner.service.update(adminId, id, dto)` — 仅 `status/startsAt/endsAt`（破坏性字段）变更时写 `updatedBy`
+  - `banner.service.findAll(query)` — 加 `includeDeleted: string` 过滤
+- **T-020 后端 controller 拆分**：
+  - 原 `banner.controller.ts` 仅保留公开 `GET banners/active`
+  - 新增 `admin-banner.controller.ts`（5 endpoint + `AdminGuard + PermissionGuard + @RequirePermission` 5 权限码）
+- **T-020 DTO 拆分**：
+  - 新增 `filter-banner.dto.ts`（position/status/page/pageSize/includeDeleted）
+  - 新增 `update-banner.dto.ts`（全字段 Optional）
+  - 新增 `dto/index.ts` 聚合导出
+- **T-020 seed**：新加 `banner.view + banner.restore` 权限码 + operator 角色绑定
+- **T-020 permission-codes**：新加 `BANNER_VIEW + BANNER_RESTORE` 常量
+- **T-020 单测**：新建 `banner.service.spec.ts` 17 用例（覆盖 banner 特有字段 position/sortOrder/linkType/linkTarget + T-020 软删 + restore）
+- **T-020 admin UI**：
+  - `/admin/banners` **卡片→表格**重写（仿 `/admin/announcements` 模式）
+  - 工具条：title 搜索 + 位置过滤（首页头部/首页中部/列表页头部）+ 状态过滤（全部/启用/停用）+ `includeDeleted` 复选框
+  - 状态 chip 三态：启用（emerald）/ 停用（gray）/ **已删除**（red opacity）
+  - 操作列：未删三按钮（停用/编辑/删除），已删单按钮（恢复）
+  - 表格加 `deletedAt` 列（仅 includeDeleted=true 时显示）
+  - 创建/编辑模态含 9 字段（之前卡片版缺 startsAt/endsAt/status）
+  - `AdminBanner` interface 加 `deletedAt / deletedBy / updatedBy / createdBy / createdAt` 字段
+
+### Notes
+- Controller 拆分后路由路径保持完全一致：`/api/v1/admin/banners/*`（与改造前等价）
+- 公开 API `findActive` 行为不变（T-001 中间件自动过滤 `deletedAt: null`）
+- 不需要新 Prisma migration（schema 已含软删字段，T-001 已加）
+- `banner.update` 破坏性字段 = status/startsAt/endsAt（与 announcement 一致）
+
 ## [Unreleased] — T-019 公告硬删 → 软删修复 + restore
 
 ### Added

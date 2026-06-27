@@ -164,3 +164,51 @@ export const adminAnnouncementApi = {
       { method: 'POST' },
     ),
 };
+
+
+// T-020: Banner 后台管理
+export interface AdminBanner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkType: "url" | "post" | "category" | "search";
+  linkTarget: string;
+  position: "home_top" | "home_mid" | "list_top";
+  sortOrder: number;
+  status: number; // 1=启用 0=停用
+  startsAt: string | null;
+  endsAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  // T-020: 软删字段
+  deletedAt: string | null;
+  deletedBy: string | null;
+  updatedBy: string | null;
+}
+
+export const adminBannerApi = {
+  list: (
+    params: {
+      position?: string;
+      status?: number;
+      page?: number;
+      pageSize?: number;
+      includeDeleted?: boolean;
+    } = {},
+  ) =>
+    apiFetch<{ list: AdminBanner[]; total: number; page: number; pageSize: number }>(
+      "/admin/banners",
+      { params: params as any },
+    ),
+  create: (body: Partial<AdminBanner>) =>
+    apiFetch<AdminBanner>("/admin/banners", { method: "POST", body }),
+  update: (id: string | number, body: Partial<AdminBanner>) =>
+    apiFetch<AdminBanner>(`/admin/banners/${id}`, { method: "PATCH", body }),
+  remove: (id: string | number) =>
+    apiFetch<{ id: string; deleted: true }>(`/admin/banners/${id}`, { method: "DELETE" }),
+  // T-020: 恢复已软删 Banner
+  restore: (id: string | number) =>
+    apiFetch<{ id: string; restored: true }>(`/admin/banners/${id}/restore`, { method: "POST" }),
+};
+

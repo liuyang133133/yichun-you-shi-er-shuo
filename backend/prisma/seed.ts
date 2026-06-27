@@ -472,9 +472,12 @@ async function seedRbac() {
     // T-019: 恢复公告（与 post.restore 平行）
     { code: 'announcement.restore', module: 'announcement', action: 'restore', name: '恢复公告' },
     // Banner
+    { code: 'banner.view',        module: 'banner', action: 'view',    name: '查看 Banner' },
     { code: 'banner.create',      module: 'banner', action: 'create',   name: '创建 Banner' },
     { code: 'banner.update',      module: 'banner', action: 'update',   name: '更新 Banner' },
     { code: 'banner.delete',      module: 'banner', action: 'delete',   name: '删除 Banner' },
+    // T-020: 恢复 Banner（与 announcement.restore 平行）
+    { code: 'banner.restore',     module: 'banner', action: 'restore',  name: '恢复 Banner' },
     // 分类 (T-003)
     { code: 'category.view',      module: 'category', action: 'view',    name: '查看分类' },
     { code: 'category.create',    module: 'category', action: 'create',  name: '创建分类' },
@@ -529,7 +532,7 @@ async function seedRbac() {
     operator: [
       'post.view',
       'announcement.view', 'announcement.create', 'announcement.update', 'announcement.delete', 'announcement.restore',
-      'banner.create', 'banner.update', 'banner.delete',
+      'banner.view', 'banner.create', 'banner.update', 'banner.delete', 'banner.restore',
       'category.view', 'category.create', 'category.update', 'category.delete',
       'dashboard.view',
       'aiUsage.view',
