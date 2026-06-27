@@ -8,9 +8,9 @@ import { Select } from '@/components/ui/select';
 import { Tabs } from '@/components/ui/tabs';
 import { PostCard, type PostCardData } from '@/components/post/post-card';
 import { PostCardSkeleton, EmptyState } from '@/components/patterns/empty-state';
-import { postApi, categoryApi, areaApi, bannerApi, type BannerItem } from '@/lib/api';
+import { postApi, categoryApi, areaApi, bannerApi, tagApi, type BannerItem, type Tag } from '@/lib/api';
 import { MODULES, MODULE_BY_CODE, type PostType } from '@/config/modules';
-import { Plus, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ArrowRight, Sparkles, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { value: 'latest', label: '最新发布' },
@@ -49,6 +49,15 @@ function HomeContentInner() {
   const [sort, setSort] = useState<string>('latest');
   const [banners, setBanners] = useState<BannerItem[]>([]);
   const [bannerIdx, setBannerIdx] = useState(0);
+  // T-014: 标签过滤
+  const [hotTags, setHotTags] = useState<Tag[]>([]);
+  const [selectedTagSlug, setSelectedTagSlug] = useState<string>('');
+
+  // 读 URL ?tag= 参数
+  useEffect(() => {
+    const tag = search.get('tag');
+    if (tag) setSelectedTagSlug(tag);
+  }, [search]);
 
   useEffect(() => {
     categoryApi.list().then((r: any) => setCategories(r || [])).catch(() => {});
@@ -64,6 +73,8 @@ function HomeContentInner() {
       setAreas(flat);
     }).catch(() => {});
     bannerApi.active('home_top').then((r: any) => setBanners(Array.isArray(r) ? r : [])).catch(() => setBanners([]));
+    // T-014: 加载热门标签
+    tagApi.hot(12).then(setHotTags).catch(() => setHotTags([]));
   }, []);
 
   // Banner 自动轮播
@@ -84,9 +95,18 @@ function HomeContentInner() {
         areaId: selectedArea ? Number(selectedArea) : undefined,
         sort: sort as any,
         pageSize: 24,
+        // T-014: tag slug 过滤（AND 语义；单选传数组 [slug]）
+        tagSlugs: selectedTagSlug ? [selectedTagSlug] : undefined,
       })
       .then((r: any) => {
-        setList(r?.list || []);
+        // T-014: 把后端 postTags: [{ tag: { id, slug, name } }] 规整为 tags: [{ id, slug, name }]
+        const normalized = (r?.list || []).map((p: any) => ({
+          ...p,
+          tags: Array.isArray(p.postTags)
+            ? p.postTags.map((pt: any) => pt.tag).filter(Boolean)
+            : [],
+        }));
+        setList(normalized);
         setTotal(r?.total || 0);
       })
       .catch(() => {
@@ -95,7 +115,16 @@ function HomeContentInner() {
         setLoadError(true);
       })
       .finally(() => setLoading(false));
-  }, [currentType, selectedCategory, selectedArea, sort]);
+  }, [currentType, selectedCategory, selectedArea, sort, selectedTagSlug]);
+
+  // T-014: 选中标签变化时同步 URL ?tag=
+  function setTagAndUrl(slug: string) {
+    setSelectedTagSlug(slug);
+    const params = new URLSearchParams(search.toString());
+    if (slug) params.set('tag', slug);
+    else params.delete('tag');
+    router.replace(`/?${params.toString()}`, { scroll: false });
+  }
 
   // ====================== 首页 Hero ======================
   if (!currentType) {
@@ -395,6 +424,48 @@ function HomeContentInner() {
             aria-label="排序方式"
           />
         </div>
+
+        {/* T-014: 热门标签过滤条（紧凑横排，水平滚动） */}
+        {hotTags.length > 0 && (
+          <div className="mt-2.5 flex items-center gap-2 overflow-x-auto -mx-1 px-1">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0 pl-1">
+              <Hash className="h-3 w-3" />
+              热门标签：
+            </span>
+            <button
+              type="button"
+              onClick={() => setTagAndUrl('')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full flex-shrink-0 transition-colors ${
+                !selectedTagSlug
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-secondary text-secondary-foreground hover:bg-emerald-50'
+              }`}
+            >
+              全部
+            </button>
+            {hotTags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => setTagAndUrl(tag.slug === selectedTagSlug ? '' : tag.slug)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-full flex-shrink-0 transition-colors inline-flex items-center gap-0.5 ${
+                  selectedTagSlug === tag.slug
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-secondary text-secondary-foreground hover:bg-emerald-50 hover:text-emerald-700'
+                }`}
+              >
+                <Hash className="h-3 w-3" />
+                {tag.name}
+              </button>
+            ))}
+            <Link
+              href="/tags"
+              className="text-xs text-emerald-600 hover:underline flex-shrink-0 pl-1"
+            >
+              全部标签 →
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* 列表 */}
@@ -410,7 +481,7 @@ function HomeContentInner() {
         <EmptyState
           title="暂无相关信息"
           description={
-            selectedCategory || selectedArea
+            selectedCategory || selectedArea || selectedTagSlug
               ? '当前筛选条件下没有帖子，试试调整筛选或发布一条'
               : '这里还很安静，做第一个发布的人吧'
           }

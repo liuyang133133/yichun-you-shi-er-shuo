@@ -5,8 +5,8 @@ import { AnnouncementBanner } from '@/components/layout/announcement-banner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/toast/toaster';
 
-// T-010 build fix: Header 中 useSearchParams 强制根 layout 走 SSR，
-// 避免 build 时静态化 /_not-found 触发 CSR bailout 错误。
+// T-010 + T-014 build fix: Header 用 useSearchParams → 全 layout 加 force-dynamic，
+// 避免 build 时静态化 /_not-found 触发 CSR bailout 错误
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {

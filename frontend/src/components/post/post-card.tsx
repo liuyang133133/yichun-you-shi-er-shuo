@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { MapPin, Eye, Heart, MessageCircle, Clock } from 'lucide-react';
+import { MapPin, Eye, Heart, MessageCircle, Clock, Hash } from 'lucide-react';
 import { formatRelative } from '@/lib/date';
 import { MODULE_BY_CODE } from '@/config/modules';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,8 @@ export interface PostCardData {
   category?: { name: string; code: string } | null;
   /** 封面图 URL（来自 post.images[0]） */
   coverImage?: string | null;
+  /** T-014: 标签列表（最多展示 3 个） */
+  tags?: Array<{ id: string | number; slug: string; name: string }>;
 }
 
 /**
@@ -104,6 +106,24 @@ export function PostCard({ post, index = 0 }: { post: PostCardData; index?: numb
               </span>
             )}
           </div>
+
+          {/* T-014: 标签 chips（最多 3 个，整卡可点） */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {post.tags.slice(0, 3).map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium ring-1 ring-emerald-100"
+                >
+                  <Hash className="h-2.5 w-2.5 mr-0.5" />
+                  {t.name}
+                </span>
+              ))}
+              {post.tags.length > 3 && (
+                <span className="text-[10px] text-muted-foreground/70">+{post.tags.length - 3}</span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-2 border-t border-dashed text-xs text-muted-foreground">
             <span className="flex items-center gap-1 truncate max-w-[60%]">

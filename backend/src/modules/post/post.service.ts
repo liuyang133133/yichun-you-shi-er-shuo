@@ -184,6 +184,8 @@ export class PostService {
             category: { select: { id: true, name: true, code: true } },
             area: { select: { id: true, name: true, level: true } },
             images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { id: true, url: true } },
+            // T-013b: tags 关联 — 前端 PostCard 显示 #标签
+            postTags: { include: { tag: { select: { id: true, slug: true, name: true } } } },
           },
         });
         // 按 AI 排序的 id 顺序还原 (Prisma findMany 不保证顺序)
@@ -208,6 +210,8 @@ export class PostService {
             area: { select: { id: true, name: true, level: true } },
             // 取首张图作为封面（select 第一个；limit 1 用 take）
             images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { id: true, url: true } },
+            // T-013b: tags 关联 — 前端 PostCard 显示 #标签
+            postTags: { include: { tag: { select: { id: true, slug: true, name: true } } } },
           },
         }),
         this.prisma.post.count({ where }),
@@ -250,6 +254,8 @@ export class PostService {
         secondhand: true,
         lifebiz: true,
         job: { include: { company: { select: { id: true, name: true, logo: true, verified: true } } } },
+        // T-013b: tags 关联 — 前端详情页显示 #标签
+        postTags: { include: { tag: { select: { id: true, slug: true, name: true } } } },
       },
     });
     if (!post) {
@@ -561,6 +567,8 @@ export class PostService {
         category: { select: { id: true, name: true, code: true } },
         area: { select: { id: true, name: true, level: true } },
         images: { orderBy: { sortOrder: 'asc' } },
+        // T-013b: tags 关联 — 创建后响应立即带 tags（前端发布页跳详情无需再请求）
+        postTags: { include: { tag: { select: { id: true, slug: true, name: true } } } },
       },
     });
 
@@ -796,6 +804,8 @@ export class PostService {
         include: {
           category: { select: { id: true, name: true, code: true } },
           area: { select: { id: true, name: true, level: true } },
+          // T-013b: tags 关联 — /me/posts 列表也带 tags
+          postTags: { include: { tag: { select: { id: true, slug: true, name: true } } } },
         },
       }),
       this.prisma.post.count({ where }),

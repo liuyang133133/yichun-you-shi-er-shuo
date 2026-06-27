@@ -197,6 +197,9 @@ export const postApi = {
     sort?: 'latest' | 'oldest' | 'price_asc' | 'price_desc';
     page?: number;
     pageSize?: number;
+    /** T-014: 标签过滤（与 tagSlugs 二选一；AND 语义） */
+    tagIds?: number[];
+    tagSlugs?: string[];
   } = {}) => {
     const search = new URLSearchParams();
     if (params.type) search.set('type', params.type);
@@ -206,6 +209,13 @@ export const postApi = {
     if (params.sort) search.set('sort', params.sort);
     if (params.page) search.set('page', String(params.page));
     if (params.pageSize) search.set('pageSize', String(params.pageSize));
+    // T-014: tagIds / tagSlugs 用逗号分隔传递（后端 ListPostDto 的 Transform 解析）
+    if (params.tagIds && params.tagIds.length > 0) {
+      search.set('tagIds', params.tagIds.join(','));
+    }
+    if (params.tagSlugs && params.tagSlugs.length > 0) {
+      search.set('tagSlugs', params.tagSlugs.join(','));
+    }
     return api.get<{ list: any[]; total: number; page: number; pageSize: number }>(
       `/posts?${search.toString()}`,
     );
@@ -399,6 +409,42 @@ export interface UserListItem {
 export const usersApi = {
   search: (keyword: string) =>
     api.get<{ list: UserListItem[]; total: number }>('/users', { keyword }),
+};
+
+// ============================================
+// T-014 标签系统 API
+// ============================================
+
+export interface Tag {
+  id: string | number;
+  slug: string;
+  name: string;
+  description?: string;
+  useCount: number;
+  isHot: boolean;
+  sortOrder: number;
+}
+
+export const tagApi = {
+  /** 列表（支持按 keyword 模糊搜索） */
+  list: (params?: { keyword?: string; page?: number; pageSize?: number }) =>
+    api.get<{ list: Tag[]; total: number; page: number; pageSize: number }>(
+      '/tags',
+      params as Record<string, string>,
+    ),
+  /** 热门标签（isHot=true 或 useCount>0，按 useCount desc） */
+  hot: (limit = 20) => api.get<Tag[]>(`/tags/hot?limit=${limit}`),
+  /** 单个标签详情 */
+  get: (slug: string) => api.get<Tag>(`/tags/${slug}`),
+  /** 标签下的帖子（公开，分页） */
+  posts: (slug: string, params?: { page?: number; pageSize?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+    return api.get<{ list: any[]; total: number; page: number; pageSize: number }>(
+      `/tags/${slug}/posts?${search.toString()}`,
+    );
+  },
 };
 
 // 收藏

@@ -1,5 +1,5 @@
 /**
- * 独立 404 页面（T-010 build fix）
+ * 独立 404 页面（T-010 + T-014 + T-018 build fix）
  *
  * 不放在 src/app/[locale]/(group)/not-found.tsx 这种层级下，避免被根 layout 强制 SSR
  * 触发 useSearchParams() CSR bailout。
