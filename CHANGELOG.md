@@ -2,6 +2,26 @@
 
 伊春有事儿说 所有重要变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] — T-017 公告前端集成（公开页 + 详情页）
+
+### Added
+- **T-017 后端公开 API**：
+  - `GET /api/v1/announcements?page=&pageSize=` — 公开分页列表（仅生效中 + select 裁剪不返回 content）
+  - `GET /api/v1/announcements/:id` — 公开详情（含 content，时间窗 + 状态 + 软删三重过滤）
+- **T-017 后端单测**：8 个用例（findList 4 + findOne 4）
+- **T-017 前端公开页**：
+  - `/announcements` 列表页（client + Suspense + Hero + 粘性搜索 + 三态分支 + 分页）
+  - `/announcements/[id]` 详情页（server + `generateMetadata` + Article JSON-LD + 404 fallback）
+- **T-017 前端 API 客户端扩展**：`announcementApi.listPublic` + `announcementApi.detail` 2 方法
+- **T-017 AnnouncementBanner 入口**：每条公告右侧加"查看全部"链接
+
+### Notes
+- 路由顺序关键：controller 严格按 `/active` → `/` → `/:id` 顺序写（F-4 教训）
+- findOne 不命中统一 404（不区分"已下架"和"不存在"，防信息泄露）
+- JSON-LD 选 schema.org/Article（兼容性最广，WebPage 太弱，schema.org/Announcement 非标准）
+- frontend install 需 `--legacy-peer-deps`（lucide-react 要求 react ^18，但项目用 react 19；这是项目预存 npm config 问题）
+- 前端预存错误：`e2e/tag-flow.spec.ts` 4 处 implicit any（T-014 遗留，与 T-017 无关）
+
 ## [Unreleased] — T-016 公告后台管理
 
 ### Added

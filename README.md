@@ -212,6 +212,30 @@ T-016 已上线：admin 端公告治理（列表 + CRUD + 启用/停用 + 删除
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-016-announcement-admin.md](docs/t-016-announcement-admin.md)。
 
+## 公告前端集成（T-017）
+
+T-017 已上线：公告公开页 + 详情页 + SEO。
+
+**核心机制**：
+- 后端 2 个公开 endpoint：`GET /announcements`（分页列表）+ `GET /announcements/:id`（详情）
+- 后端单测：8 用例（findList 4 + findOne 4）
+- 前端公开页：
+  - `/announcements` 列表页（Hero + 粘性搜索 + 公告卡 + prev/next 分页）
+  - `/announcements/[id]` 详情页（generateMetadata + Article JSON-LD + 404 fallback）
+- 顶部 `AnnouncementBanner` 加"查看全部"入口链接
+
+**SEO**：
+- 列表页 metadata：title / description / keywords / canonical / openGraph / twitter
+- 详情页 metadata：404 不 throw，robots.noindex
+- 详情页 JSON-LD：schema.org/Article（headline / description / datePublished / author / publisher）
+
+**测试**：
+- 后端 T-017 单测 8/8（含 findList select 裁剪 + 时间窗 + 404）
+- 前端 tsc 0 错（T-017b 自身）；build 21 路由
+- 后端 tag/announcement T-013/T-016 单测无回归
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-017-announcement-frontend.md](docs/t-017-announcement-frontend.md)。
+
 ## License
 
 MIT
