@@ -103,23 +103,76 @@ export default async function PostDetailPage({
   const post = await getPostForJsonLd(id);
   // Phase 2.3: 优先使用 AI 生成的 jsonLd，否则 fallback 到 4-type 模板
   const aiJsonLd = post?.seoMeta?.jsonLd;
-  const jsonLd = aiJsonLd && Object.keys(aiJsonLd).length > 0
+  const itemJsonLd = aiJsonLd && Object.keys(aiJsonLd).length > 0
     ? aiJsonLd
     : post
     ? buildJsonLd(post, id)
     : null;
+  // T-P15-02 V1: BreadcrumbList JSON-LD（首页 → 分类 → 区县 → 帖子）
+  const breadcrumbJsonLd = post ? buildBreadcrumbJsonLd(post, id) : null;
+
+  // 合并到一个 @graph 数组里输出单一 script 节点（SEO 爬虫友好）
+  const finalJsonLd = itemJsonLd || breadcrumbJsonLd
+    ? {
+        '@context': 'https://schema.org',
+        '@graph': [
+          ...(itemJsonLd ? [itemJsonLd] : []),
+          ...(breadcrumbJsonLd ? [breadcrumbJsonLd] : []),
+        ],
+      }
+    : null;
 
   return (
     <>
-      {jsonLd && (
+      {finalJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(finalJsonLd) }}
         />
       )}
       <PostDetailContent />
     </>
   );
+}
+
+/**
+ * T-P15-02 V1: BreadcrumbList JSON-LD
+ * 首页 → 分类过滤页 → 区县过滤页 → 帖子详情页
+ */
+function buildBreadcrumbJsonLd(post: any, id: string) {
+  const url = `${BASE}/posts/${id}`;
+  const items: Array<{ '@type': 'ListItem'; position: number; name: string; item: string }> = [
+    { '@type': 'ListItem', position: 1, name: '首页', item: `${BASE}/` },
+  ];
+  let position = 2;
+  if (post.type) {
+    const typeName = TYPE_NAMES[post.type] || '信息';
+    items.push({
+      '@type': 'ListItem',
+      position: position++,
+      name: `${typeName}频道`,
+      item: `${BASE}/?type=${post.type}`,
+    });
+  }
+  if (post.area?.name) {
+    items.push({
+      '@type': 'ListItem',
+      position: position++,
+      name: post.area.name,
+      item: `${BASE}/?area=${post.areaId || post.area.id}`,
+    });
+  }
+  items.push({
+    '@type': 'ListItem',
+    position: position,
+    name: post.title,
+    item: url,
+  });
+
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: items,
+  };
 }
 
 function buildJsonLd(post: any, id: string) {
