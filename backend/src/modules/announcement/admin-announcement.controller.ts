@@ -13,6 +13,9 @@ import { RequirePermission } from '../rbac/decorators/require-permission.decorat
  * T-003: 加 @RequirePermission
  * - announcement.view (GET) - T-003 新增
  * - announcement.create / update / delete
+ *
+ * T-019: 加 @RequirePermission('announcement.restore')
+ * - remove 改软删；新增 restore 端点
  */
 @Controller('admin/announcements')
 @UseGuards(AdminGuard, PermissionGuard)
@@ -34,13 +37,24 @@ export class AdminAnnouncementController {
 
   @Patch(':id')
   @RequirePermission('announcement.update')
-  update(@Param('id') id: string, @Body() dto: UpdateAnnouncementDto) {
-    return this.service.update(BigInt(id), dto);
+  update(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateAnnouncementDto,
+  ) {
+    return this.service.update(BigInt(user.sub), BigInt(id), dto);
   }
 
   @Delete(':id')
   @RequirePermission('announcement.delete')
-  remove(@Param('id') id: string) {
-    return this.service.remove(BigInt(id));
+  remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.service.remove(BigInt(user.sub), BigInt(id));
+  }
+
+  /** T-019: 恢复已软删公告 */
+  @Post(':id/restore')
+  @RequirePermission('announcement.restore')
+  restore(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.service.restore(BigInt(user.sub), BigInt(id));
   }
 }
