@@ -1,0 +1,56 @@
+{
+  "module": "I-error",
+  "results": [
+    {
+      "name": "I-1 404 不存在 API",
+      "status": "PASS",
+      "detail": "status=404"
+    },
+    {
+      "name": "I-2 404 前端页面有提示",
+      "status": "PASS",
+      "detail": "url=http://localhost:3000/non-existent-page-zzz, body=伊春有事儿说\n小兴安岭 · 本地生活\n房屋出租\n二手交易\n招聘求职\n便民信息\n登录\n免费注册\n404\nThis page could not be found."
+    },
+    {
+      "name": "I-3 错误 type 触发 400",
+      "status": "PASS",
+      "detail": "status=400"
+    },
+    {
+      "name": "I-4 重复提交触发 rate limit (429)",
+      "status": "FAIL",
+      "detail": "statuses=[201, 201, 201]"
+    },
+    {
+      "name": "I-5 超长 description (10000 字符) 拒绝",
+      "status": "PASS",
+      "detail": "status=400"
+    },
+    {
+      "name": "I-6 特殊字符/注入 测试 (不应崩)",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "name": "I-7 SQL 注入测试 (应被拒绝或转义)",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "name": "I-8 负数 price 拒绝",
+      "status": "PASS",
+      "detail": "status=400"
+    },
+    {
+      "name": "I-9 巨大 ID 查询不应崩",
+      "status": "PASS",
+      "detail": "status=404"
+    },
+    {
+      "name": "I-10 /api/v1/health 工作",
+      "status": "PASS",
+      "detail": "status=200"
+    }
+  ],
+  "page_errors": []
+}

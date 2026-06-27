@@ -1,0 +1,64 @@
+{
+  "module": "D-browse",
+  "results": [
+    {
+      "name": "D-1 帖子列表页 /posts",
+      "status": "PASS",
+      "detail": "HTTP 200, body_len=76, has_content=True"
+    },
+    {
+      "name": "D-2 首页包含帖子内容链接",
+      "status": "PASS",
+      "detail": "has_post_links=True, body_len=458"
+    },
+    {
+      "name": "D-3 API /api/v1/posts 返回数据",
+      "status": "PASS",
+      "detail": "status=200, total=1, items=1"
+    },
+    {
+      "name": "D-4 帖子详情页",
+      "status": "PASS",
+      "detail": "HTTP 200, body_len=302"
+    },
+    {
+      "name": "D-5 搜索页可访问",
+      "status": "PASS",
+      "detail": "HTTP 200, has_search=True, body_len=127"
+    },
+    {
+      "name": "D-6 搜索 API /api/v1/search?q=出租 (FULLTEXT 索引已加)",
+      "status": "PASS",
+      "detail": "status=200, items=0, body={\"code\":0,\"message\":\"ok\",\"data\":{\"list\":[],\"total\":0,\"page\":1,\"pageSize\":20,\"query\":\"出租\"},\"timestamp"
+    },
+    {
+      "name": "D-7 分类 API /api/v1/categories",
+      "status": "PASS",
+      "detail": "status=200, cats=29"
+    },
+    {
+      "name": "D-8 公告 API",
+      "status": "PASS",
+      "detail": "status=200, announcements=0"
+    },
+    {
+      "name": "D-9 轮播图 API",
+      "status": "PASS",
+      "detail": "status=200, banners=0"
+    },
+    {
+      "name": "D-10 区域 API",
+      "status": "PASS",
+      "detail": "status=200, areas=1"
+    },
+    {
+      "name": "D-11 热门搜索 API",
+      "status": "PASS",
+      "detail": "status=200"
+    }
+  ],
+  "page_errors": [
+    "Cannot read properties of undefined (reading 'type')",
+    "Objects are not valid as a React child (found: object with keys {keyword, count}). If you meant to render a collection of children, use an array instead."
+  ]
+}

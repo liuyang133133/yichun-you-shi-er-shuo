@@ -1,5 +1,8 @@
 'use client';
 
+// T-018 build 修复: 避免预渲染时 useSearchParams Suspense 报错
+export const dynamic = 'force-dynamic';
+
 /**
  * T-008: 通知偏好设置
  * 路径: /me/notifications/settings

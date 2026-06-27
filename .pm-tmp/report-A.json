@@ -1,0 +1,89 @@
+{
+  "module": "A-pages",
+  "results": [
+    {
+      "name": "用户端首页",
+      "status": "PASS",
+      "detail": "HTTP 200 (1991ms), body_text_len=458, js_err=False"
+    },
+    {
+      "name": "帖子列表(关键)",
+      "status": "PASS",
+      "detail": "HTTP 200 (137ms), body_text_len=134, js_err=False"
+    },
+    {
+      "name": "搜索页",
+      "status": "PASS",
+      "detail": "HTTP 200 (112ms), body_text_len=127, js_err=True"
+    },
+    {
+      "name": "发布页",
+      "status": "PASS",
+      "detail": "HTTP 200 (119ms), body_text_len=198, js_err=True"
+    },
+    {
+      "name": "个人中心",
+      "status": "PASS",
+      "detail": "HTTP 200 (208ms), body_text_len=266, js_err=True"
+    },
+    {
+      "name": "我的消息",
+      "status": "PASS",
+      "detail": "HTTP 200 (117ms), body_text_len=266, js_err=True"
+    },
+    {
+      "name": "登录页",
+      "status": "PASS",
+      "detail": "HTTP 200 (157ms), body_text_len=266, js_err=True"
+    },
+    {
+      "name": "后台登录",
+      "status": "PASS",
+      "detail": "HTTP 200 (89ms), body_text_len=88, js_err=True"
+    },
+    {
+      "name": "后台看板",
+      "status": "PASS",
+      "detail": "HTTP 200 (76ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "后台用户管理",
+      "status": "PASS",
+      "detail": "HTTP 200 (90ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "后台帖子管理",
+      "status": "PASS",
+      "detail": "HTTP 200 (77ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "后台轮播图",
+      "status": "PASS",
+      "detail": "HTTP 200 (75ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "后台公司管理",
+      "status": "PASS",
+      "detail": "HTTP 200 (71ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "后台举报管理",
+      "status": "PASS",
+      "detail": "HTTP 200 (71ms), body_text_len=112, js_err=True"
+    },
+    {
+      "name": "404 不存在页",
+      "status": "PASS",
+      "detail": "HTTP 404 (118ms), body_text_len=80, js_err=True"
+    },
+    {
+      "name": "404 不存在页(后台)",
+      "status": "PASS",
+      "detail": "HTTP 404 (78ms), body_text_len=33, js_err=True"
+    }
+  ],
+  "js_errors_unique": [
+    "pageerror: Objects are not valid as a React child (found: object with keys {keyword, count}). If you meant to render a collection of children, use an array instead.",
+    "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}

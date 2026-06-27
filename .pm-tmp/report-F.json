@@ -1,0 +1,51 @@
+{
+  "module": "F-me",
+  "results": [
+    {
+      "name": "F-0 登录后到达 me",
+      "status": "PASS",
+      "detail": "url=http://localhost:3000/me"
+    },
+    {
+      "name": "F-1 /me 个人中心有内容",
+      "status": "PASS",
+      "detail": "body_len=265"
+    },
+    {
+      "name": "F-2 /me/messages 消息中心 (页面有内容)",
+      "status": "PASS",
+      "detail": "body_len=101, has_msg=True, body=伊春有事儿说\n小兴安岭 · 本地生活\n房屋出租\n二手交易\n招聘求职\n便民信息\n发布信息\n1\n13900003333\n返回个人中心\n站内信\n\n与其他用户私下沟通\n\n写信\n收件箱\n发件箱\n📭\n\n收件箱是空"
+    },
+    {
+      "name": "F-3 API GET /messages/inbox",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "F-4 API GET /messages/unread-count",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "F-5 API GET /posts/me",
+      "status": "PASS",
+      "detail": "status=200, body={\"code\":0,\"message\":\"ok\",\"data\":{\"list\":[],\"total\":0,\"page\":1,\"pageSize\":10},\"timestamp\":\"2026-06-19T10:45:12.069Z\"}"
+    },
+    {
+      "name": "F-6 API GET /messages/outbox",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "F-7 API GET /auth/me",
+      "status": "PASS",
+      "detail": "status=200, body={\"code\":0,\"message\":\"ok\",\"data\":{\"sub\":\"5\",\"phone\":\"13900003333\",\"role\":\"user\",\"jti\":\"l2zm7tkrk8qmqk"
+    },
+    {
+      "name": "F-8 API POST /messages 发消息 (或 403/限流)",
+      "status": "PASS",
+      "detail": "status=201, body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"2\",\"senderId\":\"5\",\"receiverId\":\"1\",\"content\":\"黑盒测试消息\",\"isRead\":0,\"readAt\":null,\"createdAt\":\"2026-06-19T10:45:12"
+    }
+  ],
+  "page_errors": []
+}

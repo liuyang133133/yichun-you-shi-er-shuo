@@ -1,0 +1,68 @@
+{
+  "module": "B-register+C-login",
+  "results": [
+    {
+      "name": "B-1 登录页可访问 + 包含登录表单",
+      "status": "PASS",
+      "detail": "title='伊春有事儿说 | 本地生活信息平台', has_form=True"
+    },
+    {
+      "name": "B-2 空手机号: 获取验证码按钮 disabled",
+      "status": "PASS",
+      "detail": "disabled=True"
+    },
+    {
+      "name": "B-3 非法字符被自动过滤",
+      "status": "PASS",
+      "detail": "filtered value='123'"
+    },
+    {
+      "name": "B-4 10 位手机号: 获取验证码按钮 disabled",
+      "status": "PASS",
+      "detail": "disabled=True"
+    },
+    {
+      "name": "B-5 超长手机号被截断到 11 位",
+      "status": "PASS",
+      "detail": "value len=11, val='13900001234'"
+    },
+    {
+      "name": "B-6 有效手机号触发验证码请求(API 调用成功)",
+      "status": "PASS",
+      "detail": "alert='验证码已发送\n开发环境：查看后端控制台日志\n冷却 60 秒'"
+    },
+    {
+      "name": "B-7 超长验证码被截断到 6 位",
+      "status": "PASS",
+      "detail": "value len=6, val='123456'"
+    },
+    {
+      "name": "C-1 错误密码显示错误提示",
+      "status": "PASS",
+      "detail": "err='⚠ 该账号未设置密码，请使用验证码登录'"
+    },
+    {
+      "name": "C-2-pre 获取到未消费验证码",
+      "status": "PASS",
+      "detail": "code=407652"
+    },
+    {
+      "name": "C-2 SMS 验证码登录后跳转",
+      "status": "PASS",
+      "detail": "current_url=http://localhost:3000/me, code_used=407***"
+    },
+    {
+      "name": "C-3 登录态保持 (刷新后未跳 login)",
+      "status": "PASS",
+      "detail": "after_reload_url=http://localhost:3000/me"
+    },
+    {
+      "name": "C-4 登出后访问受保护页跳 login",
+      "status": "PASS",
+      "detail": "final_url=http://localhost:3000/"
+    }
+  ],
+  "alerts": [
+    "验证码已发送\n开发环境：查看后端控制台日志\n冷却 60 秒"
+  ]
+}

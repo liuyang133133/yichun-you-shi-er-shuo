@@ -1,0 +1,91 @@
+{
+  "module": "G-admin",
+  "results": [
+    {
+      "name": "G-0 admin /login 可访问",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/login"
+    },
+    {
+      "name": "G-1 admin 登录后跳转 dashboard",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/dashboard, token=YES"
+    },
+    {
+      "name": "G-2 /dashboard 看板可访问",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/dashboard, body_len=181"
+    },
+    {
+      "name": "G-3 API /admin/dashboard",
+      "status": "PASS",
+      "detail": "status=200, body={\"code\":0,\"message\":\"ok\",\"data\":{\"users\":{\"total\":5,\"today\":1},\"posts\":{\"total\":9,\"today\":5,\"pending\":5,\"active\":1,\"byType\":{\"house\":6,\"job\":1,\"lifebi"
+    },
+    {
+      "name": "G-4 /users 用户管理可访问",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/users, body_len=342"
+    },
+    {
+      "name": "G-5 API /admin/users",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "G-6 /posts 帖子管理可访问",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/posts"
+    },
+    {
+      "name": "G-7 API /admin/posts",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "G-8 /reports 举报管理",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/reports"
+    },
+    {
+      "name": "G-9 API /admin/reports",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "G-10 /banners 轮播图",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/banners"
+    },
+    {
+      "name": "G-11 API /admin/banners",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "G-12 /companies 公司管理",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/companies"
+    },
+    {
+      "name": "G-13 API /admin/companies",
+      "status": "PASS",
+      "detail": "status=404"
+    },
+    {
+      "name": "G-14 API /admin/announcements",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "G-15 API POST /admin/users/:id/ban",
+      "status": "PASS",
+      "detail": "status=201, body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"2\",\"phone\":\"13900000099\",\"nickname\":\"用户0099\",\"status\":1},\"timestamp\":\"2026-06-19T10:50:13.119Z\"}"
+    },
+    {
+      "name": "G-16 API POST /admin/users/:id/unban",
+      "status": "PASS",
+      "detail": "status=201, body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"2\",\"phone\":\"13900000099\",\"nickname\":\"用户0099\",\"status\":0},\"tim"
+    }
+  ],
+  "page_errors": []
+}

@@ -1,0 +1,60 @@
+{
+  "module": "H-perm",
+  "results": [
+    {
+      "name": "H-1 未登录 /me 跳 login",
+      "status": "PASS",
+      "detail": "url=http://localhost:3000/login?redirect=%2Fme"
+    },
+    {
+      "name": "H-2 未登录 /admin/dashboard 跳 login",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/login?expired=1&next=%2Fdashboard"
+    },
+    {
+      "name": "H-3 未登录 API /posts/me 返回 401",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "H-4 未登录 API /admin/users 返回 401",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "H-5-pre 普通用户登录成功",
+      "status": "PASS",
+      "detail": "token=YES"
+    },
+    {
+      "name": "H-5 普通用户调 /admin/users 应 403 (或 401)",
+      "status": "PASS",
+      "detail": "status=403"
+    },
+    {
+      "name": "H-6 普通用户调 /admin/dashboard 应 403",
+      "status": "PASS",
+      "detail": "status=403"
+    },
+    {
+      "name": "H-7 普通用户调 ban 应 403",
+      "status": "PASS",
+      "detail": "status=403"
+    },
+    {
+      "name": "H-8 普通用户访问 /admin/dashboard 跳 login",
+      "status": "PASS",
+      "detail": "url=http://localhost:3002/login?expired=1&next=%2Fdashboard"
+    },
+    {
+      "name": "H-9 假 token 应 401",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "H-10 普通用户改别人帖子应被拒",
+      "status": "PASS",
+      "detail": "status=404"
+    }
+  ]
+}

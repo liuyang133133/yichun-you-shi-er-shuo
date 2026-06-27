@@ -38,6 +38,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { WsModule } from './modules/ws/ws.module';
 // T-013: 标签系统（Tag 字典 + PostTag 关联）
 import { TagModule } from './modules/tag/tag.module';
+import { AgreementModule } from './modules/agreement/agreement.module'; // T-018: 用户协议 / 隐私政策 / 关于我们
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { TagModule } from './modules/tag/tag.module';
     NotificationModule, // T-007: 通知系统（@Global，全模块可注入 NotificationService.emit()）
     WsModule, // T-010: WebSocket 网关（@Global，NotificationWsService.sendToUser）
     TagModule, // T-013: 标签系统（公开 tags API + 后台 admin/tags）
+    AgreementModule, // T-018: 用户协议 / 隐私政策 / 关于我们（公开 GET 接口）
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

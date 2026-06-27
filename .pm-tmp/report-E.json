@@ -1,0 +1,41 @@
+{
+  "module": "E-publish",
+  "results": [
+    {
+      "name": "E-1 未登录访问发布页跳 login",
+      "status": "FAIL",
+      "detail": "url=http://localhost:3000/posts/publish"
+    },
+    {
+      "name": "E-2 登录后访问发布页",
+      "status": "PASS",
+      "detail": "url=http://localhost:3000/posts/publish, has_form=True, token=eyJhbGciOiJIUzI1NiIs"
+    },
+    {
+      "name": "E-3 AI 模式 debounce 触发 (有大白话输入)",
+      "status": "PASS",
+      "detail": "body_len=249, has_ai_result=True"
+    },
+    {
+      "name": "E-4 跳过 AI 跳手动模式",
+      "status": "PASS",
+      "detail": "url=http://localhost:3000/posts/publish?mode=manual&type=house, body_len=325"
+    },
+    {
+      "name": "E-5 API POST /api/v1/posts 创建帖子 (或 rate limit)",
+      "status": "PASS",
+      "detail": "status=429, body={\"code\":429,\"message\":\"新注册用户 24h 内最多发布 1 条信息，请明天再试\",\"data\":null,\"error\":\"Internal Server Error\",\"path\":\"/api/v1/posts\",\"timestamp\":\"2026-06-19T10:49:05.713Z\"}"
+    },
+    {
+      "name": "E-6 缺 title 返回 400",
+      "status": "PASS",
+      "detail": "status=400, body={\"code\":400,\"message\":[\"title must be longer than or equal to 1 characters\",\"title must be a string\""
+    },
+    {
+      "name": "E-7 超长 title 处理 (400 或 201/200)",
+      "status": "PASS",
+      "detail": "status=400, body={\"code\":400,\"message\":[\"title must be shorter than or equal to 100 characters\"],\"data\":null,\"error\":"
+    }
+  ],
+  "page_errors": []
+}

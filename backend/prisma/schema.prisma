@@ -946,6 +946,7 @@ model DeviceToken {
 }
 
 // =====================================================
+<<<<<<< HEAD
 // T-013: 标签系统 — Tag / PostTag 关联表
 // =====================================================
 
@@ -974,6 +975,27 @@ model Tag {
   sortOrder   Int       @default(0) @map("sort_order")
   /// 1=启用 0=禁用（T-015，停用 = status=0 + deletedAt=null；已删 = deletedAt 非空）
   status      Int       @default(1) @map("status")
+=======
+// T-018: 用户协议 / 隐私政策 / 关于我们
+// 同一 key 可有多版本（按 version 区分），同时只有 1 个 isCurrent=true
+// =====================================================
+
+model Agreement {
+  id          BigInt    @id @default(autoincrement())
+  /// 协议 key: 'terms' | 'privacy' | 'about'
+  key         String    @db.VarChar(50)
+  /// 版本号（1, 2, 3...），同一 key 下递增
+  version     Int
+  /// 协议标题
+  title       String    @db.VarChar(200)
+  /// Markdown 内容
+  content     String    @db.Text
+  /// 生效时间
+  effectiveAt DateTime  @map("effective_at")
+  /// 当前生效版本（同一 key 同时只有一个 true）
+  isCurrent   Boolean   @default(false) @map("is_current")
+  /// T-001 软删 + 审计字段
+>>>>>>> feature/T-018-agreements
   createdBy   BigInt?   @map("created_by")
   updatedBy   BigInt?   @map("updated_by")
   deletedBy   BigInt?   @map("deleted_by")
@@ -981,6 +1003,7 @@ model Tag {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
+<<<<<<< HEAD
   postTags PostTag[]
 
   @@index([useCount])
@@ -1005,4 +1028,10 @@ model PostTag {
   @@index([postId])
   @@index([tagId])
   @@map("post_tags")
+=======
+  @@unique([key, version], map: "uniq_key_version")
+  @@index([key, isCurrent])
+  @@index([deletedAt])
+  @@map("agreements")
+>>>>>>> feature/T-018-agreements
 }
