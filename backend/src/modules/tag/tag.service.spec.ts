@@ -13,7 +13,7 @@
  *   - migrateFromJson() — 从 Post.tags JSON 字段读旧数据，upsert Tag + PostTag
  */
 import { Test } from '@nestjs/testing';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { TagService } from './tag.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -26,9 +26,11 @@ describe('TagService (T-013)', () => {
     slug: 'shanlin',
     name: '山林',
     description: '伊春本地山林特产',
+    aliases: null,
     useCount: 5,
     isHot: false,
     sortOrder: 0,
+    status: 1,
     createdBy: null,
     updatedBy: null,
     deletedBy: null,
@@ -75,6 +77,7 @@ describe('TagService (T-013)', () => {
     await service.findAll({});
     const args = prisma.tag.findMany.mock.calls[0][0];
     expect(args.where.deletedAt).toBeNull();
+    expect(args.where.status).toBe(1); // T-015: 排除停用
     expect(args.orderBy).toEqual([
       { useCount: 'desc' },
       { sortOrder: 'asc' },
@@ -105,7 +108,7 @@ describe('TagService (T-013)', () => {
     const result = await service.findBySlug('shanlin');
     expect(result.slug).toBe('shanlin');
     expect(prisma.tag.findFirst).toHaveBeenCalledWith({
-      where: { slug: 'shanlin', deletedAt: null },
+      where: { slug: 'shanlin', deletedAt: null, status: 1 },
     });
   });
 
@@ -123,6 +126,7 @@ describe('TagService (T-013)', () => {
       { isHot: true },
       { useCount: { gt: 0 } },
     ]);
+    expect(args.where.status).toBe(1); // T-015: 排除停用
     expect(args.take).toBe(20);
     expect(args.orderBy).toEqual([
       { useCount: 'desc' },
@@ -144,7 +148,7 @@ describe('TagService (T-013)', () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it('9. create 成功 → 默认 isHot=false, sortOrder=0（useCount 由 DB 默认）', async () => {
+  it('9. create 成功 → 默认 isHot=false, sortOrder=0, status=1（useCount 由 DB 默认）', async () => {
     prisma.tag.create.mockResolvedValue(makeTagRow());
     await service.create({ slug: 'xueshan', name: '雪山' });
     const data = prisma.tag.create.mock.calls[0][0].data;
@@ -152,6 +156,7 @@ describe('TagService (T-013)', () => {
     expect(data.useCount).toBeUndefined();
     expect(data.isHot).toBe(false);
     expect(data.sortOrder).toBe(0);
+    expect(data.status).toBe(1); // T-015: 默认启用
   });
 
   it('10. create 自动去重 slug — 同 slug 已存在时加 -2', async () => {
@@ -272,5 +277,132 @@ describe('TagService (T-013)', () => {
     const result = await service.migrateFromJson();
     expect(result.tagCreated).toBe(0);
     expect(result.postTagCreated).toBe(0);
+  });
+
+  // ===== T-015: findAllForAdmin =====
+  it('21. findAllForAdmin 默认 includeDeleted=false, includeDisabled=true', async () => {
+    prisma.tag.findMany.mockResolvedValue([makeTagRow()]);
+    prisma.tag.count.mockResolvedValue(1);
+    await service.findAllForAdmin({});
+    const args = prisma.tag.findMany.mock.calls[0][0];
+    expect(args.where.deletedAt).toBeNull();
+    expect(args.where.status).toBeUndefined(); // includeDisabled=true (默认) → 不加 status 过滤
+  });
+
+  it('22. findAllForAdmin includeDeleted=true + includeDisabled=false → 不加 deletedAt 过滤, 加 status: 1 过滤', async () => {
+    prisma.tag.findMany.mockResolvedValue([makeTagRow({ status: 0, deletedAt: new Date() })]);
+    prisma.tag.count.mockResolvedValue(1);
+    await service.findAllForAdmin({ includeDeleted: true, includeDisabled: false });
+    const args = prisma.tag.findMany.mock.calls[0][0];
+    // includeDeleted=true: 不加 deletedAt 过滤
+    expect(args.where.deletedAt).toBeUndefined();
+    // includeDisabled=false: 加 status: 1 过滤（仅启用）
+    expect(args.where.status).toBe(1);
+  });
+
+  it('23. findAllForAdmin q → OR(name, slug, aliases) contains 三字段', async () => {
+    prisma.tag.findMany.mockResolvedValue([]);
+    prisma.tag.count.mockResolvedValue(0);
+    await service.findAllForAdmin({ q: '山' });
+    const args = prisma.tag.findMany.mock.calls[0][0];
+    expect(args.where.OR).toEqual([
+      { name: { contains: '山' } },
+      { slug: { contains: '山' } },
+      { aliases: { contains: '山' } },
+    ]);
+  });
+
+  it('24. findAllForAdmin 分页 skip/take 正确', async () => {
+    prisma.tag.findMany.mockResolvedValue([]);
+    prisma.tag.count.mockResolvedValue(0);
+    await service.findAllForAdmin({ page: 3, pageSize: 10 });
+    const args = prisma.tag.findMany.mock.calls[0][0];
+    expect(args.skip).toBe(20); // (3-1)*10
+    expect(args.take).toBe(10);
+  });
+
+  // ===== T-015: merge =====
+  it('25. merge 自身合并 → BadRequestException', async () => {
+    await expect(service.merge(1n, 1n)).rejects.toThrow(BadRequestException);
+  });
+
+  it('26. merge 源标签不存在 → NotFoundException', async () => {
+    prisma.tag.findUnique
+      .mockResolvedValueOnce(null) // source
+      .mockResolvedValueOnce(null);
+    await expect(service.merge(1n, 2n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('27. merge 源标签已软删 → NotFoundException', async () => {
+    prisma.tag.findUnique
+      .mockResolvedValueOnce(makeTagRow({ deletedAt: new Date() })) // source 已删
+      .mockResolvedValueOnce(makeTagRow({ id: 2n }));
+    await expect(service.merge(1n, 2n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('28. merge 目标标签已软删 → NotFoundException', async () => {
+    prisma.tag.findUnique
+      .mockResolvedValueOnce(makeTagRow())
+      .mockResolvedValueOnce(makeTagRow({ id: 2n, deletedAt: new Date() }));
+    await expect(service.merge(1n, 2n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('29. merge 正常 — 转移 PostTag + useCount 维护 + 软删 source', async () => {
+    prisma.tag.findUnique
+      .mockResolvedValueOnce(makeTagRow({ id: 1n })) // source
+      .mockResolvedValueOnce(makeTagRow({ id: 2n })); // target
+    prisma.postTag.findMany
+      .mockResolvedValueOnce([{ postId: 10n }, { postId: 11n }]) // source 的 PostTag
+      .mockResolvedValueOnce([]); // target 已存在的 (postId, targetId) — 没有
+    prisma.postTag.createMany.mockResolvedValue({ count: 2 });
+    prisma.postTag.deleteMany.mockResolvedValue({ count: 2 });
+    prisma.tag.update.mockResolvedValue({});
+
+    await service.merge(1n, 2n, 999n);
+
+    // 1) source 的 PostTag 全部转移
+    expect(prisma.postTag.createMany).toHaveBeenCalledWith({
+      data: [
+        { postId: 10n, tagId: 2n },
+        { postId: 11n, tagId: 2n },
+      ],
+    });
+    // 2) source 的 PostTag 全部删除
+    expect(prisma.postTag.deleteMany).toHaveBeenCalledWith({
+      where: { tagId: 1n },
+    });
+    // 3) source: useCount=0 + status=0 + deletedAt=now
+    const sourceUpdate = prisma.tag.update.mock.calls[0][0];
+    expect(sourceUpdate.where.id).toBe(1n);
+    expect(sourceUpdate.data.useCount).toBe(0);
+    expect(sourceUpdate.data.status).toBe(0);
+    expect(sourceUpdate.data.deletedAt).toBeInstanceOf(Date);
+    expect(sourceUpdate.data.deletedBy).toBe(999n);
+    // 4) target: useCount += 2
+    const targetUpdate = prisma.tag.update.mock.calls[1][0];
+    expect(targetUpdate.where.id).toBe(2n);
+    expect(targetUpdate.data.useCount).toEqual({ increment: 2 });
+  });
+
+  it('30. merge 同 post 已关联 target → createMany 跳过该 post (unique 防重复)', async () => {
+    prisma.tag.findUnique
+      .mockResolvedValueOnce(makeTagRow({ id: 1n }))
+      .mockResolvedValueOnce(makeTagRow({ id: 2n }));
+    prisma.postTag.findMany
+      .mockResolvedValueOnce([{ postId: 10n }, { postId: 11n }])
+      .mockResolvedValueOnce([{ postId: 10n }]); // 10 已关联 target，跳过
+    prisma.postTag.createMany.mockResolvedValue({ count: 1 });
+    prisma.postTag.deleteMany.mockResolvedValue({ count: 2 });
+    prisma.tag.update.mockResolvedValue({});
+
+    await service.merge(1n, 2n);
+
+    // createMany 只插 11（10 已存在）
+    expect(prisma.postTag.createMany).toHaveBeenCalledWith({
+      data: [{ postId: 11n, tagId: 2n }],
+    });
+    // target useCount += 2（含已存在的 10）
+    const targetUpdate = prisma.tag.update.mock.calls[1][0];
+    expect(targetUpdate.data.useCount).toEqual({ increment: 2 });
   });
 });

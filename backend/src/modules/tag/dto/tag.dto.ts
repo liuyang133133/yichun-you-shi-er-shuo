@@ -19,6 +19,12 @@ export class CreateTagDto {
   @Length(0, 500)
   description?: string;
 
+  /** T-015: 别名，逗号分隔 */
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  aliases?: string;
+
   @IsOptional()
   @IsBoolean()
   isHot?: boolean;
@@ -28,6 +34,13 @@ export class CreateTagDto {
   @Min(0)
   @Max(999)
   sortOrder?: number;
+
+  /** T-015: 1=启用 0=禁用，默认 1 */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1)
+  status?: number;
 }
 
 export class UpdateTagDto {
@@ -41,6 +54,12 @@ export class UpdateTagDto {
   @Length(0, 500)
   description?: string;
 
+  /** T-015: 别名，逗号分隔 */
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  aliases?: string;
+
   @IsOptional()
   @IsBoolean()
   isHot?: boolean;
@@ -50,6 +69,13 @@ export class UpdateTagDto {
   @Min(0)
   @Max(999)
   sortOrder?: number;
+
+  /** T-015: 1=启用 0=禁用 */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1)
+  status?: number;
 }
 
 export class FindAllTagDto {
@@ -75,4 +101,40 @@ export class FindHotTagDto {
   @Min(1)
   @Max(100)
   limit?: number;
+}
+
+/**
+ * T-015: admin 端标签列表查询 DTO
+ *  - includeDeleted / includeDisabled 是 'true' | 'false' 字符串（Query 全部是 string）
+ */
+export class AdminFindAllTagDto {
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
+  includeDeleted?: string;
+
+  @IsOptional()
+  includeDisabled?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+}
+
+/**
+ * T-015: 合并标签 DTO — A → B
+ */
+export class MergeTagDto {
+  @IsInt()
+  @Min(1)
+  targetId!: number;
 }

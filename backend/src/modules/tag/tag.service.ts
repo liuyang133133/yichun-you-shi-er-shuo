@@ -1,5 +1,5 @@
 /**
- * T-013 TagService
+ * T-013 + T-015 TagService
  *
  * 标签字典 CRUD + PostTag 关联管理 + 数据迁移
  *
@@ -8,17 +8,27 @@
  *   - useCount 冗余字段，写入 PostTag 时事务内 +1/-1
  *   - Post.tags JSON 字段保留 1 个月兼容期（V1 季节频道标签）
  *   - 软删除：tags 表保留 deletedAt；PostTag 物理删除（CASCADE 由 FK 处理）
+ *   - 停用 (T-015)：status=0 + deletedAt=null，admin 可重新启用，前端不可见
+ *   - 别名 (T-015)：aliases 字段，CSV 格式，用于搜索联想
  *
  * 主要 API：
- *   - findAll({ q?, limit?, offset? })  公开
+ *   - findAll({ q?, limit?, offset? })  公开（仅启用+未删）
  *   - findBySlug(slug)                  公开
- *   - findHot(limit=20)                 公开
+ *   - findHot(limit=20)                 公开（仅启用+未删）
+ *   - findAllForAdmin                   后台（admin only，可查禁用/已删）
  *   - create / update / delete          后台（admin only）
+ *   - merge                             后台 (T-015) — source PostTag → target, source 软删
  *   - attachToPost / detachFromPost     PostService 调用
  *   - findPostsByTag                    公开（标签详情页用）
  *   - migrateFromJson                   一次性数据迁移
  */
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -28,19 +38,36 @@ export interface FindAllOptions {
   offset?: number;
 }
 
+/** T-015: admin 列表查询参数 */
+export interface FindAllForAdminOptions {
+  q?: string;
+  includeDeleted?: boolean;
+  includeDisabled?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
 export interface CreateTagInput {
   slug: string;
   name: string;
   description?: string;
+  /** T-015: 别名，CSV 格式 */
+  aliases?: string;
   isHot?: boolean;
   sortOrder?: number;
+  /** T-015: 1=启用 0=禁用，默认 1 */
+  status?: number;
 }
 
 export interface UpdateTagInput {
   name?: string;
   description?: string;
+  /** T-015: 别名，CSV 格式 */
+  aliases?: string;
   isHot?: boolean;
   sortOrder?: number;
+  /** T-015: 1=启用 0=禁用 */
+  status?: number;
 }
 
 export interface FindPostsOptions {
@@ -56,10 +83,10 @@ export class TagService {
 
   // ================ 公开 API ================
 
-  /** 全列表（后台管理 / 搜索建议用） */
+  /** 全列表（搜索建议 / 后台管理 T-013 时期用） — T-015: 仅启用+未删 */
   async findAll(opts: FindAllOptions = {}) {
     const { q, limit = 50, offset = 0 } = opts;
-    const where: any = { deletedAt: null };
+    const where: any = { deletedAt: null, status: 1 };
     if (q) where.name = { contains: q };
 
     return this.prisma.tag.findMany({
@@ -70,10 +97,10 @@ export class TagService {
     });
   }
 
-  /** 按 slug 查询单个标签 */
+  /** 按 slug 查询单个标签 — T-015: 仅启用+未删 */
   async findBySlug(slug: string) {
     const tag = await this.prisma.tag.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug, deletedAt: null, status: 1 },
     });
     if (!tag) {
       throw new NotFoundException(`标签不存在: slug=${slug}`);
@@ -81,11 +108,12 @@ export class TagService {
     return tag;
   }
 
-  /** 热门标签（首页/侧栏） */
+  /** 热门标签（首页/侧栏） — T-015: 仅启用+未删 */
   async findHot(limit = 20) {
     return this.prisma.tag.findMany({
       where: {
         deletedAt: null,
+        status: 1,
         OR: [{ isHot: true }, { useCount: { gt: 0 } }],
       },
       orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }],
@@ -135,6 +163,37 @@ export class TagService {
 
   // ================ 后台 API ================
 
+  /** T-015: admin 端全列表（支持 includeDeleted / includeDisabled / q / 分页） */
+  async findAllForAdmin(opts: FindAllForAdminOptions = {}) {
+    const {
+      q,
+      includeDeleted = false,
+      includeDisabled = true,
+      page = 1,
+      pageSize = 20,
+    } = opts;
+    const where: any = {};
+    if (!includeDeleted) where.deletedAt = null;
+    if (!includeDisabled) where.status = 1;
+    if (q) {
+      where.OR = [
+        { name: { contains: q } },
+        { slug: { contains: q } },
+        { aliases: { contains: q } },
+      ];
+    }
+    const [list, total] = await Promise.all([
+      this.prisma.tag.findMany({
+        where,
+        orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.tag.count({ where }),
+    ]);
+    return { list, total, page, pageSize };
+  }
+
   /** 新建标签（同 slug 自动加 -2 后缀） */
   async create(input: CreateTagInput, operatorId?: bigint) {
     const slug = await this.resolveUniqueSlug(input.slug);
@@ -144,8 +203,10 @@ export class TagService {
           slug,
           name: input.name,
           description: input.description,
+          aliases: input.aliases,
           isHot: input.isHot ?? false,
           sortOrder: input.sortOrder ?? 0,
+          status: input.status ?? 1,
           createdBy: operatorId,
           updatedBy: operatorId,
         },
@@ -188,6 +249,79 @@ export class TagService {
     if (result.count === 0) {
       this.logger.debug(`标签 id=${id} 已删过，跳过`);
     }
+  }
+
+  /**
+   * T-015: 合并 source → target
+   *  - source 的 PostTag 全部转给 target（同 post 已关联 target 则跳过，避免 unique 冲突）
+   *  - source: useCount=0 + status=0 + deletedAt=now（双重标记，避免歧义）
+   *  - target: useCount += sourcePostTags.length
+   *  - 事务内执行
+   */
+  async merge(sourceId: bigint, targetId: bigint, operatorId?: bigint) {
+    if (sourceId === targetId) {
+      throw new BadRequestException('不能合并到自身');
+    }
+    const [source, target] = await Promise.all([
+      this.prisma.tag.findUnique({ where: { id: sourceId } }),
+      this.prisma.tag.findUnique({ where: { id: targetId } }),
+    ]);
+    if (!source || source.deletedAt) {
+      throw new NotFoundException(`源标签不存在: id=${sourceId}`);
+    }
+    if (!target || target.deletedAt) {
+      throw new NotFoundException(`目标标签不存在: id=${targetId}`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1) 取 source 全部 PostTag 的 postId
+      const sourcePostTags = await tx.postTag.findMany({
+        where: { tagId: sourceId },
+        select: { postId: true },
+      });
+      const postIds = sourcePostTags.map((p) => p.postId);
+
+      // 2) 找 target 已有 (postId, targetId)（避免重复触发 uniq_post_tag）
+      let existingSet: Set<string> = new Set();
+      if (postIds.length > 0) {
+        const existing = await tx.postTag.findMany({
+          where: { tagId: targetId, postId: { in: postIds } },
+          select: { postId: true },
+        });
+        existingSet = new Set(existing.map((e) => String(e.postId)));
+      }
+
+      // 3) 新增 (postId, targetId) — 仅对未关联的 post
+      const newPairs = postIds
+        .filter((pid) => !existingSet.has(String(pid)))
+        .map((postId) => ({ postId, tagId: targetId }));
+      if (newPairs.length > 0) {
+        await tx.postTag.createMany({ data: newPairs });
+      }
+
+      // 4) 删 source 全部 PostTag
+      await tx.postTag.deleteMany({ where: { tagId: sourceId } });
+
+      // 5) source: useCount=0 + status=0 + deletedAt=now + deletedBy
+      await tx.tag.update({
+        where: { id: sourceId },
+        data: {
+          useCount: 0,
+          status: 0,
+          deletedAt: new Date(),
+          deletedBy: operatorId,
+        },
+      });
+
+      // 6) target: useCount += sourcePostTags.length
+      await tx.tag.update({
+        where: { id: targetId },
+        data: { useCount: { increment: sourcePostTags.length } },
+      });
+    });
+    this.logger.log(
+      `tag merge: source=${sourceId} → target=${targetId} by operator=${operatorId}`,
+    );
   }
 
   // ================ PostTag 关联管理 ================
