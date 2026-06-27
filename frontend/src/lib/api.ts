@@ -508,4 +508,12 @@ export const announcementApi = {
   update: (id: string, data: UpdateAnnouncementInput) =>
     api.patch<Announcement>(`/admin/announcements/${id}`, data),
   remove: (id: string) => api.delete<{ id: string; deleted: boolean }>(`/admin/announcements/${id}`),
+  /** T-017: 公开分页公告列表（仅生效中，content 字段被裁剪） */
+  listPublic: (params?: { page?: number; pageSize?: number }) =>
+    api.get<{ list: Announcement[]; total: number; page: number; pageSize: number }>(
+      '/announcements',
+      params,
+    ),
+  /** T-017: 公开公告详情（命中返回完整字段含 content） */
+  detail: (id: string) => api.get<Announcement>(`/announcements/${id}`),
 };

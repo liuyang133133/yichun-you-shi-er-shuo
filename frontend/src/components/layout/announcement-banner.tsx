@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { X, Megaphone } from 'lucide-react';
 import { announcementApi, type Announcement } from '@/lib/api';
 
@@ -43,6 +44,13 @@ export function AnnouncementBanner() {
               )}
               <span className="ml-2 text-amber-800">{a.content}</span>
             </div>
+            <Link
+              href="/announcements"
+              className="shrink-0 text-xs text-amber-700 hover:text-amber-900 underline whitespace-nowrap"
+              title="查看全部公告"
+            >
+              查看全部
+            </Link>
             <button
               onClick={() => handleDismiss(a.id)}
               className="shrink-0 p-0.5 hover:bg-amber-100 rounded"

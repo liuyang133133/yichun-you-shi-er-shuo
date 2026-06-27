@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare, Image as ImageIcon, Shield, KeyRound, UserCog, ClipboardList, ScrollText, LogIn, Tag } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Flag, Building2, LogOut, MessageSquare, Image as ImageIcon, Shield, KeyRound, UserCog, ClipboardList, ScrollText, LogIn, Tag, Megaphone } from 'lucide-react';
 import { getUser, clearAuth, getToken, apiFetch } from '@/lib/api';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -15,6 +15,8 @@ const NAV = [
   { href: '/reports', label: '举报处理', icon: Flag },
   { href: '/companies', label: '公司管理', icon: Building2 },
   { href: '/banners', label: 'Banner 运营', icon: ImageIcon },
+  // T-016: 公告管理 — 位于 Banner 之后（高频运营位之后）
+  { href: '/announcements', label: '公告管理', icon: Megaphone },
 ];
 
 // T-004 + T-005 + T-006: 系统管理子菜单

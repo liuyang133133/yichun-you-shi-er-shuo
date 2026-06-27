@@ -210,6 +210,52 @@ T-015 已上线：admin 端标签治理（CRUD + 合并 + 停用 + 别名）。
 
 详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-015-tag-admin.md](docs/t-015-tag-admin.md)。
 
+## 公告后台管理（T-016）
+
+T-016 已上线：admin 端公告治理（列表 + CRUD + 启用/停用 + 删除）。
+
+**核心机制**：
+- 后端无变更：沿用现有 `AnnouncementService`（findActive / findAll / create / update / remove）+ `AdminAnnouncementController`（5 endpoint）+ 4 个 RBAC 权限码
+- 后端单测：`announcement.service.spec.ts` 新增 12 用例（findActive 2 + findAll 3 + create 2 + update 3 + remove 2）
+- admin UI `/admin/announcements`：
+  - 列表 + 状态过滤（全部/启用/停用）+ 客户端 title 模糊搜索
+  - 表格列：ID / 标题（含内容预览） / 状态 chip / 优先级 chip / 生效时段 / 创建时间 / 操作
+  - 操作：⚡ 启用停用 / ✏ 编辑 / 🗑 删除（含"不可恢复"警告）
+  - 创建/编辑模态：title (1-100) / content (1-2000) / status / priority / startsAt (datetime-local) / endsAt (datetime-local)
+- admin 侧边栏："运营"组加"公告管理"项（Megaphone 图标），位置：Banners 之后
+
+**已知问题**：
+- `remove` 当前硬删，与 T-001 软删规范不一致（banner 同款；T-019+ 修复）
+- admin tsc 0 错；admin build 仍受 pre-existing globals.css 4 级相对路径影响
+
+**关联**：T-007 通知 / T-008 通知前端 / SHOULD-30 公告后端 + 前端 banner
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-016-announcement-admin.md](docs/t-016-announcement-admin.md)。
+
+## 公告前端集成（T-017）
+
+T-017 已上线：公告公开页 + 详情页 + SEO。
+
+**核心机制**：
+- 后端 2 个公开 endpoint：`GET /announcements`（分页列表）+ `GET /announcements/:id`（详情）
+- 后端单测：8 用例（findList 4 + findOne 4）
+- 前端公开页：
+  - `/announcements` 列表页（Hero + 粘性搜索 + 公告卡 + prev/next 分页）
+  - `/announcements/[id]` 详情页（generateMetadata + Article JSON-LD + 404 fallback）
+- 顶部 `AnnouncementBanner` 加"查看全部"入口链接
+
+**SEO**：
+- 列表页 metadata：title / description / keywords / canonical / openGraph / twitter
+- 详情页 metadata：404 不 throw，robots.noindex
+- 详情页 JSON-LD：schema.org/Article（headline / description / datePublished / author / publisher）
+
+**测试**：
+- 后端 T-017 单测 8/8（含 findList select 裁剪 + 时间窗 + 404）
+- 前端 tsc 0 错（T-017b 自身）；build 21 路由
+- 后端 tag/announcement T-013/T-016 单测无回归
+
+详见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/t-017-announcement-frontend.md](docs/t-017-announcement-frontend.md)。
+
 ## License
 
 MIT

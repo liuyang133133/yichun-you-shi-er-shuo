@@ -120,3 +120,31 @@ export const adminTagApi = {
       { method: 'POST', body: { targetId } },
     ),
 };
+
+// T-016: 公告后台管理
+export interface AdminAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  status: number; // 1=启用 0=停用
+  priority: number; // 1=置顶 0=普通
+  startsAt: string | null;
+  endsAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const adminAnnouncementApi = {
+  list: (params: { status?: number; page?: number; pageSize?: number } = {}) =>
+    apiFetch<{ list: AdminAnnouncement[]; total: number; page: number; pageSize: number }>(
+      '/admin/announcements',
+      { params: params as any },
+    ),
+  create: (body: Partial<AdminAnnouncement>) =>
+    apiFetch<AdminAnnouncement>('/admin/announcements', { method: 'POST', body }),
+  update: (id: string | number, body: Partial<AdminAnnouncement>) =>
+    apiFetch<AdminAnnouncement>(`/admin/announcements/${id}`, { method: 'PATCH', body }),
+  remove: (id: string | number) =>
+    apiFetch<{ id: string; deleted: true }>(`/admin/announcements/${id}`, { method: 'DELETE' }),
+};
