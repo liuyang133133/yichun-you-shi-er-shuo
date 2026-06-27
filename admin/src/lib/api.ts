@@ -121,7 +121,7 @@ export const adminTagApi = {
     ),
 };
 
-// T-016: 公告后台管理
+// T-016 + T-019: 公告后台管理
 export interface AdminAnnouncement {
   id: string;
   title: string;
@@ -133,10 +133,20 @@ export interface AdminAnnouncement {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // T-019: 软删字段
+  deletedAt: string | null;
+  deletedBy: string | null;
 }
 
 export const adminAnnouncementApi = {
-  list: (params: { status?: number; page?: number; pageSize?: number } = {}) =>
+  list: (
+    params: {
+      status?: number;
+      page?: number;
+      pageSize?: number;
+      includeDeleted?: boolean; // T-019
+    } = {},
+  ) =>
     apiFetch<{ list: AdminAnnouncement[]; total: number; page: number; pageSize: number }>(
       '/admin/announcements',
       { params: params as any },
@@ -147,4 +157,10 @@ export const adminAnnouncementApi = {
     apiFetch<AdminAnnouncement>(`/admin/announcements/${id}`, { method: 'PATCH', body }),
   remove: (id: string | number) =>
     apiFetch<{ id: string; deleted: true }>(`/admin/announcements/${id}`, { method: 'DELETE' }),
+  // T-019: 恢复已软删公告
+  restore: (id: string | number) =>
+    apiFetch<{ id: string; restored: true }>(
+      `/admin/announcements/${id}/restore`,
+      { method: 'POST' },
+    ),
 };

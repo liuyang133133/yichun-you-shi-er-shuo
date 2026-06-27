@@ -1,16 +1,15 @@
 'use client';
 
 /**
- * T-016: 公告管理
+ * T-016 + T-019: 公告管理
  * 路径: /admin/announcements
- * 功能: 公告列表 + 创建 + 编辑 + 启用/停用 + 删除
+ * 功能: 公告列表 + 创建 + 编辑 + 启用/停用 + 软删 + 恢复
  *
- * 设计要点:
- * - 沿用 tags/page.tsx 模式（顶部 + 工具条 + 表格 + 模态）
- * - 状态/优先级 2 级（schema TinyInt 0|1）
- * - 时间控件: 原生 <input type="datetime-local">
- * - 内容: 原生 <textarea>
- * - 删除: 当前是硬删（service.remove 用 prisma.delete，预存问题），UI 二次确认警告
+ * 设计要点 (T-019):
+ * - 删除为软删（写 deletedAt/deletedBy/updatedBy）；新增 restore 按钮恢复
+ * - "包含已删除"复选框切换 includeDeleted 参数
+ * - 状态 chip 三态：启用（emerald）/ 停用（gray）/ 已删除（red opacity）
+ * - 删除时间列仅 includeDeleted=true 时显示
  */
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +26,7 @@ import {
   PowerOff,
   Search,
   Calendar,
-  AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -35,6 +34,26 @@ const STATUS_LABEL: Record<number, { text: string; cls: string }> = {
   1: { text: '启用', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
   0: { text: '停用', cls: 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
 };
+
+// T-019: 状态 chip 三态（含已删除）
+function StatusChip({ a }: { a: AdminAnnouncement }) {
+  if (a.deletedAt) {
+    return (
+      <span
+        className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 opacity-60"
+        title={`删除时间: ${formatDateTime(a.deletedAt)}`}
+      >
+        已删除
+      </span>
+    );
+  }
+  const sc = STATUS_LABEL[a.status] ?? STATUS_LABEL[0];
+  return (
+    <span className={clsx('px-2 py-0.5 rounded text-xs font-medium', sc.cls)}>
+      {sc.text}
+    </span>
+  );
+}
 
 const PRIORITY_LABEL: Record<number, { text: string; cls: string }> = {
   1: { text: '置顶', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
@@ -62,7 +81,6 @@ const EMPTY_FORM: FormState = {
 function isoToLocal(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
-  // datetime-local 需要 YYYY-MM-DDTHH:mm (本地时区)
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -77,6 +95,8 @@ export default function AdminAnnouncementsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 0 | 1>('all');
+  // T-019: "包含已删除" 复选框（默认 false — admin 默认只看到未删）
+  const [includeDeleted, setIncludeDeleted] = useState(false);
   const [q, setQ] = useState('');
 
   // 模态状态
@@ -93,6 +113,7 @@ export default function AdminAnnouncementsPage() {
         status: statusFilter === 'all' ? undefined : statusFilter,
         page: 1,
         pageSize: 100,
+        includeDeleted, // T-019
       });
       setList(r?.list || []);
       setTotal(r?.total || 0);
@@ -106,7 +127,7 @@ export default function AdminAnnouncementsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, includeDeleted]);
 
   // 客户端搜索防抖（title 模糊）
   const filteredList = useMemo(() => {
@@ -174,10 +195,16 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
+  /**
+   * T-019: 软删（不再硬删）
+   * - 后端 service.remove 写 deletedAt/deletedBy/updatedBy
+   * - UI 仅显示"软删"提示（不再"不可恢复"）
+   * - 默认勾选 includeDeleted 让用户看到刚删的行（不勾选则隐藏）
+   */
   async function handleDelete(a: AdminAnnouncement) {
     if (
       !confirm(
-        `确认删除公告「${a.title}」？\n\n⚠ 当前为硬删（不可恢复），T-019+ 会改为软删。`,
+        `确认删除公告「${a.title}」？\n\n删除后可勾选"包含已删除"恢复。`,
       )
     )
       return;
@@ -189,7 +216,31 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
+  /**
+   * T-019: 恢复已软删公告
+   * - 后端 service.restore 事务双写 update + AuditLog
+   * - 恢复后 status 自动 = 1（启用）
+   */
+  async function handleRestore(a: AdminAnnouncement) {
+    if (
+      !confirm(
+        `确认恢复公告「${a.title}」？\n\n恢复后该公告将自动设为启用状态，可能立即在前台 banner 显示。`,
+      )
+    )
+      return;
+    try {
+      await adminAnnouncementApi.restore(a.id);
+      await load();
+    } catch (e: any) {
+      alert('恢复失败：' + (e?.message || ''));
+    }
+  }
+
   async function handleToggleStatus(a: AdminAnnouncement) {
+    if (a.deletedAt) {
+      alert('已删除的公告无法修改状态，请先恢复');
+      return;
+    }
     const next = a.status === 1 ? 0 : 1;
     const action = next === 1 ? '启用' : '停用';
     if (
@@ -263,6 +314,16 @@ export default function AdminAnnouncementsPage() {
               </button>
             ))}
           </div>
+          {/* T-019: 包含已删除 复选框 */}
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeDeleted}
+              onChange={(e) => setIncludeDeleted(e.target.checked)}
+              className="rounded"
+            />
+            包含已删除
+          </label>
         </CardContent>
       </Card>
 
@@ -392,9 +453,13 @@ export default function AdminAnnouncementsPage() {
           <CardContent className="p-12 text-center">
             <Megaphone className="mx-auto h-12 w-12 text-muted-foreground/50" />
             <p className="mt-3 text-muted-foreground">
-              {q.trim() ? `未找到包含「${q.trim()}」的公告` : '还没有公告'}
+              {q.trim()
+                ? `未找到包含「${q.trim()}」的公告`
+                : includeDeleted
+                ? '没有已删除的公告'
+                : '还没有公告'}
             </p>
-            {!q.trim() && (
+            {!q.trim() && !includeDeleted && (
               <Button className="mt-4" onClick={openCreate}>
                 <Plus className="mr-1 h-4 w-4" /> 新建第一条
               </Button>
@@ -414,17 +479,25 @@ export default function AdminAnnouncementsPage() {
                     <th className="px-4 py-3 text-left font-medium">优先级</th>
                     <th className="px-4 py-3 text-left font-medium">生效时段</th>
                     <th className="px-4 py-3 text-left font-medium">创建时间</th>
+                    {/* T-019: 仅 includeDeleted=true 时显示 */}
+                    {includeDeleted && (
+                      <th className="px-4 py-3 text-left font-medium">删除时间</th>
+                    )}
                     <th className="px-4 py-3 text-right font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredList.map((a) => {
-                    const sc = STATUS_LABEL[a.status] ?? STATUS_LABEL[0];
                     const pc = PRIORITY_LABEL[a.priority] ?? PRIORITY_LABEL[0];
                     return (
                       <tr
                         key={a.id}
-                        className="border-t border-border hover:bg-muted/30 transition-colors"
+                        className={clsx(
+                          'border-t border-border transition-colors',
+                          a.deletedAt
+                            ? 'opacity-60 bg-red-50/30 dark:bg-red-950/10'
+                            : 'hover:bg-muted/30',
+                        )}
                       >
                         <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                           #{a.id}
@@ -438,14 +511,7 @@ export default function AdminAnnouncementsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={clsx(
-                              'px-2 py-0.5 rounded text-xs font-medium',
-                              sc.cls,
-                            )}
-                          >
-                            {sc.text}
-                          </span>
+                          <StatusChip a={a} />
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -463,39 +529,59 @@ export default function AdminAnnouncementsPage() {
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {formatDateTime(a.createdAt)}
                         </td>
+                        {includeDeleted && (
+                          <td className="px-4 py-3 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                            {a.deletedAt ? formatDateTime(a.deletedAt) : '—'}
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleStatus(a)}
-                              title={a.status === 1 ? '停用' : '启用'}
-                              className="rounded-full h-8 px-2"
-                            >
-                              {a.status === 1 ? (
-                                <PowerOff className="h-3.5 w-3.5" />
-                              ) : (
-                                <Power className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEdit(a)}
-                              title="编辑"
-                              className="rounded-full h-8 px-2"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(a)}
-                              title="删除"
-                              className="rounded-full h-8 px-2 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            {a.deletedAt ? (
+                              // T-019: 已删状态只显示"恢复"
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRestore(a)}
+                                title="恢复"
+                                className="rounded-full h-8 px-2 text-emerald-600 hover:text-emerald-700"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleToggleStatus(a)}
+                                  title={a.status === 1 ? '停用' : '启用'}
+                                  className="rounded-full h-8 px-2"
+                                >
+                                  {a.status === 1 ? (
+                                    <PowerOff className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Power className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEdit(a)}
+                                  title="编辑"
+                                  className="rounded-full h-8 px-2"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(a)}
+                                  title="软删除（可在包含已删除中恢复）"
+                                  className="rounded-full h-8 px-2 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -507,14 +593,6 @@ export default function AdminAnnouncementsPage() {
           </CardContent>
         </Card>
       )}
-
-      <div className="flex items-start gap-2 text-xs text-muted-foreground">
-        <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-        <p>
-          ⚠ 已知问题：删除公告当前为<b>硬删</b>（不可恢复），与 T-001 软删规范不一致。
-          T-019+ 会改为软删 + 加恢复端点。Banner 模块也存在相同问题。
-        </p>
-      </div>
     </div>
   );
 }

@@ -469,6 +469,8 @@ async function seedRbac() {
     { code: 'announcement.create', module: 'announcement', action: 'create', name: '创建公告' },
     { code: 'announcement.update', module: 'announcement', action: 'update', name: '更新公告' },
     { code: 'announcement.delete', module: 'announcement', action: 'delete', name: '删除公告' },
+    // T-019: 恢复公告（与 post.restore 平行）
+    { code: 'announcement.restore', module: 'announcement', action: 'restore', name: '恢复公告' },
     // Banner
     { code: 'banner.create',      module: 'banner', action: 'create',   name: '创建 Banner' },
     { code: 'banner.update',      module: 'banner', action: 'update',   name: '更新 Banner' },
@@ -526,7 +528,7 @@ async function seedRbac() {
     ],
     operator: [
       'post.view',
-      'announcement.view', 'announcement.create', 'announcement.update', 'announcement.delete',
+      'announcement.view', 'announcement.create', 'announcement.update', 'announcement.delete', 'announcement.restore',
       'banner.create', 'banner.update', 'banner.delete',
       'category.view', 'category.create', 'category.update', 'category.delete',
       'dashboard.view',

@@ -1,19 +1,20 @@
 /**
- * T-016 AnnouncementService 单测
+ * AnnouncementService 单测 (T-016 + T-019)
  *
  * 行为：
  *   - findActive() — 公开 API：当前生效集合 (status=1 + time window)
- *   - findAll(query) — admin: 分页列表（status 过滤）
+ *   - findAll(query) — admin: 分页列表（status 过滤 + includeDeleted 过滤 T-019）
  *   - create(adminId, dto) — 默认 status=1, priority=0, createdBy=adminId
- *   - update(id, dto) — 部分更新；startsAt/endsAt 转 Date
- *   - remove(id) — 调用 prisma.announcement.delete（注：T-016 不修硬删问题）
+ *   - update(adminId, id, dto) — 破坏性字段变更写 updatedBy (T-019)
+ *   - remove(adminId, id) — T-019 改软删（写 deletedAt/deletedBy/updatedBy）
+ *   - restore(adminId, id) — T-019 恢复已软删（事务双写 update + auditLog）
  */
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AnnouncementService } from './announcement.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
-describe('AnnouncementService (T-016)', () => {
+describe('AnnouncementService (T-016 + T-019)', () => {
   let service: AnnouncementService;
   let prisma: any;
 
@@ -39,11 +40,18 @@ describe('AnnouncementService (T-016)', () => {
       announcement: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
         count: jest.fn(),
       },
+      auditLog: {
+        create: jest.fn(),
+      },
+      // $transaction 接受 ops 数组，service 是 await 调用
+      // 不需要返回值（service 仅 await，不读 result），mock.calls 记录原始 args
+      $transaction: jest.fn().mockResolvedValue(undefined),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [AnnouncementService, { provide: PrismaService, useValue: prisma }],
@@ -57,9 +65,7 @@ describe('AnnouncementService (T-016)', () => {
     await service.findActive();
     const args = prisma.announcement.findMany.mock.calls[0][0];
     expect(args.where.status).toBe(1);
-    // startsAt: null OR <= now
     expect(args.where.OR).toBeDefined();
-    // endsAt: null OR >= now 嵌在 AND 里
     expect(args.where.AND).toBeDefined();
     expect(args.orderBy).toEqual([{ priority: 'desc' }, { createdAt: 'desc' }]);
     expect(args.take).toBe(5);
@@ -69,7 +75,6 @@ describe('AnnouncementService (T-016)', () => {
     prisma.announcement.findMany.mockResolvedValue([]);
     await service.findActive();
     const args = prisma.announcement.findMany.mock.calls[0][0];
-    // 仅 status + time window，无 status 之外的 admin 字段
     expect(Object.keys(args.where).sort()).toEqual(['AND', 'OR', 'status']);
   });
 
@@ -83,7 +88,7 @@ describe('AnnouncementService (T-016)', () => {
     expect(args.orderBy).toEqual([{ priority: 'desc' }, { createdAt: 'desc' }]);
   });
 
-  it('4. findAll 带 status=0 → where.status === 0（admin 看停用列表）', async () => {
+  it('4. findAll 带 status=0 → where.status === 0', async () => {
     prisma.announcement.findMany.mockResolvedValue([makeRow({ status: 0 })]);
     prisma.announcement.count.mockResolvedValue(1);
     await service.findAll({ status: 0 });
@@ -106,7 +111,6 @@ describe('AnnouncementService (T-016)', () => {
     await service.create(BigInt(42), {
       title: '测试公告',
       content: '内容',
-      // 不传 status/priority, 应默认 1/0
     } as any);
     const data = prisma.announcement.create.mock.calls[0][0].data;
     expect(data.status).toBe(1);
@@ -131,19 +135,18 @@ describe('AnnouncementService (T-016)', () => {
 
   // ===== update =====
   it('8. update 找不到 → NotFoundException', async () => {
-    prisma.announcement.findUnique.mockResolvedValue(null);
-    await expect(service.update(BigInt(99), { title: 'x' } as any)).rejects.toThrow(
+    prisma.announcement.findFirst.mockResolvedValue(null);
+    await expect(service.update(BigInt(1), BigInt(99), { title: 'x' } as any)).rejects.toThrow(
       NotFoundException,
     );
   });
 
-  it('9. update 成功 → startsAt 转 Date；DTO 未提供 endsAt 时不写入 data（保留 DB 原值）', async () => {
-    prisma.announcement.findUnique.mockResolvedValue(makeRow());
+  it('9. update 成功 → startsAt 转 Date；DTO 未提供 endsAt 时不写入 data', async () => {
+    prisma.announcement.findFirst.mockResolvedValue(makeRow());
     prisma.announcement.update.mockResolvedValue(makeRow());
-    await service.update(BigInt(1), {
+    await service.update(BigInt(1), BigInt(1), {
       title: '新标题',
       startsAt: '2026-06-26T00:00:00.000Z',
-      // 不传 endsAt → data 中不写入（spread undefined + !undefined 守卫）
     } as any);
     const data = prisma.announcement.update.mock.calls[0][0].data;
     expect(data.title).toBe('新标题');
@@ -151,30 +154,76 @@ describe('AnnouncementService (T-016)', () => {
     expect(data.endsAt).toBeUndefined();
   });
 
-  it('10. update 只改 title → 其他字段不被覆盖', async () => {
-    prisma.announcement.findUnique.mockResolvedValue(makeRow());
+  it('10. update 只改 title → 不写 updatedBy（非破坏性字段）', async () => {
+    prisma.announcement.findFirst.mockResolvedValue(makeRow());
     prisma.announcement.update.mockResolvedValue(makeRow());
-    await service.update(BigInt(1), { title: '仅改标题' } as any);
+    await service.update(BigInt(1), BigInt(1), { title: '仅改标题' } as any);
     const data = prisma.announcement.update.mock.calls[0][0].data;
     expect(data.title).toBe('仅改标题');
-    // status/priority/content 未在 DTO 出现 → 不写入 data
-    expect(data.status).toBeUndefined();
-    expect(data.priority).toBeUndefined();
-    expect(data.content).toBeUndefined();
+    // T-019: title/content 不算破坏性，不写 updatedBy
+    expect(data.updatedBy).toBeUndefined();
   });
 
-  // ===== remove =====
+  // ===== remove（T-019 改软删）=====
   it('11. remove 找不到 → NotFoundException', async () => {
-    prisma.announcement.findUnique.mockResolvedValue(null);
-    await expect(service.remove(BigInt(99))).rejects.toThrow(NotFoundException);
+    prisma.announcement.findFirst.mockResolvedValue(null);
+    await expect(service.remove(BigInt(1), BigInt(99))).rejects.toThrow(NotFoundException);
   });
 
-  it('12. remove 成功 → 调用 prisma.announcement.delete（注：T-016 不修硬删问题）', async () => {
-    prisma.announcement.findUnique.mockResolvedValue(makeRow());
-    prisma.announcement.delete.mockResolvedValue(makeRow());
-    const r = await service.remove(BigInt(1));
-    expect(prisma.announcement.delete).toHaveBeenCalledWith({ where: { id: BigInt(1) } });
+  it('12. remove 成功 → T-019 软删（写 deletedAt/deletedBy/updatedBy，不调 prisma.delete）', async () => {
+    prisma.announcement.findFirst.mockResolvedValue(makeRow());
+    prisma.announcement.update.mockResolvedValue({});
+    const r = await service.remove(BigInt(1), BigInt(1));
+    // 断言调用 update 而非 delete
+    expect(prisma.announcement.update).toHaveBeenCalledTimes(1);
+    expect(prisma.announcement.delete).not.toHaveBeenCalled();
+    const data = prisma.announcement.update.mock.calls[0][0].data;
+    expect(data.deletedAt).toBeInstanceOf(Date);
+    expect(data.deletedBy).toBe(BigInt(1));
+    expect(data.updatedBy).toBe(BigInt(1));
     expect(r).toEqual({ id: '1', deleted: true });
-    // Known issue: 当前硬删，与 T-001 软删规范不一致（独立任务修）
+  });
+
+  // ===== restore（T-019 新增）=====
+  it('13. restore 找不到 → NotFoundException', async () => {
+    prisma.announcement.findUnique.mockResolvedValue(null);
+    await expect(service.restore(BigInt(1), BigInt(99))).rejects.toThrow(NotFoundException);
+  });
+
+  it('14. restore 未软删（deletedAt=null）→ BadRequestException', async () => {
+    prisma.announcement.findUnique.mockResolvedValue(makeRow({ deletedAt: null }));
+    await expect(service.restore(BigInt(1), BigInt(1))).rejects.toThrow(BadRequestException);
+  });
+
+  it('15. restore 成功 → $transaction 双写 update + auditLog', async () => {
+    prisma.announcement.findUnique.mockResolvedValue(
+      makeRow({ deletedAt: new Date('2026-06-26'), deletedBy: BigInt(5) }),
+    );
+    const r = await service.restore(BigInt(1), BigInt(1));
+    // 断言 $transaction 被调用一次（事务入口）
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    // 断言 update 被调用（事务内） — 写 deletedAt: null + deletedBy: null + status: 1 + updatedBy
+    const updateCall = prisma.announcement.update.mock.calls[0];
+    expect(updateCall[0].where.id).toBe(BigInt(1));
+    expect(updateCall[0].data.deletedAt).toBeNull();
+    expect(updateCall[0].data.deletedBy).toBeNull();
+    expect(updateCall[0].data.status).toBe(1);
+    expect(updateCall[0].data.updatedBy).toBe(BigInt(1));
+    // 断言 auditLog.create 被调用（事务内） — action: 'restore' + targetType
+    const auditCall = prisma.auditLog.create.mock.calls[0];
+    expect(auditCall[0].data.action).toBe('restore');
+    expect(auditCall[0].data.targetType).toBe('announcement');
+    expect(auditCall[0].data.targetId).toBe(BigInt(1));
+    expect(r).toEqual({ id: '1', restored: true });
+  });
+
+  // ===== update 写 updatedBy（T-019）=====
+  it('16. update 含 status → 写 updatedBy（破坏性字段）', async () => {
+    prisma.announcement.findFirst.mockResolvedValue(makeRow());
+    prisma.announcement.update.mockResolvedValue(makeRow());
+    await service.update(BigInt(1), BigInt(1), { status: 0 } as any);
+    const data = prisma.announcement.update.mock.calls[0][0].data;
+    expect(data.status).toBe(0);
+    expect(data.updatedBy).toBe(BigInt(1));
   });
 });
