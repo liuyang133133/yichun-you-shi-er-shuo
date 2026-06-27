@@ -483,10 +483,12 @@ async function seedRbac() {
     { code: 'category.create',    module: 'category', action: 'create',  name: '创建分类' },
     { code: 'category.update',    module: 'category', action: 'update',  name: '更新分类' },
     { code: 'category.delete',    module: 'category', action: 'delete',  name: '删除分类' },
-    // 公司 (T-003)
+    // 公司 (T-003 + T-021)
     { code: 'company.view',       module: 'company',  action: 'view',    name: '查看公司' },
     { code: 'company.verify',     module: 'company',  action: 'verify',  name: '认证公司' },
     { code: 'company.unverify',   module: 'company',  action: 'unverify', name: '取消公司认证' },
+    { code: 'company.delete',     module: 'company',  action: 'delete',  name: '删除公司' },
+    { code: 'company.restore',    module: 'company',  action: 'restore', name: '恢复公司' },
     // 日志
     { code: 'auditLog.view',      module: 'auditLog', action: 'view',   name: '查看操作日志' },
     { code: 'loginLog.view',      module: 'loginLog', action: 'view',   name: '查看登录日志' },
