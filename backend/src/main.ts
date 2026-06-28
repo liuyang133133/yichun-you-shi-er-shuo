@@ -191,6 +191,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // 10. WebSocket Redis Adapter (T-010): 跨实例广播
+  // 必须先 await app.init() 触发 RedisService.onModuleInit()，否则 getClient() 返回 undefined
+  await app.init();
   const redisIoAdapter = new RedisIoAdapter(app);
   await redisIoAdapter.init(app);
   app.useWebSocketAdapter(redisIoAdapter);

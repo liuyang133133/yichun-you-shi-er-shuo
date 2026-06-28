@@ -29,7 +29,7 @@ export class SeoController {
    * - 公开端点，不需要鉴权
    */
   @Public()
-  @Get('posts/sitemap-full')
+  @Get('seo/sitemap-full')
   async getFullSitemapData(@Query('limit') limit = '50000') {
     return this.service.getFullSitemapData(parseInt(limit));
   }

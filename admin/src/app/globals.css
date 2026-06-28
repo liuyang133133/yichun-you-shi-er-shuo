@@ -1,8 +1,9 @@
 /**
  * Admin 全局样式 — 引用 frontend design tokens 实现设计一致性
  * 主色/圆角/间距/阴影 与用户端完全一致
+ * 路径修正：原 4 级相对路径多一层，改为 3 级（admin/src/app → workspace → frontend）
  */
-@import '../../../../frontend/src/styles/tokens.css';
+@import '../../../frontend/src/styles/tokens.css';
 
 @tailwind base;
 @tailwind components;

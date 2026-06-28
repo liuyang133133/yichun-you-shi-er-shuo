@@ -14,9 +14,11 @@ import { Global, Module } from '@nestjs/common';
 import { NotificationGateway } from './notification.gateway';
 import { NotificationWsService, WS_EMITTER } from './notification-ws.service';
 import { WsAuthGuard } from './ws-auth.guard';
+import { AuthModule } from '../auth/auth.module';
 
 @Global()
 @Module({
+  imports: [AuthModule], // 提供 JwtService + AuthService 给 WsAuthGuard
   providers: [
     WsAuthGuard,
     NotificationGateway,

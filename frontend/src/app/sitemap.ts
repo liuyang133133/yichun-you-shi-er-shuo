@@ -42,11 +42,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let dynamicPages: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${API_URL}/posts/sitemap-full?limit=50000`, {
+    const res = await fetch(`${API_URL}/seo/sitemap-full?limit=50000`, {
       next: { revalidate: 300 }, // 5 分钟 ISR 缓存
     });
     if (res.ok) {
-      const data: FullSitemapData = await res.json();
+      // 后端有 TransformInterceptor 包装：{ code, message, data: {...}, timestamp }
+      // wrapped.data 才是真正的业务数据
+      const wrapped: { data?: FullSitemapData } = await res.json();
+      const data = wrapped.data || (wrapped as any);
       const mapEntry = (e: SitemapEntry): MetadataRoute.Sitemap[number] => ({
         url: e.loc,
         lastModified: new Date(e.lastmod),

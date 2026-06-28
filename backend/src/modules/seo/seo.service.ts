@@ -144,7 +144,8 @@ export class SeoService {
       }),
       this.prisma.area.findMany({
         where: { level: { in: [1, 2] }, deletedAt: null, slug: { not: null } },
-        select: { slug: true, updatedAt: true },
+        // Area model 没有 updatedAt 字段（pre-existing schema），用 createdAt 兜底
+        select: { slug: true, createdAt: true },
       }),
     ]);
 
@@ -158,7 +159,7 @@ export class SeoService {
       })),
       areas: areas.map((a) => ({
         loc: `${baseUrl}/a/${a.slug}`,
-        lastmod: a.updatedAt.toISOString(),
+        lastmod: a.createdAt.toISOString(),
         changefreq: 'weekly',
         priority: 0.7,
       })),

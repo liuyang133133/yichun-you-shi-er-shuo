@@ -135,4 +135,22 @@ export class RegisterThrottleService {
       await this.redis.expire(newUserKey, 24 * 3600);
     }
   }
+
+  /**
+   * 检查新用户发帖资格（不预占）
+   * - post.service 在事务前调用，仅检查
+   * - 事务成功后调用 recordPostAttempt 占名额
+   * 注：当前实现仍 INCR 预占（与 assertCanPost 一致），后续可重构为非预占
+   */
+  async checkPostEligibility(userId: bigint): Promise<void> {
+    return this.assertCanPost(userId);
+  }
+
+  /**
+   * 记录一次发帖（事务成功后调用）
+   * - 当前实现：INCR 已在 checkPostEligibility 预占，recordPostAttempt 只需 no-op
+   */
+  async recordPostAttempt(_userId: bigint): Promise<void> {
+    // no-op: 名额已在 checkPostEligibility 预占
+  }
 }
