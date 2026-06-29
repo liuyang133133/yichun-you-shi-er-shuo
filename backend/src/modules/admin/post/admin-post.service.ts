@@ -1,10 +1,27 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { NotificationService } from '../../notification/notification.service';
+import { NotificationEvent } from '../../notification/notification-event';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminPostService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminPostService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  /**
+   * 通知发送失败不应阻塞审核主流程（业务侧已写库成功）
+   * 仅记录 warn 日志，便于排查
+   */
+  private swallowNotificationError(e: any, action: string, userId: bigint) {
+    this.logger.warn(
+      `通知发送失败 [${action}] user=${userId}: ${e?.message ?? e}`,
+    );
+  }
 
   /**
    * 帖子列表（带审核状态过滤）
@@ -120,6 +137,16 @@ export class AdminPostService {
       }),
     ]);
 
+    // 通知帖主：审核通过
+    await this.notificationService.emit({
+      userId: post.userId,
+      event: NotificationEvent.AUDIT,
+      title: '审核通过',
+      body: `您的帖子"${post.title}"已通过审核`,
+      payload: { type: 'post', id: postId.toString(), url: `/posts/${postId}` },
+      priority: 3,
+    }).catch((e) => this.swallowNotificationError(e, 'audit_pass', post.userId));
+
     return this.prisma.post.findUnique({ where: { id: postId } });
   }
 
@@ -152,6 +179,16 @@ export class AdminPostService {
         },
       }),
     ]);
+
+    // 通知帖主：审核未通过
+    await this.notificationService.emit({
+      userId: post.userId,
+      event: NotificationEvent.AUDIT,
+      title: '审核未通过',
+      body: `您的帖子"${post.title}"未通过审核：${reason}`,
+      payload: { type: 'post', id: postId.toString(), url: `/posts/${postId}`, reason },
+      priority: 4,
+    }).catch((e) => this.swallowNotificationError(e, 'audit_reject', post.userId));
 
     return this.prisma.post.findUnique({ where: { id: postId } });
   }
@@ -192,6 +229,16 @@ export class AdminPostService {
         },
       }),
     ]);
+
+    // 通知帖主：帖子被强制下架
+    await this.notificationService.emit({
+      userId: post.userId,
+      event: NotificationEvent.AUDIT,
+      title: '帖子已下架',
+      body: `您的帖子"${post.title}"已被下架：${reason}`,
+      payload: { type: 'post', id: postId.toString(), url: `/posts/${postId}`, reason },
+      priority: 4,
+    }).catch((e) => this.swallowNotificationError(e, 'offline', post.userId));
 
     return this.prisma.post.findUnique({ where: { id: postId } });
   }

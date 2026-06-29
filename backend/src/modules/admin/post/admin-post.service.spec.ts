@@ -14,6 +14,7 @@
 
 import { AdminPostService } from './admin-post.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { NotificationService } from '../../notification/notification.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('AdminPostService T-001 软删除 + 恢复', () => {
@@ -24,7 +25,9 @@ describe('AdminPostService T-001 软删除 + 恢复', () => {
 
   beforeAll(async () => {
     prisma = new PrismaService();
-    service = new AdminPostService(prisma);
+    // NotificationService 用 mock，集成测试不需要真实推送
+    const notificationService = { emit: jest.fn().mockResolvedValue(null) } as any;
+    service = new AdminPostService(prisma, notificationService);
     await prisma.$connect();
 
     // 找一个 admin user，没有就用第一个 user 当 admin
