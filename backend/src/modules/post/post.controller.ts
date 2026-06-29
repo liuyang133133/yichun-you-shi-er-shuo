@@ -9,6 +9,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { PostService } from './post.service';
@@ -90,9 +91,34 @@ export class PostController {
   @ApiOperation({ summary: '获取联系方式(已登录,个保法)' })
   async getContact(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
   ) {
     return this.postService.getContact(BigInt(id), BigInt(user.sub));
+  }
+
+  /**
+   * F-3: GET /api/v1/posts/:id/breadcrumb
+   * 面包屑数据（公开）
+   */
+  @Public()
+  @Get(':id/breadcrumb')
+  @ApiOperation({ summary: '面包屑数据 (公开)' })
+  async getBreadcrumb(@Param('id', ParseIntPipe) id: number) {
+    return this.postService.getBreadcrumb(BigInt(id));
+  }
+
+  /**
+   * F-3: GET /api/v1/posts/:id/related?limit=5
+   * 相关推荐（公开，默认 5 条）
+   */
+  @Public()
+  @Get(':id/related')
+  @ApiOperation({ summary: '相关推荐 (公开)' })
+  async getRelated(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit') limit?: string,
+  ) {
+    return this.postService.getRelated(BigInt(id), limit ? parseInt(limit, 10) : 5);
   }
 
   /**
@@ -113,7 +139,7 @@ export class PostController {
   @Get(':id')
   @ApiOperation({ summary: '信息详情（自动 +1 浏览）' })
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
     @CurrentUser() user: JwtPayload | undefined,
   ) {
@@ -133,7 +159,7 @@ export class PostController {
   @ApiOperation({ summary: '编辑信息' })
   update(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePostDto,
   ) {
     return this.postService.update(BigInt(user.sub), BigInt(id), dto);
@@ -147,7 +173,7 @@ export class PostController {
   @ApiOperation({ summary: '切换信息状态' })
   changeStatus(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: ChangeStatusDto,
   ) {
     return this.postService.changeStatus(BigInt(user.sub), BigInt(id), dto.status);
@@ -161,7 +187,7 @@ export class PostController {
   @ApiOperation({ summary: '删除信息（软删）' })
   remove(
     @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
   ) {
     return this.postService.remove(BigInt(user.sub), BigInt(id));
   }

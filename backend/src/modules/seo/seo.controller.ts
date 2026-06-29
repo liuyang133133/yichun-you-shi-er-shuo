@@ -67,6 +67,20 @@ export class SeoController {
     return dto;
   }
 
+  /**
+   * F-3: 通用页面 TDK 端点
+   * - GET /seo/tdk?path=/posts/123
+   * - GET /seo/tdk?path=/c/house
+   * - GET /seo/tdk?path=/a/yimei
+   */
+  @Public()
+  @Get('seo/tdk')
+  async pageTdk(@Query('path') path: string) {
+    const tdk = await this.service.getPageTdk(path);
+    if (!tdk) throw new NotFoundException(`路径 '${path}' 无对应 TDK`);
+    return tdk;
+  }
+
   // =====================================================
   // Admin 端点
   // =====================================================

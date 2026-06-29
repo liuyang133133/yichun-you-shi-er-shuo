@@ -12,6 +12,8 @@ import { AiService } from '../ai/ai.service';
 import { SeoService } from '../seo/seo.service';
 // T-013: 标签系统
 import { TagService } from '../tag/tag.service';
+// F-3: URL slug 生成
+import { generateSlug } from '../../common/utils/slug.util';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -428,6 +430,9 @@ export class PostService {
       // [P1-014] post-success 配额占用（仅事务内创建后才 INCR；失败回滚无副作用）
       await this.registerThrottle.recordPostAttempt(userId);
 
+      // F-3: 自动生成 slug（重试 3 次处理冲突）
+      const slug = await this.resolveSlugConflict(dto.title);
+
       const created = await tx.post.create({
         data: {
           userId,
@@ -443,6 +448,8 @@ export class PostService {
           contactWechat: dto.contactWechat,
           status: 'pending',
           auditStatus: 'pending',
+          // F-3: URL slug
+          slug,
         },
       });
 
@@ -703,6 +710,11 @@ export class PostService {
       ...(dto.price !== undefined ? { price: new Prisma.Decimal(dto.price) } : {}),
     };
 
+    // F-3: title 改了 → 重新生成 slug（排除自己当前 slug 避免误冲突）
+    if (dto.title && dto.title !== post.title) {
+      data.slug = await this.resolveSlugConflict(dto.title, post.id);
+    }
+
     return this.prisma.post.update({
       where: { id },
       data,
@@ -864,5 +876,177 @@ export class PostService {
     return this.prisma.post.count({
       where: { ...(type ? { type } : {}), status: 'active' },
     });
+  }
+
+  // =====================================================
+  // F-3: URL slug + 面包屑 + 相关推荐
+  // =====================================================
+
+  /**
+   * F-3: 生成 slug 并处理唯一性冲突
+   * - 重试 3 次（-1, -2, -3 后缀）
+   * - excludePostId：更新自己时排除自己，避免误冲突
+   */
+  private async resolveSlugConflict(title: string, excludePostId?: bigint): Promise<string> {
+    const base = generateSlug(title);
+    // 第一次先查 base 是否冲突
+    const exists = await this.prisma.post.findFirst({
+      where: {
+        slug: base,
+        ...(excludePostId ? { NOT: { id: excludePostId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!exists) return base;
+    // 重试 -1/-2/-3
+    for (let i = 1; i <= 3; i++) {
+      const candidate = `${base}-${i}`;
+      const dup = await this.prisma.post.findFirst({
+        where: {
+          slug: candidate,
+          ...(excludePostId ? { NOT: { id: excludePostId } } : {}),
+        },
+        select: { id: true },
+      });
+      if (!dup) return candidate;
+    }
+    // 极端：超过 3 次冲突 → 用 -<timestamp> 兜底
+    return `${base}-${Date.now().toString(36).slice(-4)}`;
+  }
+
+  /**
+   * F-3: 公开端点 - 面包屑数据（首页 → 顶级分类 → [子分类] → [区域] → 当前帖）
+   */
+  async getBreadcrumb(postId: bigint) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        category: { select: { id: true, name: true, code: true, slug: true, parentId: true } },
+        area: { select: { id: true, name: true, slug: true } },
+      },
+    });
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
+
+    // 顶级分类（parent.category；或自身即为顶级）
+    const topCategory = post.category.parentId
+      ? await this.prisma.category.findUnique({
+          where: { id: post.category.parentId },
+          select: { id: true, name: true, code: true, slug: true },
+        })
+      : post.category;
+
+    // 是否有 subCategory（当 post.category 有 parentId 时）
+    const subCategory =
+      post.category.parentId
+        ? {
+            id: post.category.id.toString(),
+            name: post.category.name,
+            slug: post.category.slug || '',
+            url: `/?type=${post.type}&category=${post.category.slug || post.category.id.toString()}`,
+          }
+        : null;
+
+    return {
+      home: '/',
+      category: topCategory
+        ? {
+            id: topCategory.id.toString(),
+            name: topCategory.name,
+            slug: topCategory.slug || '',
+            url: `/?type=${topCategory.code || ''}`.replace(/\?type=$/, '/'),
+          }
+        : null,
+      subCategory,
+      area: post.area
+        ? {
+            id: post.area.id.toString(),
+            name: post.area.name,
+            slug: post.area.slug || '',
+            url: `/?type=${post.type}&area=${post.area.slug || post.area.id.toString()}`,
+          }
+        : null,
+      post: {
+        id: post.id.toString(),
+        title: post.title,
+        url: `/posts/${post.id}${post.slug ? `-${post.slug}` : ''}`,
+      },
+    };
+  }
+
+  /**
+   * F-3: 公开端点 - 相关推荐（同分类/同区域/同标签 任一匹配）
+   * - 排序：匹配维度数 DESC（命中分类+标签的排前），然后 createdAt DESC
+   * - 默认 5 条，最大 20
+   */
+  async getRelated(postId: bigint, limit = 5) {
+    const safeLimit = Math.min(Math.max(limit, 1), 20);
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        categoryId: true,
+        areaId: true,
+        postTags: { select: { tagId: true } },
+      },
+    });
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
+
+    const tagIds = post.postTags.map((pt) => pt.tagId);
+
+    // 任一匹配：同 categoryId OR 同 areaId OR 同 tagId
+    const OR: Prisma.PostWhereInput[] = [];
+    OR.push({ categoryId: post.categoryId });
+    if (post.areaId) OR.push({ areaId: post.areaId });
+    if (tagIds.length > 0) OR.push({ postTags: { some: { tagId: { in: tagIds } } } });
+
+    const candidates = await this.prisma.post.findMany({
+      where: {
+        OR,
+        status: 'active',
+        auditStatus: 'passed',
+        NOT: { id: postId },
+        deletedAt: null,
+      },
+      take: 50, // 多取一些，然后按匹配维度数排序
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        price: true,
+        createdAt: true,
+        categoryId: true,
+        areaId: true,
+        images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { url: true } },
+        area: { select: { name: true } },
+        postTags: { select: { tagId: true } },
+      },
+    });
+
+    // 计算每个候选的匹配维度数 + 排序
+    const scored = candidates
+      .map((c) => {
+        let score = 0;
+        if (c.categoryId === post.categoryId) score++;
+        if (post.areaId && c.areaId === post.areaId) score++;
+        if (tagIds.length > 0 && c.postTags.some((pt) => tagIds.includes(pt.tagId))) score++;
+        return { ...c, _score: score };
+      })
+      // score DESC, createdAt DESC
+      .sort((a, b) => {
+        if (b._score !== a._score) return b._score - a._score;
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      })
+      .slice(0, safeLimit);
+
+    return scored.map((c) => ({
+      id: c.id.toString(),
+      slug: c.slug || '',
+      title: c.title,
+      price: Number(c.price),
+      coverImage: c.images[0]?.url || null,
+      areaName: c.area?.name || null,
+      createdAt: c.createdAt.toISOString(),
+      matchScore: c._score,
+    }));
   }
 }

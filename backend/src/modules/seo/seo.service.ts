@@ -229,6 +229,92 @@ ${urls}
     };
   }
 
+  /**
+   * F-3: 通用 TDK 端点 — 根据 path 生成 SEO TDK
+   * - /posts/:id → 走 PostService.getBreadcrumb + Post 数据
+   * - /posts/:id-:slug → 同上（忽略 slug，仅取 :id）
+   * - /c/:slug → 走 CategorySeo
+   * - /a/:slug → 走 AreaSeo
+   * - 其他 → 返回 null
+   */
+  async getPageTdk(path: string): Promise<{
+    title: string;
+    keywords: string;
+    description: string;
+    path: string;
+  } | null> {
+    if (!path) return null;
+    const cleanPath = path.split('?')[0];
+
+    // /posts/:id 或 /posts/:id-:slug
+    const postMatch = cleanPath.match(/^\/posts\/(\d+)(?:-.*)?$/);
+    if (postMatch) {
+      const postId = BigInt(postMatch[1]);
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        include: {
+          category: { select: { id: true, name: true, code: true, slug: true } },
+          area: { select: { id: true, name: true, slug: true } },
+          postTags: { include: { tag: { select: { name: true } } } },
+        },
+      });
+      if (!post) return null;
+      const tags = post.postTags.map((pt) => pt.tag.name);
+      const catName = post.category?.name || '';
+      const areaName = post.area?.name || '';
+      // title: "《帖子标题》 - 伊春{category}{area} | 伊春有事儿说"
+      const suffix = [catName, areaName].filter(Boolean).join('·');
+      const title = `${post.title} - 伊春${suffix} | 伊春有事儿说`;
+      // description: 内容前 160 字（去 HTML/换行）
+      const plain = (post.description || '')
+        .replace(/<[^>]+>/g, ' ')   // 去 HTML
+        .replace(/[\r\n]+/g, ' ')   // 去换行
+        .replace(/\s+/g, ' ')
+        .trim();
+      const description = plain.length > 160 ? `${plain.slice(0, 160)}...` : plain;
+      // keywords: tags + 分类 + 区域
+      const kwSet = new Set<string>();
+      tags.forEach((t) => kwSet.add(t));
+      if (catName) kwSet.add(`伊春${catName}`);
+      if (areaName) kwSet.add(`伊春${areaName}`);
+      kwSet.add('伊春有事儿说');
+      return {
+        title,
+        keywords: Array.from(kwSet).join(','),
+        description,
+        path,
+      };
+    }
+
+    // /c/:slug
+    const catMatch = cleanPath.match(/^\/c\/([a-z0-9-]+)$/);
+    if (catMatch) {
+      const cat = await this.getCategorySeo(catMatch[1]);
+      if (!cat) return null;
+      return {
+        title: cat.seoTitle,
+        keywords: cat.seoKeywords.join(','),
+        description: cat.seoDescription,
+        path,
+      };
+    }
+
+    // /a/:slug
+    const areaMatch = cleanPath.match(/^\/a\/([a-z0-9-]+)$/);
+    if (areaMatch) {
+      const area = await this.getAreaSeo(areaMatch[1]);
+      if (!area) return null;
+      return {
+        title: area.seoTitle,
+        keywords: area.seoKeywords.join(','),
+        description: area.seoDescription,
+        path,
+      };
+    }
+
+    return null;
+  }
+
   /** 公开 SEO - 区县 by slug */
   async getAreaSeo(slug: string): Promise<AreaSeoResponseDto | null> {
     const area = await this.prisma.area.findUnique({
