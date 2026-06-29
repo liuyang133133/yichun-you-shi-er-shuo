@@ -29,6 +29,10 @@ export function setUser(u: { sub: string; phone: string; role: string }) {
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  // V1.0 验收 BUG-4 修复: 同步清 SSR middleware 检测的 cookie
+  if (typeof document !== 'undefined') {
+    document.cookie = 'admin_token=; Path=/; Max-Age=0';
+  }
 }
 
 export async function apiFetch<T = any>(
@@ -212,6 +216,41 @@ export const adminBannerApi = {
     apiFetch<{ id: string; restored: true }>(`/admin/banners/${id}/restore`, { method: "POST" }),
 };
 
+
+// T-P15-02b: 分类后台管理 (adminCategoryApi)
+export interface AdminCategory {
+  id: string;
+  parentId: string | null;
+  code: string | null; // 顶级分类必填 (house/secondhand/job/lifebiz)
+  name: string;
+  icon: string | null;
+  sortOrder: number;
+  status: number; // 1=启用 0=停用
+  slug: string | null;
+  seoTitle: string | null;
+  seoKeywords: string | null;
+  seoDescription: string | null;
+  // 树形 (findTree 返回)
+  children?: AdminCategory[];
+}
+
+export const adminCategoryApi = {
+  // 列表 (扁平 + 防御性去重) — 用于表单 parentId 下拉
+  list: (params: { code?: string } = {}) =>
+    apiFetch<AdminCategory[]>('/admin/categories', { params: params as any }),
+  // 树形 — 列表页主视图
+  tree: (params: { code?: string } = {}) =>
+    apiFetch<AdminCategory[]>('/admin/categories/tree', { params: params as any }),
+  create: (body: Partial<AdminCategory>) =>
+    apiFetch<AdminCategory>('/admin/categories', { method: 'POST', body }),
+  update: (id: string | number, body: Partial<AdminCategory>) =>
+    apiFetch<AdminCategory>(`/admin/categories/${id}`, { method: 'PATCH', body }),
+  remove: (id: string | number) =>
+    apiFetch<{ id: string; deleted: true }>(
+      `/admin/categories/${id}`,
+      { method: 'DELETE' },
+    ),
+};
 
 // T-021: 公司后台管理
 export interface AdminCompany {
