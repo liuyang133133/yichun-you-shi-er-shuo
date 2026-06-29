@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { RewritePopover } from '@/components/ai/rewrite-popover';
 import { TagSelector } from '@/components/post/tag-selector';
-import { postApi, categoryApi, areaApi, uploadApi } from '@/lib/api';
+import { postApi, categoryApi, areaApi, uploadApi, buildPostUrl } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2, Hash } from 'lucide-react';
 
@@ -141,7 +141,19 @@ function ManualPublishForm() {
     setStep(1); // 切 type 重置
   }, [type]);
 
-  const subCategories = categories.filter((c) => c.code === type);
+  const subCategories = (() => {
+    // V1.0 页面合理性修复:
+    // 1) 必须 parentId != null — 否则 4 个顶级会混进"分类"下拉
+    // 2) 按 (parentId, name) 去重 — 防御 seed/reset 产生孤儿
+    const filtered = categories.filter((c) => c.code === type && c.parentId != null && c.parentId !== '');
+    const seen = new Set<string>();
+    return filtered.filter((c) => {
+      const key = `${c.parentId ?? 'top'}:${c.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
   const currentTypeMeta = TYPE_OPTIONS.find((t) => t.code === type);
   const Icon = currentTypeMeta?.icon;
 
@@ -291,7 +303,8 @@ function ManualPublishForm() {
         // T-014: 标签关联（后端 CreatePostDto Max=5，事务内 attachToPost）
         tagIds: tagIds.length > 0 ? tagIds : undefined,
       } as any);
-      router.push(`/posts/${post.id}`);
+      // F-3 V2: 跳详情页走 slug 格式 /posts/[id]-[slug]
+      router.push(buildPostUrl(post));
     } catch (e: any) {
       setError(e?.message || '发布失败');
     } finally {

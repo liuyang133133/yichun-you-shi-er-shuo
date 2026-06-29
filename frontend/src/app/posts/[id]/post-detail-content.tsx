@@ -21,6 +21,8 @@ import {
   Phone, MessageSquare, ArrowLeft, Calendar, Share2, Flag, ChevronRight,
   Sparkles, BadgeCheck, X, ChevronLeft, Hash,
 } from 'lucide-react';
+// F-3 V2: 面包屑由 /posts/[id]-[slug]/page.tsx 在顶部统一渲染
+// 此处不再渲染内嵌面包屑（避免重复）
 
 function Field({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
@@ -221,17 +223,7 @@ function PostDetailContent() {
 
   return (
     <main className="container max-w-6xl py-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
-        <Link href="/" className="hover:text-foreground">首页</Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link href={`/?type=${post.type}`} className="hover:text-foreground">
-          {meta.label}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-foreground truncate max-w-[200px]">{post.title}</span>
-      </nav>
-
+      {/* F-3 V2: 面包屑已由 [id]-[slug]/page.tsx 顶部渲染，此处不再重复 */}
       <div className="grid md:grid-cols-3 gap-6 items-start">
         {/* Left: 主内容 */}
         <div className="md:col-span-2 space-y-5">
