@@ -34,7 +34,8 @@ export class SearchService {
     }
 
     // 过滤条件
-    const extraWhere: string[] = ['p.status = \'active\''];
+    // P0 修复 (search 软删残留): 显式加 p.deleted_at IS NULL，绕过 T-001 中间件的 $queryRawUnsafe 看不到软删帖子
+    const extraWhere: string[] = ['p.status = \'active\'', 'p.deleted_at IS NULL'];
     const params2: any[] = [];
     if (type) {
       extraWhere.push('p.type = ?');
@@ -191,6 +192,7 @@ export class SearchService {
         FROM posts,
         (SELECT 1 n UNION SELECT 2 UNION SELECT 3) n
         WHERE LENGTH(title) - LENGTH(REPLACE(title, ' ', '')) >= n.n - 1
+          AND deleted_at IS NULL
       ) words
       WHERE CHAR_LENGTH(word) >= 2
       GROUP BY word
