@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -7,9 +7,26 @@ export class FavoriteService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续收藏/取消收藏
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 收藏（幂等：重复收藏不报错）
    */
   async add(userId: bigint, postId: bigint) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
     // 1. 校验 post 存在且未删除
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
@@ -46,6 +63,9 @@ export class FavoriteService {
    * 取消收藏
    */
   async remove(userId: bigint, postId: bigint) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const existing = await this.prisma.favorite.findUnique({
       where: { userId_postId: { userId, postId } },
     });

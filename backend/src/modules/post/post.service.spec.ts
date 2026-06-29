@@ -1,4 +1,5 @@
 import { PostService } from './post.service';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('PostService.create - 重复检测', () => {
   let service: PostService;
@@ -25,6 +26,10 @@ describe('PostService.create - 重复检测', () => {
         }),
         create: jest.fn().mockResolvedValue({ id: 1n }),
         update: jest.fn().mockResolvedValue({ id: 1n }),
+      },
+      // [P0-001] 默认 user.status=0（正常），封禁测试单独覆盖
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ status: 0 }),
       },
     };
     mockRedis = {
@@ -118,6 +123,10 @@ describe('PostService.findOne - tags include (T-013b)', () => {
         }),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
+      // [P0-001] 用户表 mock
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ status: 0 }),
+      },
     };
     mockRedis = { get: jest.fn().mockResolvedValue(null), setEx: jest.fn().mockResolvedValue('OK'), invalidatePattern: jest.fn() };
     mockViewLog = { recordView: jest.fn().mockResolvedValue(undefined) };
@@ -164,6 +173,10 @@ describe('PostService.findAll - tags include (T-013b)', () => {
         count: jest.fn().mockResolvedValue(0),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
+      // [P0-001] 用户表 mock
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ status: 0 }),
+      },
     };
     mockRedis = { get: jest.fn().mockResolvedValue(null), setEx: jest.fn().mockResolvedValue('OK'), invalidatePattern: jest.fn() };
     mockViewLog = { recordView: jest.fn() };
@@ -194,6 +207,115 @@ describe('PostService.findAll - tags include (T-013b)', () => {
     const callArgs = mockPrisma.post.findMany.mock.calls[0]?.[0];
     expect(callArgs?.where?.AND).toBeDefined();
     expect(callArgs.where.AND.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ============================================================
+// [P0-001] 封禁用户拦截 — 写入口（create/update/remove/changeStatus）
+// ============================================================
+describe('PostService 写入口 - 封禁用户拦截 (P0-001)', () => {
+  let service: PostService;
+  let mockPrisma: any;
+  let mockRedis: any;
+  let mockViewLog: any;
+  let mockRegisterThrottle: any;
+  let mockAiService: any;
+  let mockSeoService: any;
+
+  beforeEach(() => {
+    mockPrisma = {
+      post: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+      user: {
+        // 默认模拟：封禁状态 = 1
+        findUnique: jest.fn().mockResolvedValue({ status: 1 }),
+      },
+    };
+    mockRedis = {
+      get: jest.fn(),
+      setEx: jest.fn(),
+      invalidatePattern: jest.fn().mockResolvedValue(undefined),
+    };
+    mockViewLog = { recordView: jest.fn() };
+    mockRegisterThrottle = {
+      checkPostEligibility: jest.fn(),
+      recordPostAttempt: jest.fn(),
+    };
+    mockAiService = { score: jest.fn() };
+    mockSeoService = { generateSeoMeta: jest.fn() };
+    service = new PostService(
+      mockPrisma,
+      mockRedis,
+      mockViewLog,
+      mockRegisterThrottle,
+      mockAiService,
+      mockSeoService,
+      { attachToPost: jest.fn() } as any,
+    );
+  });
+
+  it('create：封禁用户 → 抛 ForbiddenException', async () => {
+    await expect(
+      service.create(1n, { title: 't', categoryId: 1, type: 'house' } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    // 关键：后续业务逻辑不应触发（重复检测、事务、tag attach 等）
+    expect(mockRegisterThrottle.checkPostEligibility).not.toHaveBeenCalled();
+    expect(mockPrisma.post.create).not.toHaveBeenCalled();
+  });
+
+  it('update：封禁用户 → 抛 ForbiddenException', async () => {
+    await expect(
+      service.update(1n, 1n, { title: 't' } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockPrisma.post.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.post.update).not.toHaveBeenCalled();
+  });
+
+  it('remove：封禁用户 → 抛 ForbiddenException', async () => {
+    await expect(
+      service.remove(1n, 1n),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockPrisma.post.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('changeStatus：封禁用户 → 抛 ForbiddenException', async () => {
+    await expect(
+      service.changeStatus(1n, 1n, 'sold'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockPrisma.post.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('create：正常用户 status=0 → 通过封禁检查（继续走到后续逻辑）', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ status: 0 });
+    mockPrisma.post.findFirst.mockResolvedValue(null);
+    mockPrisma.category = { findUnique: jest.fn().mockResolvedValue({ id: 1n, code: 'house' }) };
+    mockPrisma.$transaction = jest.fn().mockImplementation(async (fn) =>
+      fn({
+        post: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({ id: 1n }),
+        },
+        postImage: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      }),
+    );
+    // post-transaction findUnique — 仿照已有 happy-path 测试给一个 mock 值
+    mockPrisma.post.findUnique
+      .mockResolvedValueOnce(null) // create 入口的重复检测
+      .mockResolvedValueOnce({     // post-transaction findUnique 返回
+        id: 1n,
+        user: { id: 1n, nickname: 'u', avatar: null },
+        category: { id: 1n, name: 'c', code: 'house' },
+        area: null,
+        images: [],
+        postTags: [],
+      });
+    await service.create(1n, { title: 't', type: 'house', categoryId: 1 } as any);
+    // 关键断言: 封禁检查通过 → 后续业务逻辑 (registerThrottle) 被调用
+    expect(mockRegisterThrottle.checkPostEligibility).toHaveBeenCalledWith(1n);
   });
 });
 

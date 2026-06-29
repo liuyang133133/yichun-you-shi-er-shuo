@@ -33,6 +33,21 @@ export class PostService {
   private static readonly LIST_CACHE_TTL = 300;
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续发帖/改状态
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 列表查询（统一入口，type 必填）
    * 支持：分类/区域/关键词/价格区间/标签/排序/分页
    */
@@ -52,7 +67,9 @@ export class PostService {
       tagSlugs,
     } = query;
 
-    const where: Prisma.PostWhereInput = { type, status };
+    // V1.0 验收 BUG-5 修复: type 可选
+    const where: Prisma.PostWhereInput = { status };
+    if (type) where.type = type;
     let categoryOrFilter: Prisma.PostWhereInput[] | undefined;
     if (categoryId) {
       // [Bug fix] 子类目过滤：兼容父类目直接挂的旧数据
@@ -342,6 +359,9 @@ export class PostService {
    * dto.detail 不传时保持旧行为（只写主表），前端可继续用两次 HTTP 路径。
    */
   async create(userId: bigint, dto: CreatePostDto) {
+    // ===== [P0-001] 封禁检查（写入口必须） =====
+    await this.assertUserNotBanned(userId);
+
     // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
     // [P1-007] 移到事务内，消除 read-then-write race window
     const oneDayAgo = new Date();
@@ -660,6 +680,9 @@ export class PostService {
    * 更新（只能改自己的）
    */
   async update(userId: bigint, id: bigint, dto: UpdatePostDto) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
@@ -703,6 +726,9 @@ export class PostService {
    * - 中间件会自动过滤掉 deletedAt 非空的记录，list 不再返回
    */
   async remove(userId: bigint, id: bigint) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
@@ -739,6 +765,9 @@ export class PostService {
    * [P1-009] 状态机白名单：拒绝 rejected/deleted 绕过审核直接 active
    */
   async changeStatus(userId: bigint, id: bigint, newStatus: 'active' | 'sold' | 'expired') {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);

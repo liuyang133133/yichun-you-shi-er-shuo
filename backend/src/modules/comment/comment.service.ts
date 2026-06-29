@@ -6,6 +6,21 @@ export class CommentService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续留言/删留言
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 帖子留言列表（含回复）
    * 顶级留言按时间正序排，回复挂在 parent 下
    * GET /api/v1/posts/:postId/comments
@@ -48,6 +63,9 @@ export class CommentService {
     content: string,
     parentId?: bigint,
   ) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     // 1. 校验 post
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
@@ -104,6 +122,9 @@ export class CommentService {
    * 权限：自己 / post 作者 / 管理员（V1 暂未实现 admin role）
    */
   async remove(userId: bigint, commentId: bigint) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
       include: { post: { select: { userId: true } } },
