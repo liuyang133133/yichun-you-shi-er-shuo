@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { PostDetailContent } from '../[id]/post-detail-content';
+import { PostDetailContent } from './post-detail-content';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { RelatedPosts } from '@/components/related-posts';
 import { BreadcrumbItem } from '@/lib/api';
@@ -14,12 +14,11 @@ const TYPE_NAMES: Record<string, string> = {
   secondhand: '二手',
   job: '招聘',
   lifebiz: '便民',
-  // F-2: 5 个伊春本地刚需分类
   carpool: '拼车',
-  lostfound: '失物',
-  contact: '电话',
-  forestry: '林下',
-  dating: '交友',
+  lostfound: '失物招领',
+  contact: '便民电话',
+  forestry: '林下经济',
+  dating: '同城交友',
 };
 
 /**
@@ -38,10 +37,6 @@ async function fetchPost(id: string): Promise<any | null> {
 
 /**
  * F-3 V2: SEO meta — 优先用 /seo/tdk 端点，fallback 用 post 数据拼接
- *
- * /seo/tdk 端点返回 { title, description, keywords }
- * - title/description 是后端已经按 Post.seoMeta 优先级生成的
- * - 失败时回退到原来的拼接逻辑
  */
 async function fetchTdk(path: string): Promise<{ title: string; description: string; keywords: string } | null> {
   try {
@@ -57,44 +52,26 @@ async function fetchTdk(path: string): Promise<{ title: string; description: str
 }
 
 /**
- * F-3 V2: 动态路由参数
- * - 路径段格式：`{id}-{slug}`（如 `123-my-post-title`）
- * - slug 中可能含 '-'（pinyin），用 split('-', 1) 只切第一个
+ * F-3 V2: URL segment 解析
+ * - "/posts/123"           → { id: "123", slug: "" }
+ * - "/posts/123-my-slug"   → { id: "123", slug: "my-slug" }
  */
-interface PageParams {
-  /** 完整 segment，如 "123-my-post-title" */
-  id?: string;
-  /** slug 部分（路由层会按 [id]-[slug] 拆分，但 slug 中仍可能含 '-'） */
-  slug?: string;
-}
-
-/**
- * F-3 V2: 拆出真正的 id（segment 中第一个 '-' 之前的部分）
- */
-function extractId(combined: string): string {
-  if (!combined) return combined;
-  const idx = combined.indexOf('-');
-  if (idx === -1) return combined;
-  return combined.slice(0, idx);
-}
-
-/**
- * F-3 V2: 拼出 slug 剩余部分（id 之后的全部）
- */
-function extractSlug(combined: string, id: string): string {
-  if (!combined || combined === id) return '';
-  return combined.slice(id.length + 1);
+function parseSegment(segment: string): { id: string; slug: string } {
+  if (!segment) return { id: '', slug: '' };
+  const idx = segment.indexOf('-');
+  if (idx === -1) return { id: segment, slug: '' };
+  return { id: segment.slice(0, idx), slug: segment.slice(idx + 1) };
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id?: string; slug?: string }>;
+  params: Promise<{ postId: string }>;
 }): Promise<Metadata> {
-  const resolved = await params;
-  // Next.js 把 [id]-[slug] 拆成 id + slug，所以 id 已是纯数字
-  const id = resolved.id || '';
-  const slug = resolved.slug || '';
+  const { postId } = await params;
+  const { id, slug } = parseSegment(postId);
+  if (!id) return { title: '信息不存在 - 伊春有事儿说' };
+
   const path = `/posts/${id}`;
   const url = `${BASE}/posts/${id}${slug ? `-${slug}` : ''}`;
 
@@ -160,31 +137,19 @@ export async function generateMetadata({
   };
 }
 
-/**
- * 服务端 JSON-LD 结构化数据
- * - 优先 Post.seoMeta.jsonLd (AI 生成)，fallback 到 4-type schema.org 模板
- * - 同时附加 BreadcrumbList JSON-LD
- */
-async function getPostForJsonLd(id: string) {
-  return await fetchPost(id);
-}
-
 export default async function PostDetailPage({
   params,
 }: {
-  params: Promise<{ id?: string; slug?: string }>;
+  params: Promise<{ postId: string }>;
 }) {
-  const resolved = await params;
-  // Next.js 路由层会按 [id]-[slug] 拆，所以 id 已是纯数字
-  // 但如果 slug 中还含 '-'（少见但合法），slug 字段就是剩余部分
-  const id = resolved.id || '';
-  const slugFromRoute = resolved.slug || '';
+  const { postId } = await params;
+  const { id, slug: slugFromRoute } = parseSegment(postId);
 
   if (!id) {
     redirect('/');
   }
 
-  const post = await getPostForJsonLd(id);
+  const post = await fetchPost(id);
 
   // 404 兜底
   if (!post) {
@@ -203,41 +168,33 @@ export default async function PostDetailPage({
     );
   }
 
-  // slug 校验：URL 上的 slug 必须和后端 post.slug 一致，否则重定向到正确 URL
+  // 老 URL `/posts/123` → 跳到新 URL `/posts/123-{slug}`
   const expectedSlug = post.slug || '';
   const expectedUrl = `/posts/${id}${expectedSlug ? `-${expectedSlug}` : ''}`;
-  const currentUrl = `/posts/${id}${slugFromRoute ? `-${slugFromRoute}` : ''}`;
-  if (expectedSlug && slugFromRoute && slugFromRoute !== expectedSlug) {
+  if (!slugFromRoute) {
+    redirect(expectedUrl);
+  }
+  // slug 校验：URL 上的 slug 必须和后端 post.slug 一致，否则重定向到正确 URL
+  if (slugFromRoute && expectedSlug && slugFromRoute !== expectedSlug) {
     redirect(expectedUrl);
   }
 
-  // 构造面包屑数据（服务端组件从 post 取）
+  // 构造面包屑数据
   const breadcrumbItems: BreadcrumbItem[] = buildBreadcrumbFromPost(post, id);
 
   // JSON-LD
   const aiJsonLd = post?.seoMeta?.jsonLd;
+  const idSlug = `${id}${expectedSlug ? `-${expectedSlug}` : ''}`;
   const itemJsonLd =
     aiJsonLd && Object.keys(aiJsonLd).length > 0
       ? aiJsonLd
-      : post
-      ? buildJsonLd(post, `${id}${expectedSlug ? `-${expectedSlug}` : ''}`)
-      : null;
-  const breadcrumbJsonLd = post
-    ? buildBreadcrumbJsonLd(post, `${id}${expectedSlug ? `-${expectedSlug}` : ''}`)
-    : null;
+      : buildJsonLd(post, idSlug);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(post, idSlug);
 
-  const finalJsonLd = itemJsonLd || breadcrumbJsonLd
-    ? {
-        '@context': 'https://schema.org',
-        '@graph': [
-          ...(itemJsonLd ? [itemJsonLd] : []),
-          ...(breadcrumbJsonLd ? [breadcrumbJsonLd] : []),
-        ],
-      }
-    : null;
-
-  // 防 unused 当前 url（用于规范 canonical 写入 metadata）
-  void currentUrl;
+  const finalJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [itemJsonLd, breadcrumbJsonLd],
+  };
 
   return (
     <>
@@ -246,12 +203,10 @@ export default async function PostDetailPage({
         <Breadcrumb items={breadcrumbItems} />
       </div>
 
-      {finalJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(finalJsonLd) }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(finalJsonLd) }}
+      />
       {/* V1.0 验收 BUG-3: PostDetailContent 使用 useSearchParams, 必须包 Suspense 边界 */}
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-muted-foreground">加载中...</div>}>
         <PostDetailContent />
@@ -264,7 +219,7 @@ export default async function PostDetailPage({
 }
 
 /**
- * F-3 V2: 从 post 数据构造面包屑
+ * 从 post 数据构造面包屑
  * - 首页 → 类型频道 → 分类（如有） → 区县（如有） → 帖子标题
  */
 function buildBreadcrumbFromPost(post: any, id: string): BreadcrumbItem[] {
@@ -295,7 +250,7 @@ function buildBreadcrumbFromPost(post: any, id: string): BreadcrumbItem[] {
 }
 
 /**
- * T-P15-02 V1: BreadcrumbList JSON-LD（兼容 schema.org 旧版）
+ * BreadcrumbList JSON-LD（兼容 schema.org 旧版）
  */
 function buildBreadcrumbJsonLd(post: any, idSlug: string) {
   const url = `${BASE}/posts/${idSlug}`;
@@ -372,13 +327,6 @@ function buildJsonLd(post: any, idSlug: string) {
           : undefined,
         jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: post.job?.workCity || '伊春', addressRegion: '黑龙江', addressCountry: 'CN' } },
       };
-    // F-2: 5 个伊春本地刚需分类 — 暂都用 Article schema，后续按业务优化
-    case 'carpool':
-    case 'lostfound':
-    case 'contact':
-    case 'forestry':
-    case 'dating':
-    case 'lifebiz':
     default:
       return {
         ...base,
@@ -386,6 +334,3 @@ function buildJsonLd(post: any, idSlug: string) {
       };
   }
 }
-
-// 仅作为 API 暴露，便于其它 server component 复用（暂未直接使用，保留扩展位）
-export { extractId, extractSlug };

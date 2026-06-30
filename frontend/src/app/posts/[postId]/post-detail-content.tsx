@@ -38,9 +38,11 @@ function Field({ label, value, icon }: { label: string; value: string; icon?: Re
 
 function PostDetailContent() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ postId: string }>();
   const searchParams = useSearchParams();
-  const id = params?.id;
+  // F-3 V2: postId 实际是完整 segment "123-slug"，需要 split
+  const postIdSegment = params?.postId || '';
+  const id = postIdSegment.includes('-') ? postIdSegment.split('-')[0] : postIdSegment;
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
