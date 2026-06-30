@@ -15,17 +15,6 @@ interface Props {
 }
 
 /**
- * F-2: 5 个新 type 后端 AI rewrite 暂不支持, 落到 lifebiz 兜底
- * 返回窄 4-way，匹配 RewriteRequestDto.type
- */
-function toAiPostType(t: AiPostType): 'house' | 'job' | 'secondhand' | 'lifebiz' {
-  if (t === 'carpool' || t === 'lostfound' || t === 'contact' || t === 'forestry' || t === 'dating') {
-    return 'lifebiz';
-  }
-  return t;
-}
-
-/**
  * Minimal popover (no @radix-ui/react-popover dependency).
  * Click the trigger to open; click outside / X / Escape to close.
  */
@@ -60,7 +49,7 @@ export function RewritePopover({ type, field, original, context, onApply }: Prop
     setLoading(true);
     setError(null);
     try {
-      const r = await aiApi.rewrite({ type: toAiPostType(type), field, original, context });
+      const r = await aiApi.rewrite({ type, field, original, context });
       setVersions(r.versions || []);
     } catch (e: any) {
       setError(e?.message || '改写失败, 请重试');

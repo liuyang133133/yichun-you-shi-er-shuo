@@ -74,7 +74,7 @@ function HomeContentInner() {
     }).catch(() => {});
     bannerApi.active('home_top').then((r: any) => setBanners(Array.isArray(r) ? r : [])).catch(() => setBanners([]));
     // T-014 + V1.0 修复: 热门标签按当前 type 过滤
-    // 房屋出租页之前显示"山野菜/雪地胎"等 lifebiz 标签, 没意义
+    // 房屋租售页之前显示"山野菜/雪地胎"等 lifebiz 标签, 没意义
     tagApi.hot(12, currentType || undefined).then(setHotTags).catch(() => setHotTags([]));
   }, [currentType]);
 
@@ -153,7 +153,7 @@ function HomeContentInner() {
                   <span className="text-foreground">说</span>
                 </h1>
                 <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                  房屋出租 · 二手交易 · 招聘求职 · 便民信息
+                  房屋租售 · 二手交易 · 招聘求职 · 便民信息
                   <br />
                   <span className="text-sm text-muted-foreground/80">本地人发布，本地人浏览，真实可靠</span>
                 </p>
@@ -180,11 +180,11 @@ function HomeContentInner() {
                 </div>
                 <div className="flex items-center gap-6 pt-4 text-xs text-muted-foreground">
                   <div>
-                    <span className="text-2xl font-bold text-foreground">9</span> 大模块
+                    <span className="text-2xl font-bold text-foreground">4</span> 大模块
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
-                    <span className="text-2xl font-bold text-foreground">58</span> 个分类
+                    <span className="text-2xl font-bold text-foreground">29</span> 个分类
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
@@ -307,8 +307,8 @@ function HomeContentInner() {
               <p className="text-sm text-muted-foreground mt-1">选择你感兴趣的信息类别</p>
             </div>
           </div>
-          {/* F-2: 9 个模块 — 4 大主类 + 5 个本地刚需分类 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+          {/* 4 大模块入口 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {MODULES.map((m, i) => {
               const Icon = m.icon;
               return (

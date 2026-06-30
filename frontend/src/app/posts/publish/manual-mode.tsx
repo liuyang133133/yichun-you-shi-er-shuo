@@ -11,19 +11,13 @@ import { RewritePopover } from '@/components/ai/rewrite-popover';
 import { TagSelector } from '@/components/post/tag-selector';
 import { postApi, categoryApi, areaApi, uploadApi, buildPostUrl } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
-import { Home, ShoppingBag, Briefcase, Megaphone, Car, Search, Phone, TreePine, Heart, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2, Hash } from 'lucide-react';
+import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2, Hash } from 'lucide-react';
 
 const TYPE_OPTIONS = [
-  { code: 'house', title: '房屋出租', icon: Home, gradient: 'from-blue-500 to-indigo-600' },
+  { code: 'house', title: '房屋租售', icon: Home, gradient: 'from-blue-500 to-indigo-600' },
   { code: 'secondhand', title: '二手交易', icon: ShoppingBag, gradient: 'from-pink-500 to-fuchsia-600' },
   { code: 'job', title: '招聘求职', icon: Briefcase, gradient: 'from-emerald-500 to-teal-600' },
   { code: 'lifebiz', title: '便民信息', icon: Megaphone, gradient: 'from-amber-500 to-red-600' },
-  // F-2: 5 个伊春本地刚需分类（暂只走通用表单，无 type-specific 字段）
-  { code: 'carpool', title: '拼车/顺风车', icon: Car, gradient: 'from-violet-500 to-fuchsia-600' },
-  { code: 'lostfound', title: '失物招领', icon: Search, gradient: 'from-cyan-500 to-blue-700' },
-  { code: 'contact', title: '便民电话', icon: Phone, gradient: 'from-lime-500 to-emerald-700' },
-  { code: 'forestry', title: '林下经济', icon: TreePine, gradient: 'from-green-500 to-teal-700' },
-  { code: 'dating', title: '同城交友', icon: Heart, gradient: 'from-rose-500 to-red-700' },
 ] as const;
 
 const RENTAL_TYPES = ['整租', '合租', '短租', '日租'];
@@ -42,17 +36,7 @@ export default function ManualPublishMode() {
 function ManualPublishForm() {
   const router = useRouter();
   const search = useSearchParams();
-  const type = (search.get('type') as 'house' | 'secondhand' | 'job' | 'lifebiz' | 'carpool' | 'lostfound' | 'contact' | 'forestry' | 'dating') || 'house';
-
-// F-2: 5 个新 type 不接入 AI rewrite（后端 AI 只支持 4 大模块）
-// 落到 lifebiz（最近的通用分类），让 AI 给出兜底改写
-// 返回窄 4-way，匹配 RewriteRequestDto.type
-function toAiPostType(t: typeof type): 'house' | 'job' | 'secondhand' | 'lifebiz' {
-  if (t === 'carpool' || t === 'lostfound' || t === 'contact' || t === 'forestry' || t === 'dating') {
-    return 'lifebiz';
-  }
-  return t;
-}
+  const type = (search.get('type') as 'house' | 'secondhand' | 'job' | 'lifebiz') || 'house';
 
   // Phase 1: read prefill_* URL params and apply as initial form state.
   // No complex mapping (e.g. prefill_layout -> rooms/livingRooms) is performed.
@@ -382,9 +366,9 @@ function toAiPostType(t: typeof type): 'house' | 'job' | 'secondhand' | 'lifebiz
         </div>
 
         <CardContent className="p-6 md:p-8 space-y-6">
-          {/* 类型切换 — F-2: 9 个分类，横向滚动避免挤压 */}
+          {/* 类型切换 — 4 大模块 */}
           <div className="-mx-2 px-2 overflow-x-auto">
-            <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-9 gap-2 min-w-fit">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-fit">
               {TYPE_OPTIONS.map((t) => {
                 const TIcon = t.icon;
                 return (
@@ -410,7 +394,7 @@ function toAiPostType(t: typeof type): 'house' | 'job' | 'secondhand' | 'lifebiz
                 <div className="flex items-center justify-between">
                   <Label htmlFor="title" className="text-sm">标题 <span className="text-destructive">*</span></Label>
                   <RewritePopover
-                    type={toAiPostType(type)}
+                    type={type}
                     field="title"
                     original={title}
                     context={{ price, priceUnit, rentalType, areaSqm, rooms, livingRooms, communityName }}
@@ -534,7 +518,7 @@ function toAiPostType(t: typeof type): 'house' | 'job' | 'secondhand' | 'lifebiz
                 <div className="flex items-center justify-between">
                   <Label htmlFor="desc" className="text-sm">详细描述 <span className="text-destructive">*</span></Label>
                   <RewritePopover
-                    type={toAiPostType(type)}
+                    type={type}
                     field="description"
                     original={description}
                     context={{ title, price, priceUnit, rentalType, areaSqm, communityName }}

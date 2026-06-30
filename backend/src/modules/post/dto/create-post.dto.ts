@@ -271,32 +271,11 @@ export class CreatePostDto {
   areaId?: number;
 
   /**
-   * F-2: 9 个 type 枚举 — 4 大模块 + 5 个伊春本地刚需分类
-   * carpool/lostfound/contact/forestry/dating 暂只走主表通用字段（description + contactPhone），
-   * 无 type-specific 子表，简化发布流程
+   * 4 大模块 type 枚举（V1.0 — house/secondhand/job/lifebiz）
    */
   @IsString()
-  @IsIn([
-    'house',
-    'secondhand',
-    'job',
-    'lifebiz',
-    'carpool',
-    'lostfound',
-    'contact',
-    'forestry',
-    'dating',
-  ])
-  type!:
-    | 'house'
-    | 'secondhand'
-    | 'job'
-    | 'lifebiz'
-    | 'carpool'
-    | 'lostfound'
-    | 'contact'
-    | 'forestry'
-    | 'dating';
+  @IsIn(['house', 'secondhand', 'job', 'lifebiz'])
+  type!: 'house' | 'secondhand' | 'job' | 'lifebiz';
 
   @IsString()
   @Length(1, 100)

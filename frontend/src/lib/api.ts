@@ -494,21 +494,12 @@ export const tagApi = {
     ),
   /**
    * 热门标签（isHot=true 或 useCount>0，按 useCount desc）
-   * V1.0 页面合理性修复: 支持按 type 过滤, 避免房屋出租页显示 lifebiz 标签
+   * V1.0 页面合理性修复: 支持按 type 过滤, 避免房屋租售页显示 lifebiz 标签
    * @param type 可选 'house' | 'secondhand' | 'job' | 'lifebiz'
    */
   hot: (
     limit = 20,
-    type?:
-      | 'house'
-      | 'secondhand'
-      | 'job'
-      | 'lifebiz'
-      | 'carpool'
-      | 'lostfound'
-      | 'contact'
-      | 'forestry'
-      | 'dating',
+    type?: 'house' | 'secondhand' | 'job' | 'lifebiz',
   ) => {
     const params = new URLSearchParams();
     params.set('limit', String(limit));

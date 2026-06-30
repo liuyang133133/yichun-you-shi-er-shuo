@@ -15,15 +15,6 @@ import { Sparkles, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
-// F-2: 5 个新 type 后端 AI 暂不支持，落到 lifebiz 兜底
-// 返回窄 4-way，匹配 ScoreRequestDto.type
-function toAiPostType(t: AiPostType): 'house' | 'job' | 'secondhand' | 'lifebiz' {
-  if (t === 'carpool' || t === 'lostfound' || t === 'contact' || t === 'forestry' || t === 'dating') {
-    return 'lifebiz';
-  }
-  return t;
-}
-
 const EXAMPLE_HINTS = [
   '南郡精装两室一厅 8楼 1200一月 押一付三 拎包入住',
   '出售金水湾 90平 两室 50万 简装 三楼',
@@ -76,8 +67,7 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
     setScoreLoading(true);
     aiApi
       .score({
-        // F-2: 5 个新 type 后端 AI 不支持，落到 lifebiz 做兜底评分
-        type: toAiPostType(result.type),
+        type: result.type,
         title: titleForScore,
         description: result.fields?.description,
         fields: result.fields,
@@ -135,7 +125,7 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
           <h1 className="text-2xl md:text-3xl font-bold">把您要发的内容写出来，AI 帮您整理</h1>
           <p className="text-sm text-muted-foreground">
             不用填表，像聊天一样发信息 ——
-            {initialType === 'house' ? '房屋出租' : '其他类型'} 也能用
+            {initialType === 'house' ? '房屋租售' : '其他类型'} 也能用
           </p>
         </div>
 

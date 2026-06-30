@@ -10,15 +10,10 @@ const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 const TYPE_NAMES: Record<string, string> = {
-  house: '房屋',
+  house: '房屋租售',
   secondhand: '二手',
   job: '招聘',
   lifebiz: '便民',
-  carpool: '拼车',
-  lostfound: '失物招领',
-  contact: '便民电话',
-  forestry: '林下经济',
-  dating: '同城交友',
 };
 
 /**
