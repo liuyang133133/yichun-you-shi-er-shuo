@@ -73,9 +73,10 @@ function HomeContentInner() {
       setAreas(flat);
     }).catch(() => {});
     bannerApi.active('home_top').then((r: any) => setBanners(Array.isArray(r) ? r : [])).catch(() => setBanners([]));
-    // T-014: 加载热门标签
-    tagApi.hot(12).then(setHotTags).catch(() => setHotTags([]));
-  }, []);
+    // T-014 + V1.0 修复: 热门标签按当前 type 过滤
+    // 房屋出租页之前显示"山野菜/雪地胎"等 lifebiz 标签, 没意义
+    tagApi.hot(12, currentType || undefined).then(setHotTags).catch(() => setHotTags([]));
+  }, [currentType]);
 
   // Banner 自动轮播
   useEffect(() => {
@@ -179,11 +180,11 @@ function HomeContentInner() {
                 </div>
                 <div className="flex items-center gap-6 pt-4 text-xs text-muted-foreground">
                   <div>
-                    <span className="text-2xl font-bold text-foreground">4</span> 大模块
+                    <span className="text-2xl font-bold text-foreground">9</span> 大模块
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
-                    <span className="text-2xl font-bold text-foreground">29</span> 个分类
+                    <span className="text-2xl font-bold text-foreground">58</span> 个分类
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
@@ -254,6 +255,7 @@ function HomeContentInner() {
                       } else if (banners[bannerIdx].linkType === 'category') {
                         router.push(`/?type=${t}`);
                       } else {
+                        // F-3 V2: banner.linkTarget 是 postId（无 slug），跳老路由由 /posts/[id] 重定向到 /posts/[id]-[slug]
                         router.push(`/posts/${t}`);
                       }
                     }}
@@ -305,7 +307,8 @@ function HomeContentInner() {
               <p className="text-sm text-muted-foreground mt-1">选择你感兴趣的信息类别</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* F-2: 9 个模块 — 4 大主类 + 5 个本地刚需分类 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
             {MODULES.map((m, i) => {
               const Icon = m.icon;
               return (
@@ -313,7 +316,7 @@ function HomeContentInner() {
                   key={m.code}
                   href={`/?type=${m.code}`}
                   className="group relative overflow-hidden rounded-2xl bg-card border shadow-soft hover:shadow-hover hover:-translate-y-1 transition-all duration-300 animate-slide-up"
-                  style={{ animationDelay: `${i * 80}ms` }}
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${m.gradient}`} />
                   <div className="p-6 space-y-3">
@@ -355,9 +358,18 @@ function HomeContentInner() {
   );
 
   // 构造筛选 Tab items（含"全部"）
+  // V1.0 页面合理性修复: 防御性去重, 按 (parentId, name) 保留第一个
+  // 后端已去重, 这里是 belt-and-suspenders 防御
+  const seenTab = new Set<string>();
+  const uniqueSubCategories = subCategories.filter((c) => {
+    const key = `${c.parentId ?? 'top'}:${c.name}`;
+    if (seenTab.has(key)) return false;
+    seenTab.add(key);
+    return true;
+  });
   const tabItems = [
     { value: '', label: '全部', badge: total > 0 ? total : undefined },
-    ...subCategories.map((c) => ({
+    ...uniqueSubCategories.map((c) => ({
       value: c.id,
       label: c.name,
     })),

@@ -46,6 +46,52 @@ const TOP_CATEGORY_SEO = [
     seoDescription:
       '伊春本地便民服务平台，提供顺风车、家政、装修、宠物、寻人寻物、邻里互助等社区生活信息，伊春人自己的邻里圈。',
   },
+  // F-2: 5 个伊春本地刚需分类（P0-BUG 修复，详见业务审计 §3.1-BUG-P0-03）
+  {
+    code: 'carpool',
+    slug: 'carpool',
+    seoTitle: '伊春拼车顺风车 - 跨县拼车/同城拼车/上下班通勤 | 伊春有事儿说',
+    seoKeywords:
+      '伊春拼车,伊春顺风车,伊春拼车群,伊美区拼车,南岔拼车,友好拼车,跨县拼车,通勤拼车',
+    seoDescription:
+      '伊春本地拼车顺风车信息平台，提供伊美区、南岔、友好、铁力等区县跨县拼车、同城拼车、长途拼车、上下班通勤拼车，本地真实车主，绿色出行。',
+  },
+  {
+    code: 'lostfound',
+    slug: 'lostfound',
+    seoTitle: '伊春失物招领 - 寻物启事/拾物招领/寻宠寻人 | 伊春有事儿说',
+    seoKeywords:
+      '伊春失物招领,伊春寻物,伊春拾物,伊春寻宠,伊春寻人,伊春寻狗,伊春寻猫',
+    seoDescription:
+      '伊春本地失物招领平台，提供寻物启事、拾物招领、寻宠启事、寻人启事，本地发布、传播更快，找回失物成功率更高。',
+  },
+  {
+    code: 'contact',
+    slug: 'contact',
+    seoTitle: '伊春便民电话 - 供暖供水/物业维修/派出所/医院 | 伊春有事儿说',
+    seoKeywords:
+      '伊春便民电话,伊春供暖电话,伊春供水电话,伊春物业电话,伊春派出所电话,伊春医院电话',
+    seoDescription:
+      '伊春本地便民电话薄，汇集供暖供水、物业维修、派出所、医院学校、政府服务等常用电话，本地号码本地查，一键拨打。',
+  },
+  {
+    code: 'forestry',
+    slug: 'forestry',
+    seoTitle: '伊春林下经济 - 蓝莓/木耳/松子/榛子/蘑菇/林下参 | 伊春有事儿说',
+    seoKeywords:
+      '伊春林下经济,伊春蓝莓,伊春木耳,伊春松子,伊春榛子,伊春蘑菇,伊春林下参,小兴安岭特产',
+    seoDescription:
+      '伊春林下经济特产平台，伊春本地蓝莓、木耳、松子、榛子、蘑菇、林下参、中药材等小兴安岭特产供应、求购、批发信息。',
+  },
+  {
+    code: 'dating',
+    slug: 'dating',
+    seoTitle: '伊春同城交友 - 同城活动/兴趣交友/相亲征婚/体育运动 | 伊春有事儿说',
+    seoKeywords:
+      '伊春交友,伊春相亲,伊春同城活动,伊春兴趣交友,伊春体育运动,伊春征婚',
+    seoDescription:
+      '伊春本地同城交友平台，组织同城活动、兴趣交友、相亲征婚、体育运动等线下聚会，伊春人认识伊春人。',
+  },
 ] as const;
 
 /**
@@ -88,6 +134,46 @@ const SUB_CATEGORY_SLUGS: Record<string, Record<string, string>> = {
     '本地爆料': 'lifebiz-boliao',
     '季节特产': 'lifebiz-techan',
     '其他': 'lifebiz-qita',
+  },
+  // F-2: 5 个伊春本地刚需分类子分类 slug
+  carpool: {
+    '跨县拼车': 'carpool-kuaxian',
+    '同城拼车': 'carpool-tongcheng',
+    '长途拼车': 'carpool-changtu',
+    '上下班通勤': 'carpool-tongqin',
+    '其他': 'carpool-qita',
+  },
+  lostfound: {
+    '寻物启事': 'lostfound-xunwu',
+    '拾物招领': 'lostfound-shizhi',
+    '寻宠启事': 'lostfound-xunchong',
+    '寻人启事': 'lostfound-xunren',
+    '其他': 'lostfound-qita',
+  },
+  contact: {
+    '供暖供水': 'contact-gongnuan',
+    '物业维修': 'contact-wuye',
+    '派出所': 'contact-paichusuo',
+    '医院学校': 'contact-yiyuan',
+    '政府服务': 'contact-zhengfu',
+    '其他': 'contact-qita',
+  },
+  forestry: {
+    '蓝莓': 'forestry-lanmei',
+    '木耳': 'forestry-muer',
+    '松子': 'forestry-songzi',
+    '榛子': 'forestry-henzi',
+    '蘑菇': 'forestry-mogu',
+    '林下参': 'forestry-linxia',
+    '中药材': 'forestry-yaocai',
+    '其他': 'forestry-qita',
+  },
+  dating: {
+    '同城活动': 'dating-huodong',
+    '兴趣交友': 'dating-xingqu',
+    '相亲征婚': 'dating-xiangqin',
+    '体育运动': 'dating-tiyu',
+    '其他': 'dating-qita',
   },
 };
 
@@ -136,6 +222,62 @@ async function main() {
   console.log('🌱 开始播种...');
 
   // ============================================
+  // 0. V1.0 页面合理性修复: 清理孤儿 category
+  // 根因: schema 没有 @@unique, 历史 seed 跑过 5 次, 留 4 份孤儿顶级 + 116 子
+  // 策略: 按 (code, parentId, name) 找出重复组, 保留最小 id, 删其余 (无引用)
+  // ============================================
+  console.log('  🧹 清理孤儿 category...');
+  const allCats = await prisma.category.findMany({
+    select: { id: true, code: true, parentId: true, name: true },
+    orderBy: [{ id: 'asc' }],
+  });
+  const seen = new Set<string>();
+  const keepIds = new Set<bigint>();
+  const orphanIds: bigint[] = [];
+  for (const c of allCats) {
+    const key = `${c.code}:${c.parentId ?? 'null'}:${c.name}`;
+    if (seen.has(key)) {
+      orphanIds.push(c.id);
+    } else {
+      seen.add(key);
+      keepIds.add(c.id);
+    }
+  }
+  if (orphanIds.length > 0) {
+    // 只删没被 posts 引用的
+    const refCats = await prisma.post.findMany({
+      where: { categoryId: { in: orphanIds } },
+      select: { categoryId: true },
+    });
+    const refSet = new Set(refCats.map((r) => r.categoryId));
+    const safeOrphan = orphanIds.filter((id) => !refSet.has(id));
+    if (safeOrphan.length > 0) {
+      // 先删子（孤儿子）再删顶级
+      const orphanSubIds = safeOrphan.filter((id) => {
+        const cat = allCats.find((c) => c.id === id);
+        return cat && cat.parentId != null;
+      });
+      const orphanTopIds = safeOrphan.filter((id) => {
+        const cat = allCats.find((c) => c.id === id);
+        return cat && cat.parentId == null;
+      });
+      if (orphanSubIds.length > 0) {
+        const r = await prisma.category.deleteMany({ where: { id: { in: orphanSubIds } } });
+        console.log(`    ✓ 删 ${r.count} 个孤儿子分类`);
+      }
+      if (orphanTopIds.length > 0) {
+        const r = await prisma.category.deleteMany({ where: { id: { in: orphanTopIds } } });
+        console.log(`    ✓ 删 ${r.count} 个孤儿顶级分类`);
+      }
+    }
+    if (refSet.size > 0) {
+      console.log(`    ⚠ 保留 ${refSet.size} 个被 post 引用的 category (历史脏数据, 需手工修复)`);
+    }
+  } else {
+    console.log('    ✓ 无孤儿');
+  }
+
+  // ============================================
   // 1. 分类数据
   // ============================================
   console.log('  📁 创建分类...');
@@ -146,6 +288,12 @@ async function main() {
     { code: 'secondhand', name: '二手交易', icon: '🛍️', sortOrder: 2 },
     { code: 'job', name: '招聘求职', icon: '💼', sortOrder: 3 },
     { code: 'lifebiz', name: '便民信息', icon: '📌', sortOrder: 4 },
+    // F-2: 5 个伊春本地刚需分类（业务审计 P0 修复）
+    { code: 'carpool', name: '拼车/顺风车', icon: '🚗', sortOrder: 5 },
+    { code: 'lostfound', name: '失物招领', icon: '🔍', sortOrder: 6 },
+    { code: 'contact', name: '便民电话', icon: '📞', sortOrder: 7 },
+    { code: 'forestry', name: '林下经济', icon: '🌲', sortOrder: 8 },
+    { code: 'dating', name: '同城交友', icon: '💕', sortOrder: 9 },
   ];
 
   const createdTopCats: Record<string, bigint> = {};
@@ -211,6 +359,46 @@ async function main() {
       { name: '邻居拼车', sortOrder: 9 },
       { name: '本地爆料', sortOrder: 10 },
       { name: '季节特产', sortOrder: 11 }, // 山野菜/蘑菇/坚果/雪地胎
+      { name: '其他', sortOrder: 99 },
+    ],
+    // F-2: 5 个伊春本地刚需分类子分类
+    carpool: [
+      { name: '跨县拼车', sortOrder: 1 },
+      { name: '同城拼车', sortOrder: 2 },
+      { name: '长途拼车', sortOrder: 3 },
+      { name: '上下班通勤', sortOrder: 4 },
+      { name: '其他', sortOrder: 99 },
+    ],
+    lostfound: [
+      { name: '寻物启事', sortOrder: 1 },
+      { name: '拾物招领', sortOrder: 2 },
+      { name: '寻宠启事', sortOrder: 3 },
+      { name: '寻人启事', sortOrder: 4 },
+      { name: '其他', sortOrder: 99 },
+    ],
+    contact: [
+      { name: '供暖供水', sortOrder: 1 },
+      { name: '物业维修', sortOrder: 2 },
+      { name: '派出所', sortOrder: 3 },
+      { name: '医院学校', sortOrder: 4 },
+      { name: '政府服务', sortOrder: 5 },
+      { name: '其他', sortOrder: 99 },
+    ],
+    forestry: [
+      { name: '蓝莓', sortOrder: 1 },
+      { name: '木耳', sortOrder: 2 },
+      { name: '松子', sortOrder: 3 },
+      { name: '榛子', sortOrder: 4 },
+      { name: '蘑菇', sortOrder: 5 },
+      { name: '林下参', sortOrder: 6 },
+      { name: '中药材', sortOrder: 7 },
+      { name: '其他', sortOrder: 99 },
+    ],
+    dating: [
+      { name: '同城活动', sortOrder: 1 },
+      { name: '兴趣交友', sortOrder: 2 },
+      { name: '相亲征婚', sortOrder: 3 },
+      { name: '体育运动', sortOrder: 4 },
       { name: '其他', sortOrder: 99 },
     ],
   };

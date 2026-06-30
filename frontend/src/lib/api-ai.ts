@@ -9,7 +9,20 @@ import type { RewriteRequestDto, RewriteResponse } from '@/types/ai-rewrite';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export type AiPostType = 'house' | 'job' | 'secondhand' | 'lifebiz';
+/**
+ * F-2: 9 个 type — 4 大模块 + 5 个伊春本地刚需分类
+ * AI extract/rewrite 等能力对 5 个新 type 按通用字段处理（description + contactPhone）
+ */
+export type AiPostType =
+  | 'house'
+  | 'job'
+  | 'secondhand'
+  | 'lifebiz'
+  | 'carpool'
+  | 'lostfound'
+  | 'contact'
+  | 'forestry'
+  | 'dating';
 
 export interface ExtractChip {
   label: string;

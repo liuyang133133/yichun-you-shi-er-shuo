@@ -497,7 +497,19 @@ export const tagApi = {
    * V1.0 页面合理性修复: 支持按 type 过滤, 避免房屋出租页显示 lifebiz 标签
    * @param type 可选 'house' | 'secondhand' | 'job' | 'lifebiz'
    */
-  hot: (limit = 20, type?: 'house' | 'secondhand' | 'job' | 'lifebiz') => {
+  hot: (
+    limit = 20,
+    type?:
+      | 'house'
+      | 'secondhand'
+      | 'job'
+      | 'lifebiz'
+      | 'carpool'
+      | 'lostfound'
+      | 'contact'
+      | 'forestry'
+      | 'dating',
+  ) => {
     const params = new URLSearchParams();
     params.set('limit', String(limit));
     if (type) params.set('type', type);

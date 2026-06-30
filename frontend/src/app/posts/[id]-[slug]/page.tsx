@@ -14,6 +14,12 @@ const TYPE_NAMES: Record<string, string> = {
   secondhand: '二手',
   job: '招聘',
   lifebiz: '便民',
+  // F-2: 5 个伊春本地刚需分类
+  carpool: '拼车',
+  lostfound: '失物',
+  contact: '电话',
+  forestry: '林下',
+  dating: '交友',
 };
 
 /**
@@ -366,6 +372,13 @@ function buildJsonLd(post: any, idSlug: string) {
           : undefined,
         jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: post.job?.workCity || '伊春', addressRegion: '黑龙江', addressCountry: 'CN' } },
       };
+    // F-2: 5 个伊春本地刚需分类 — 暂都用 Article schema，后续按业务优化
+    case 'carpool':
+    case 'lostfound':
+    case 'contact':
+    case 'forestry':
+    case 'dating':
+    case 'lifebiz':
     default:
       return {
         ...base,

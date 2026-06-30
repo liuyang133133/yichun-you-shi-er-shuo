@@ -7,9 +7,35 @@ import { Type, Transform } from 'class-transformer';
  *                            + &tagIds=1,2,3  + &tagSlugs=shanlin,xueshan
  */
 export class ListPostQueryDto {
+  /**
+   * V1.0 验收 BUG-5 修复: type 改为可选
+   * 业务背景: 首页"全部信息"混合流 + SEO sitemap 入口需要不带 type 的列表
+   * 旧版必填导致 GET /api/v1/posts 一直 400, 整个首页推荐流不可用
+   * F-2: 加入 5 个伊春本地刚需分类 (carpool/lostfound/contact/forestry/dating)
+   */
+  @IsOptional()
   @IsString()
-  @IsIn(['house', 'secondhand', 'job', 'lifebiz'])
-  type!: 'house' | 'secondhand' | 'job' | 'lifebiz';
+  @IsIn([
+    'house',
+    'secondhand',
+    'job',
+    'lifebiz',
+    'carpool',
+    'lostfound',
+    'contact',
+    'forestry',
+    'dating',
+  ])
+  type?:
+    | 'house'
+    | 'secondhand'
+    | 'job'
+    | 'lifebiz'
+    | 'carpool'
+    | 'lostfound'
+    | 'contact'
+    | 'forestry'
+    | 'dating';
 
   @IsOptional()
   @IsInt()
