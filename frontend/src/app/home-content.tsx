@@ -184,7 +184,7 @@ function HomeContentInner() {
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
-                    <span className="text-2xl font-bold text-foreground">29</span> 个分类
+                    <span className="text-2xl font-bold text-foreground">50</span> 个分类
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div>
