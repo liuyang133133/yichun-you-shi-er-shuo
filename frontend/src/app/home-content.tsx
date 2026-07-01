@@ -353,9 +353,14 @@ function HomeContentInner() {
   // ====================== 列表页 ======================
   const currentModule = MODULE_BY_CODE[currentType];
   const Icon = currentModule?.icon;
-  const subCategories = categories.filter(
-    (c) => c.code === currentType && c.parentId != null && c.parentId !== '',
+  // 子分类：先找顶级（code 匹配 + parentId 为空），再找其下子分类（parentId === 顶级 id）
+  // V1.0 子分类重整: 新子分类 code 独立 (如 house-second-hand), 不能用 c.code === currentType
+  const parentCategory = categories.find(
+    (c) => c.code === currentType && (c.parentId == null || c.parentId === ''),
   );
+  const subCategories = parentCategory
+    ? categories.filter((c) => String(c.parentId) === String(parentCategory.id))
+    : [];
 
   // 构造筛选 Tab items（含"全部"）
   // V1.0 页面合理性修复: 防御性去重, 按 (parentId, name) 保留第一个
