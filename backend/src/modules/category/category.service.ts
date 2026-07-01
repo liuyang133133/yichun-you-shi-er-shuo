@@ -36,19 +36,22 @@ export class CategoryService {
 
   /**
    * 列出所有分类（可按顶级 code 过滤）
+   * - code 匹配顶级 OR 子分类的 parent.code（子分类 code 独立，不一定匹配顶级）
    */
   async findAll(code?: string) {
+    const where = code ? { OR: [{ code }, { parent: { code } }] } : undefined;
     return this.prisma.category.findMany({
-      where: code ? { code } : undefined,
+      where,
       orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
     });
   }
 
   /**
    * 获取分类树（按顶级 code 分组）
+   * - 同 findAll：code 过滤顶级 + 子分类（通过 parent.code）
    */
   async findTree(code?: string) {
-    const where = code ? { code } : undefined;
+    const where = code ? { OR: [{ code }, { parent: { code } }] } : undefined;
     const all = await this.prisma.category.findMany({
       where,
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],

@@ -419,7 +419,7 @@ async function main() {
 
   // 顶级分类
   const topCategories = [
-    { code: 'house', name: '房屋出租', icon: '🏠', sortOrder: 1 },
+    { code: 'house', name: '房屋租售', icon: '🏠', sortOrder: 1 },
     { code: 'secondhand', name: '二手交易', icon: '🛍️', sortOrder: 2 },
     { code: 'job', name: '招聘求职', icon: '💼', sortOrder: 3 },
     { code: 'lifebiz', name: '便民信息', icon: '📌', sortOrder: 4 },
