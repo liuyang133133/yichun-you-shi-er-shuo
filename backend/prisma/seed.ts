@@ -95,45 +95,64 @@ const TOP_CATEGORY_SEO = [
 ] as const;
 
 /**
- * 子分类 slug 映射（21 条；TDK 运行时由父分类拼装）
+ * 子分类 slug 映射
+ * - house/secondhand/job/lifebiz 4 主顶级在 V1.0 重整中：key 改为 子 code（稳定标识）
+ * - F-2 的 5 个本地分类保留旧 name-keyed 映射（不动）
  */
 const SUB_CATEGORY_SLUGS: Record<string, Record<string, string>> = {
   house: {
-    '整租': 'house-zhengzu',
-    '合租': 'house-hezu',
-    '短租/日租': 'house-duanzu',
-    '商铺/写字楼': 'house-shangpu',
+    'house-second-hand': 'house-second-hand',
+    'house-new':         'house-new',
+    'house-rental':      'house-rental',
+    'house-shop':        'house-shop',
+    'house-office':      'house-office',
+    'house-warehouse':   'house-warehouse',
+    'house-parking':     'house-parking',
+    'house-homestay':    'house-homestay',
+    'house-wanted':      'house-wanted',
+    'house-service':     'house-service',
   },
   secondhand: {
-    '数码电器': 'secondhand-shuma',
-    '家居日用': 'secondhand-jiaju',
-    '服饰鞋包': 'secondhand-fushi',
-    '图书音像': 'secondhand-tushu',
-    '母婴玩具': 'secondhand-muying',
-    '其他': 'secondhand-qita',
+    'sh-phone':     'sh-phone',
+    'sh-appliance': 'sh-appliance',
+    'sh-computer':  'sh-computer',
+    'sh-clothing':  'sh-clothing',
+    'sh-baby':      'sh-baby',
+    'sh-books':     'sh-books',
+    'sh-outdoor':   'sh-outdoor',
+    'sh-tools':     'sh-tools',
+    'sh-farm':      'sh-farm',
+    'sh-pet':       'sh-pet',
+    'sh-misc':      'sh-misc',
+    'sh-free':      'sh-free',
   },
   job: {
-    '销售/客服': 'job-xiaoshou',
-    '餐饮/酒店': 'job-canyin',
-    '家政/保洁': 'job-jiazheng',
-    '司机/物流': 'job-siji',
-    'IT/互联网': 'job-it',
-    '教育/培训': 'job-jiaoyu',
-    '其他': 'job-qita',
+    'job-fulltime':  'job-fulltime',
+    'job-parttime':  'job-parttime',
+    'job-resume':    'job-resume',
+    'job-worker':    'job-worker',
+    'job-sales':     'job-sales',
+    'job-admin':     'job-admin',
+    'job-finance':   'job-finance',
+    'job-tech':      'job-tech',
+    'job-education': 'job-education',
+    'job-medical':   'job-medical',
+    'job-driver':    'job-driver',
   },
   lifebiz: {
-    '顺风车': 'lifebiz-shunfengche',
-    '打听事': 'lifebiz-dating',
-    '寻人寻物': 'lifebiz-xunren',
-    '家政服务': 'lifebiz-jiazheng-fw',
-    '装修维修': 'lifebiz-zhuangxiu',
-    '宠物': 'lifebiz-chongwu',
-    '婚恋交友': 'lifebiz-hunlian',
-    '小区互助': 'lifebiz-xiaoqu',
-    '邻居拼车': 'lifebiz-linju-pc',
-    '本地爆料': 'lifebiz-boliao',
-    '季节特产': 'lifebiz-techan',
-    '其他': 'lifebiz-qita',
+    'lb-cleaning':  'lb-cleaning',
+    'lb-repair':    'lb-repair',
+    'lb-move':      'lb-move',
+    'lb-lock':      'lb-lock',
+    'lb-errand':    'lb-errand',
+    'lb-delivery':  'lb-delivery',
+    'lb-carpool':   'lb-carpool',
+    'lb-pet':       'lb-pet',
+    'lb-wedding':   'lb-wedding',
+    'lb-print':     'lb-print',
+    'lb-legal':     'lb-legal',
+    'lb-recycle':   'lb-recycle',
+    'lb-lostfound': 'lb-lostfound',
   },
   // F-2: 5 个伊春本地刚需分类子分类 slug
   carpool: {
@@ -214,6 +233,122 @@ function buildSubCategorySeoTdk(
     seoKeywords: `伊春${subName},${parentKeywords},伊春${parentName}${subName}`,
     seoDescription: `伊春本地${parentName}频道下的${subName}分类，汇集伊春各区县${subName}信息，每日更新。`,
   };
+}
+
+// =====================================================
+// V1.0 子分类重整: 4 主顶级（house/secondhand/job/lifebiz）新定义
+// - F-2 的 5 个本地分类（carpool/lostfound/contact/forestry/dating）保持旧定义，不参与重整
+// - code 在子分类空间稳定不变（rename 时用 code 匹配，update name）
+// - slug 与 code 对齐（URL 友好）
+// - 总计: house=10, secondhand=12, job=11, lifebiz=13 = 46 条
+// =====================================================
+const NEW_SUB_CATEGORY_DEFS: Record<
+  string,
+  Array<{ name: string; code: string; slug: string; sortOrder: number }>
+> = {
+  house: [
+    { name: '二手房',              code: 'house-second-hand', slug: 'house-second-hand', sortOrder: 1 },
+    { name: '新房',                code: 'house-new',         slug: 'house-new',         sortOrder: 2 },
+    { name: '租房（整租 / 合租）', code: 'house-rental',      slug: 'house-rental',      sortOrder: 3 },
+    { name: '商铺（出租 / 出售）', code: 'house-shop',        slug: 'house-shop',        sortOrder: 4 },
+    { name: '写字楼',              code: 'house-office',      slug: 'house-office',      sortOrder: 5 },
+    { name: '厂房仓库',            code: 'house-warehouse',   slug: 'house-warehouse',   sortOrder: 6 },
+    { name: '车位车库',            code: 'house-parking',     slug: 'house-parking',     sortOrder: 7 },
+    { name: '民宿 / 短租',         code: 'house-homestay',    slug: 'house-homestay',    sortOrder: 8 },
+    { name: '求租 / 求购',         code: 'house-wanted',      slug: 'house-wanted',      sortOrder: 9 },
+    { name: '房屋托管 / 中介',     code: 'house-service',     slug: 'house-service',     sortOrder: 10 },
+  ],
+  secondhand: [
+    { name: '手机数码',     code: 'sh-phone',     slug: 'sh-phone',     sortOrder: 1 },
+    { name: '家电家具',     code: 'sh-appliance', slug: 'sh-appliance', sortOrder: 2 },
+    { name: '电脑办公',     code: 'sh-computer',  slug: 'sh-computer',  sortOrder: 3 },
+    { name: '服装鞋帽',     code: 'sh-clothing',  slug: 'sh-clothing',  sortOrder: 4 },
+    { name: '母婴用品',     code: 'sh-baby',      slug: 'sh-baby',      sortOrder: 5 },
+    { name: '图书乐器',     code: 'sh-books',     slug: 'sh-books',     sortOrder: 6 },
+    { name: '户外运动',     code: 'sh-outdoor',   slug: 'sh-outdoor',   sortOrder: 7 },
+    { name: '五金工具',     code: 'sh-tools',     slug: 'sh-tools',     sortOrder: 8 },
+    { name: '农机设备',     code: 'sh-farm',      slug: 'sh-farm',      sortOrder: 9 },
+    { name: '宠物用品',     code: 'sh-pet',       slug: 'sh-pet',       sortOrder: 10 },
+    { name: '闲置杂物',     code: 'sh-misc',      slug: 'sh-misc',      sortOrder: 11 },
+    { name: '求购 / 免费送', code: 'sh-free',     slug: 'sh-free',      sortOrder: 12 },
+  ],
+  job: [
+    { name: '全职招聘',     code: 'job-fulltime',  slug: 'job-fulltime',  sortOrder: 1 },
+    { name: '兼职招聘',     code: 'job-parttime',  slug: 'job-parttime',  sortOrder: 2 },
+    { name: '求职简历',     code: 'job-resume',    slug: 'job-resume',    sortOrder: 3 },
+    { name: '普工 / 技工',  code: 'job-worker',    slug: 'job-worker',    sortOrder: 4 },
+    { name: '销售客服',     code: 'job-sales',     slug: 'job-sales',     sortOrder: 5 },
+    { name: '文员行政',     code: 'job-admin',     slug: 'job-admin',     sortOrder: 6 },
+    { name: '财务会计',     code: 'job-finance',   slug: 'job-finance',   sortOrder: 7 },
+    { name: 'IT / 电商',    code: 'job-tech',      slug: 'job-tech',      sortOrder: 8 },
+    { name: '教育培训',     code: 'job-education', slug: 'job-education', sortOrder: 9 },
+    { name: '医疗护理',     code: 'job-medical',   slug: 'job-medical',   sortOrder: 10 },
+    { name: '司机 / 家政',  code: 'job-driver',    slug: 'job-driver',    sortOrder: 11 },
+  ],
+  lifebiz: [
+    { name: '家政保洁',                       code: 'lb-cleaning',   slug: 'lb-cleaning',   sortOrder: 1 },
+    { name: '维修安装（水电/家电/电脑）', code: 'lb-repair',     slug: 'lb-repair',     sortOrder: 2 },
+    { name: '搬家拉货',                       code: 'lb-move',       slug: 'lb-move',       sortOrder: 3 },
+    { name: '开锁疏通',                       code: 'lb-lock',       slug: 'lb-lock',       sortOrder: 4 },
+    { name: '跑腿代办',                       code: 'lb-errand',     slug: 'lb-errand',     sortOrder: 5 },
+    { name: '同城配送',                       code: 'lb-delivery',   slug: 'lb-delivery',   sortOrder: 6 },
+    { name: '拼车顺风车',                     code: 'lb-carpool',    slug: 'lb-carpool',    sortOrder: 7 },
+    { name: '宠物服务',                       code: 'lb-pet',        slug: 'lb-pet',        sortOrder: 8 },
+    { name: '婚庆摄影',                       code: 'lb-wedding',    slug: 'lb-wedding',    sortOrder: 9 },
+    { name: '广告印刷',                       code: 'lb-print',      slug: 'lb-print',      sortOrder: 10 },
+    { name: '法律财税',                       code: 'lb-legal',      slug: 'lb-legal',      sortOrder: 11 },
+    { name: '废品回收',                       code: 'lb-recycle',    slug: 'lb-recycle',    sortOrder: 12 },
+    { name: '失物招领 / 寻物',           code: 'lb-lostfound',  slug: 'lb-lostfound',  sortOrder: 13 },
+  ],
+};
+
+/**
+ * V1.0 子分类重整: 删除孤儿子分类
+ * - 在 NEW_SUB_CATEGORY_DEFS 里的 → 保留
+ * - 不在新定义里 + posts 无引用 → DELETE
+ * - 不在新定义里 + posts 有引用 → 跳过，warn 输出（需用户手工处理）
+ *
+ * 安全策略:
+ *  - 用 Prisma API (category.delete) 而非 $executeRaw，遵守 FK
+ *  - 先 count posts 引用再删
+ *  - 顶级分类不动（按 parentId != null 过滤）
+ */
+async function pruneOrphanSubcategories(prisma: PrismaClient, validCodes: Set<string>) {
+  const subs = await prisma.category.findMany({
+    where: { parentId: { not: null } },
+    select: { id: true, code: true, name: true, parentId: true },
+  });
+
+  let deleted = 0;
+  let skipped = 0;
+  const skippedList: Array<{ id: bigint; code: string; name: string; refCount: number }> = [];
+
+  for (const sub of subs) {
+    if (validCodes.has(sub.code)) continue; // 在新定义里，保留
+    // 不在新定义里 → 检查 posts 引用
+    const refCount = await prisma.post.count({ where: { categoryId: sub.id } });
+    if (refCount > 0) {
+      skippedList.push({ id: sub.id, code: sub.code, name: sub.name, refCount });
+      skipped++;
+      continue;
+    }
+    try {
+      await prisma.category.delete({ where: { id: sub.id } });
+      console.log(`    ✓ 删除孤儿子分类 [${sub.code}] ${sub.name}`);
+      deleted++;
+    } catch (e: any) {
+      console.warn(`    ⚠ 删除孤儿子分类失败 [${sub.code}] ${sub.name}: ${e.message}`);
+      skipped++;
+    }
+  }
+
+  if (skippedList.length > 0) {
+    console.log(`    ⚠ 跳过 ${skippedList.length} 个被 posts 引用的孤儿子分类（需手工迁移）:`);
+    for (const s of skippedList) {
+      console.log(`      - id=${s.id} code=[${s.code}] name="${s.name}" posts=${s.refCount}`);
+    }
+  }
+  return { deleted, skipped };
 }
 
 const prisma = new PrismaClient();
@@ -321,47 +456,41 @@ async function main() {
     createdTopCats[cat.code] = created.id;
   }
 
-  // 子分类
-  const subCategories: Record<string, Array<{ name: string; sortOrder: number }>> = {
-    house: [
-      { name: '整租', sortOrder: 1 },
-      { name: '合租', sortOrder: 2 },
-      { name: '短租/日租', sortOrder: 3 },
-      { name: '商铺/写字楼', sortOrder: 4 },
-    ],
-    secondhand: [
-      { name: '数码电器', sortOrder: 1 },
-      { name: '家居日用', sortOrder: 2 },
-      { name: '服饰鞋包', sortOrder: 3 },
-      { name: '图书音像', sortOrder: 4 },
-      { name: '母婴玩具', sortOrder: 5 },
-      { name: '其他', sortOrder: 6 },
-    ],
-    job: [
-      { name: '销售/客服', sortOrder: 1 },
-      { name: '餐饮/酒店', sortOrder: 2 },
-      { name: '家政/保洁', sortOrder: 3 },
-      { name: '司机/物流', sortOrder: 4 },
-      { name: 'IT/互联网', sortOrder: 5 },
-      { name: '教育/培训', sortOrder: 6 },
-      { name: '其他', sortOrder: 7 },
-    ],
-    lifebiz: [
-      { name: '顺风车', sortOrder: 1 },
-      { name: '打听事', sortOrder: 2 },
-      { name: '寻人寻物', sortOrder: 3 },
-      { name: '家政服务', sortOrder: 4 },
-      { name: '装修维修', sortOrder: 5 },
-      { name: '宠物', sortOrder: 6 },
-      { name: '婚恋交友', sortOrder: 7 },
-      // —— 差异化新分类（邻里/社区属性） ——
-      { name: '小区互助', sortOrder: 8 },
-      { name: '邻居拼车', sortOrder: 9 },
-      { name: '本地爆料', sortOrder: 10 },
-      { name: '季节特产', sortOrder: 11 }, // 山野菜/蘑菇/坚果/雪地胎
-      { name: '其他', sortOrder: 99 },
-    ],
-    // F-2: 5 个伊春本地刚需分类子分类
+  // ============================================
+  // 1a. V1.0 子分类重整: prune 旧子分类
+  // - 4 主顶级新子分类 code 加入 validCodes（保留）
+  // - F-2 5 顶级 parent.code 加入 validCodes（保护 F-2 子分类不被误删）
+  // ============================================
+  console.log('  🧹 Prune 旧子分类（posts 无引用的删除，有引用的保留+warn）...');
+  const validCodes = new Set<string>();
+  for (const subs of Object.values(NEW_SUB_CATEGORY_DEFS)) {
+    for (const s of subs) validCodes.add(s.code);
+  }
+  // 保护 F-2 的 5 个本地分类（其子分类 code = parent.code）
+  for (const f2 of ['carpool', 'lostfound', 'contact', 'forestry', 'dating']) {
+    validCodes.add(f2);
+  }
+  const { deleted: prunedCount, skipped: prunedSkipped } = await pruneOrphanSubcategories(
+    prisma,
+    validCodes,
+  );
+  console.log(`  ✓ prune 结果: 删 ${prunedCount} / 跳过 ${prunedSkipped}`);
+
+  // 子分类（V1.0 重整: 4 主顶级换新 46 条；F-2 5 顶级保持旧定义）
+  // - NEW (house/secondhand/job/lifebiz): 元素有 {code, name, slug, sortOrder}
+  // - F-2  (carpool/lostfound/contact/forestry/dating): 元素只有 {name, sortOrder}
+  type SubDef = {
+    name: string;
+    sortOrder: number;
+    code?: string;       // NEW 子分类用
+    slug?: string;       // NEW 子分类用
+  };
+  const subCategories: Record<string, SubDef[]> = {
+    house: NEW_SUB_CATEGORY_DEFS.house as unknown as SubDef[],
+    secondhand: NEW_SUB_CATEGORY_DEFS.secondhand as unknown as SubDef[],
+    job: NEW_SUB_CATEGORY_DEFS.job as unknown as SubDef[],
+    lifebiz: NEW_SUB_CATEGORY_DEFS.lifebiz as unknown as SubDef[],
+    // F-2: 5 个伊春本地刚需分类（保持旧名 + code=parent.code 旧实现）
     carpool: [
       { name: '跨县拼车', sortOrder: 1 },
       { name: '同城拼车', sortOrder: 2 },
@@ -408,16 +537,21 @@ async function main() {
     const parentSeo = TOP_CATEGORY_SEO.find((s) => s.code === code);
     const parentName = topCategories.find((c) => c.code === code)?.name ?? code;
     for (const sub of subs) {
+      // NEW 子分类有 sub.code/slug；F-2 没有 → 退化用 code=name/slugMap[name]
+      const subCode = sub.code ?? code; // 子 code 稳定（V1.0）/ 或 parent.code（F-2）
+      const slugLookupKey = sub.code ?? sub.name;
+      const subSlug = sub.slug ?? slugMap[slugLookupKey] ?? `${code}-${sub.name}`;
+      // 匹配：F-2 用 (code, name, parentId)；NEW 用 (code=subCode, parentId)
+      //   NEW 子分类 code 空间唯一，rename 通过 subCode 命中并 update name
       const existing = await prisma.category.findFirst({
-        where: { code, name: sub.name, parentId: createdTopCats[code] },
+        where: { code: subCode, parentId: createdTopCats[code] },
       });
-      const subSlug = slugMap[sub.name] ?? `${code}-${sub.name}`;
       const subTdk = parentSeo
         ? buildSubCategorySeoTdk(parentName, sub.name, parentSeo.seoKeywords)
         : null;
       const data = {
         parentId: createdTopCats[code],
-        code,
+        code: subCode,
         name: sub.name,
         sortOrder: sub.sortOrder,
         status: 1,
@@ -457,17 +591,18 @@ async function main() {
   console.log('  📝 创建测试信息...');
   // [Bug fix] 测试帖子必须挂在子分类上（id 5-29），不能挂在父分类（id 1-4）
   // 否则前端 tab 过滤时会找不到（修复前 bug）
+  // V1.0: 用新子分类 code 匹配
   const houseSub = await prisma.category.findFirst({
-    where: { code: 'house', parentId: { not: null }, name: '整租' },
+    where: { code: 'house-rental', parentId: { not: null } },
   });
   const secondhandSub = await prisma.category.findFirst({
-    where: { code: 'secondhand', parentId: { not: null }, name: '数码电器' },
+    where: { code: 'sh-phone', parentId: { not: null } },
   });
   const jobSub = await prisma.category.findFirst({
-    where: { code: 'job', parentId: { not: null }, name: '餐饮/酒店' },
+    where: { code: 'job-fulltime', parentId: { not: null } },
   });
   const lifebizSub = await prisma.category.findFirst({
-    where: { code: 'lifebiz', parentId: { not: null }, name: '顺风车' },
+    where: { code: 'lb-carpool', parentId: { not: null } },
   });
 
   const samplePosts = [
