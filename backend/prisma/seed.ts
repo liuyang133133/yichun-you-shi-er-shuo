@@ -544,7 +544,7 @@ async function main() {
       // 匹配：F-2 用 (code, name, parentId)；NEW 用 (code=subCode, parentId)
       //   NEW 子分类 code 空间唯一，rename 通过 subCode 命中并 update name
       const existing = await prisma.category.findFirst({
-        where: { code: subCode, parentId: createdTopCats[code] },
+        where: { code: subCode, parentId: createdTopCats[code], name: sub.name },
       });
       const subTdk = parentSeo
         ? buildSubCategorySeoTdk(parentName, sub.name, parentSeo.seoKeywords)
