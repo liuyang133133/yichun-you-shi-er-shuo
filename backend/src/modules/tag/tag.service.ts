@@ -36,6 +36,11 @@ export interface FindAllOptions {
   q?: string;
   limit?: number;
   offset?: number;
+  /** [P1-04] V1.0: 兼容前端 pageSize 参数, 等价于 limit (但取 max(pageSize, limit)) */
+  pageSize?: number;
+  page?: number;
+  /** [P1-04] V1.0: 兼容前端 keyword 参数, 等价于 q */
+  keyword?: string;
 }
 
 /** T-015: admin 列表查询参数 */
@@ -83,18 +88,41 @@ export class TagService {
 
   // ================ 公开 API ================
 
-  /** 全列表（搜索建议 / 后台管理 T-013 时期用） — T-015: 仅启用+未删 */
+  /**
+   * 全列表（搜索建议 / 后台管理 T-013 时期用） — T-015: 仅启用+未删
+   * [P1-04] V1.0 验收: 同时接受 pageSize/page/keyword 与旧式 limit/offset/q
+   *        优先级: pageSize > limit, page > offset, keyword > q
+   *        返回 { list, total, page, pageSize } 与 admin 端格式一致
+   */
   async findAll(opts: FindAllOptions = {}) {
-    const { q, limit = 50, offset = 0 } = opts;
-    const where: any = { deletedAt: null, status: 1 };
-    if (q) where.name = { contains: q };
+    const {
+      q,
+      keyword,
+      limit,
+      pageSize,
+      page,
+      offset,
+    } = opts;
+    // [P1-04] 兼容: pageSize 优先于 limit
+    const effectiveLimit = Math.min(pageSize ?? limit ?? 50, 200);
+    const effectivePage = page ?? (offset !== undefined ? Math.floor(offset / effectiveLimit) + 1 : 1);
+    const effectiveSkip = offset ?? (effectivePage - 1) * effectiveLimit;
+    // [P1-04] 兼容: keyword 优先于 q
+    const searchTerm = keyword ?? q;
 
-    return this.prisma.tag.findMany({
-      where,
-      orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
-      take: Math.min(limit, 200),
-      skip: offset,
-    });
+    const where: any = { deletedAt: null, status: 1 };
+    if (searchTerm) where.name = { contains: searchTerm };
+
+    const [list, total] = await Promise.all([
+      this.prisma.tag.findMany({
+        where,
+        orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        take: effectiveLimit,
+        skip: effectiveSkip,
+      }),
+      this.prisma.tag.count({ where }),
+    ]);
+    return { list, total, page: effectivePage, pageSize: effectiveLimit };
   }
 
   /** 按 slug 查询单个标签 — T-015: 仅启用+未删 */
@@ -108,13 +136,41 @@ export class TagService {
     return tag;
   }
 
-  /** 热门标签（首页/侧栏） — T-015: 仅启用+未删 */
-  async findHot(limit = 20) {
+  /**
+   * 热门标签（首页/侧栏） — T-015: 仅启用+未删
+   * [P1-06] V1.0 验收: 支持按 type 过滤 (house/secondhand/job/lifebiz)
+   * 业务场景: 房屋租售页面只显示与房屋关联的标签
+   * 关联规则: tag → PostTag → Post.type
+   */
+  async findHot(limit = 20, type?: 'house' | 'secondhand' | 'job' | 'lifebiz') {
+    if (!type) {
+      // 无 type 过滤: 按 isHot + useCount 简单查询
+      return this.prisma.tag.findMany({
+        where: {
+          deletedAt: null,
+          status: 1,
+          OR: [{ isHot: true }, { useCount: { gt: 0 } }],
+        },
+        orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }],
+        take: Math.min(limit, 100),
+      });
+    }
+    // 有 type 过滤: 关联 PostTag + Post 找到该 type 用过的 tag
+    const postTags = await this.prisma.postTag.findMany({
+      where: {
+        post: { type, status: { not: 'deleted' } },
+        tag: { deletedAt: null, status: 1 },
+      },
+      select: { tagId: true },
+      take: 5000, // 上限保护
+    });
+    const tagIdSet = new Set(postTags.map((pt) => pt.tagId.toString()));
+    if (tagIdSet.size === 0) return [];
     return this.prisma.tag.findMany({
       where: {
+        id: { in: Array.from(tagIdSet).map((s) => BigInt(s)) },
         deletedAt: null,
         status: 1,
-        OR: [{ isHot: true }, { useCount: { gt: 0 } }],
       },
       orderBy: [{ useCount: 'desc' }, { sortOrder: 'asc' }],
       take: Math.min(limit, 100),

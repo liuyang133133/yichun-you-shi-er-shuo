@@ -52,11 +52,21 @@ export default function MePage() {
     }
     setUser(u);
     setReady(true);
+    // [P1-01] V1.0 验收修复: /auth/me 失败时不再立即踢回登录页
+    // 业务背景: 登录后立即访问 /me,后端 /auth/me 偶发 5xx/网络抖动
+    // 旧逻辑: 失败 → clearAuth() + router.replace('/login') → 用户被踢
+    // 新逻辑: 用 localStorage 数据继续渲染;失败时静默记录到 meDetail 为 null
+    //        统计接口也用 allSettled, 失败填 0, 不影响页面
+    // 只有明确 401 (token 失效) 才走 handle401 → /login
     authApi.me()
-      .then(setMeDetail)
-      .catch(() => {
-        clearAuth();
-        router.replace('/login');
+      .then((data) => setMeDetail(data))
+      .catch((e) => {
+        // 仅 token 失效 (401) 才清登录态;其它错误 (5xx/网络) 保留登录态
+        if (e?.status === 401) {
+          clearAuth();
+          router.replace('/login?expired=1');
+        }
+        // 否则: token 仍有效,保留 localStorage 数据继续展示
       });
 
     // 并行拉统计

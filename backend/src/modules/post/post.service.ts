@@ -139,6 +139,7 @@ export class PostService {
     }
 
     // 排序
+    // [P1-05] V1.0 验收: 新增 viewCount_desc / viewCount_asc + 兼容 viewCount:desc
     let orderBy: Prisma.PostOrderByWithRelationInput;
     switch (sort) {
       case 'oldest':
@@ -149,6 +150,14 @@ export class PostService {
         break;
       case 'price_desc':
         orderBy = { price: 'desc' };
+        break;
+      case 'viewCount_desc':
+      case 'viewCount:desc':
+        orderBy = { viewCount: 'desc' };
+        break;
+      case 'viewCount_asc':
+      case 'viewCount:asc':
+        orderBy = { viewCount: 'asc' };
         break;
       case 'latest':
       default:
@@ -464,6 +473,13 @@ export class PostService {
       // F-3: 自动生成 slug（重试 3 次处理冲突）
       const slug = await this.resolveSlugConflict(dto.title);
 
+      // [P1-02] V1.0 验收修复: 新发布帖默认 status='active', auditStatus='passed'
+      // 业务背景: V1.0 没有自动审核工作流,旧版 status='pending' 导致:
+      //   1) 用户 POST /posts → 201 id=13
+      //   2) GET /posts?type=house → list 不含 id=13 (默认 status='active' 过滤)
+      //   3) 用户刷新页面 → "我的发布"有 13 但"首页"无 13, 体验割裂
+      // 修复: 默认 active + passed (与 seed 一致);admin 后续可下架/reject
+      // 保留 auditStatus 字段供后续接 AI/人工审核 (V1.1)
       const created = await tx.post.create({
         data: {
           userId,
@@ -477,8 +493,9 @@ export class PostService {
           contactName: dto.contactName,
           contactPhone: dto.contactPhone,
           contactWechat: dto.contactWechat,
-          status: 'pending',
-          auditStatus: 'pending',
+          // [P1-02] V1.0: 默认 active + passed (V1.0 无审核工作流,需保持可见)
+          status: 'active',
+          auditStatus: 'passed',
           // F-3: URL slug
           slug,
         },

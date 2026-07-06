@@ -523,11 +523,17 @@ async function expectStatus(actual, expected, label) {
     if (diff >= 3) throw new Error(`${diff} console errors`);
   }, '12.控制台');
 
-  await safeRun('12.2 列表页 network failed < 2', async () => {
+  await safeRun('12.2 列表页 network failed < 6', async () => {
+    // [P1-07] 阈值从 < 2 放宽到 < 6
+    // 原因: /posts 现在是真实列表页 (P1-07 修复), 不再是 redirect
+    //       4 个 useEffect fetch (categories/areas/banners/tags/hot) 在 React 18 StrictMode 下
+    //       dev 模式 useEffect 跑 2 次, 第一次会被取消 → Playwright 计为 requestfailed
+    //       这是 StrictMode 的预期行为, 不是 bug
+    // 实际 prod 不会有取消, 但 v1-acceptance 跑在 dev 容器里
     const before = networkFailures;
     await page.goto(FRONTEND + '/posts', { waitUntil: 'networkidle' });
     const diff = networkFailures - before;
-    if (diff >= 2) throw new Error(`${diff} network failures`);
+    if (diff >= 6) throw new Error(`${diff} network failures`);
   }, '12.控制台');
 
   // ═══ 报告 ═══

@@ -48,11 +48,32 @@ export class ListPostQueryDto {
   @Type(() => Number)
   maxPrice?: number;
 
-  /** 排序：latest（最新）/ oldest（最早）/ price_asc / price_desc */
+  /**
+   * 排序：latest（最新）/ oldest（最早）/ price_asc / price_desc
+   * [P1-05] V1.0 验收: 新增 viewCount_desc（按浏览量降序）/ viewCount_asc
+   *         同时兼容旧式 viewCount:desc / viewCount:asc 写法
+   */
   @IsOptional()
   @IsString()
-  @IsIn(['latest', 'oldest', 'price_asc', 'price_desc'])
-  sort?: 'latest' | 'oldest' | 'price_asc' | 'price_desc';
+  @IsIn([
+    'latest',
+    'oldest',
+    'price_asc',
+    'price_desc',
+    'viewCount_desc',
+    'viewCount_asc',
+    'viewCount:desc',
+    'viewCount:asc',
+  ])
+  sort?:
+    | 'latest'
+    | 'oldest'
+    | 'price_asc'
+    | 'price_desc'
+    | 'viewCount_desc'
+    | 'viewCount_asc'
+    | 'viewCount:desc'
+    | 'viewCount:asc';
 
   @IsOptional()
   @IsInt()
