@@ -24,9 +24,30 @@ export class CommentService {
    * 帖子留言列表（含回复）
    * 顶级留言按时间正序排，回复挂在 parent 下
    * GET /api/v1/posts/:postId/comments
+   *
+   * [P2-06] V1.0 验收修复: 当 postId 不存在时应抛 NotFoundException (404)
+   * 此前直接 prisma.comment.findMany, 即使 post 不存在也返回 200 + 空数组
+   *   - 与同模块 create() 的行为不一致
+   *   - 让前端难以区分"该帖无评论"与"该帖不存在"
+   * 修复: 第一步先校验 post 存在 (与 create() 第 70-79 行同模式)
    */
   async findByPost(postId: bigint, options: { page?: number; pageSize?: number } = {}) {
     const { page = 1, pageSize = 20 } = options;
+
+    // [P2-06] 校验 post 存在性, 与 create() 一致
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, status: true },
+    });
+    if (!post) {
+      throw new NotFoundException(`信息 ID ${postId} 不存在`);
+    }
+    if (post.status === 'deleted') {
+      // 已删除帖返回空列表而非 404 — 与 create() 抛 BadRequest 不同
+      // (create 是写操作,不允许;读操作允许空结果)
+      return { list: [], total: 0, page, pageSize };
+    }
+
     const where = { postId, status: 0, parentId: null }; // 只查顶级
 
     const skip = (page - 1) * pageSize;
