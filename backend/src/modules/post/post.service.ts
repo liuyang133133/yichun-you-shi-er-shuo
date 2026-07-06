@@ -395,12 +395,43 @@ export class PostService {
     }
 
     // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
-    if (dto.detail && dto.type === 'job' && dto.detail.companyId) {
-      const company = await this.prisma.company.findUnique({
-        where: { id: BigInt(dto.detail.companyId) },
-      });
-      if (!company || company.creatorUserId !== userId) {
-        throw new BadRequestException('公司不存在或不属于当前用户');
+    // [P0-fix] 如果用户未传 companyId（普通个人招聘场景），自动复用/创建其"个人招聘"公司
+    // - 命名规范: "个人招聘 · {phone 后 4 位}"，便于列表页识别
+    // - verified=0 表示未认证
+    let resolvedCompanyId: bigint | null = null;
+    if (dto.detail && dto.type === 'job') {
+      if (dto.detail.companyId) {
+        const company = await this.prisma.company.findUnique({
+          where: { id: BigInt(dto.detail.companyId) },
+        });
+        if (!company || company.creatorUserId !== userId) {
+          throw new BadRequestException('公司不存在或不属于当前用户');
+        }
+        resolvedCompanyId = company.id;
+      } else {
+        // 自动创建/复用"个人招聘"公司，避免阻塞普通用户发招聘
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { phone: true },
+        });
+        const phoneTail = (user?.phone || '').slice(-4) || String(userId);
+        const personalName = `个人招聘·${phoneTail}`;
+        const existing = await this.prisma.company.findFirst({
+          where: { creatorUserId: userId, name: personalName },
+        });
+        resolvedCompanyId = existing
+          ? existing.id
+          : (
+              await this.prisma.company.create({
+                data: {
+                  creatorUserId: userId,
+                  name: personalName,
+                  verified: 0,
+                },
+              })
+            ).id;
+        // 覆盖 dto.detail.companyId（让后续 postJob.create 用上）
+        dto.detail.companyId = Number(resolvedCompanyId);
       }
     }
 

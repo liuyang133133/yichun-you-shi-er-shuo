@@ -1,5 +1,6 @@
 # ==========================================
-# Multi-stage Dockerfile for Next.js 15
+# Multi-stage Dockerfile for Admin (Next.js 15)
+# 与 frontend/Dockerfile 同构，端口 3002
 # ==========================================
 
 # --- dependencies stage ---
@@ -7,7 +8,7 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# 复制 .npmrc (legacy-peer-deps=true) 必须在 npm install 之前 — 解决 lucide-react/react 19 peer dep 冲突
+# 复制 .npmrc (legacy-peer-deps=true) 必须在 npm install 之前
 COPY .npmrc ./
 COPY package*.json ./
 RUN npm install
@@ -20,7 +21,7 @@ RUN apk add --no-cache libc6-compat
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-EXPOSE 3000
+EXPOSE 3002
 CMD ["npm", "run", "dev"]
 
 # --- builder stage ---
@@ -47,9 +48,9 @@ COPY --from=builder --chown=next:node /app/.next/standalone ./
 COPY --from=builder --chown=next:node /app/.next/static ./.next/static
 
 USER next
-EXPOSE 3000
+EXPOSE 3002
 
-ENV PORT=3000
+ENV PORT=3002
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

@@ -7,7 +7,19 @@ import { ApiError } from './api';
 import type { ScoreRequestDto, ScoreResponse } from '@/types/ai-score';
 import type { RewriteRequestDto, RewriteResponse } from '@/types/ai-rewrite';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// 与 api.ts 一致：SSR 优先用 API_URL（容器内 backend:3001）
+function resolveApiBase(): string {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3001/api/v1'
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+}
+
+const API_BASE = resolveApiBase();
 
 /**
  * 4 大模块 type — house/secondhand/job/lifebiz

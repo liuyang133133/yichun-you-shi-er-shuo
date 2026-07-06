@@ -17,6 +17,14 @@ export class JobService {
     if (post.userId !== userId) throw new ForbiddenException('只能给自己发布的信息添加职位详情');
     if (post.type !== 'job') throw new BadRequestException(`type=${post.type} 的信息不是招聘`);
 
+    // [P0-fix] 副端点不处理自动创建 — 主端点 (PostService.create) 会做
+    // 若用户在副端点没传 companyId，提示用主端点
+    if (!dto.companyId) {
+      throw new BadRequestException(
+        'companyId 必填：请使用 POST /api/v1/posts (主端点) 发招聘，会自动创建"个人招聘"公司；或先在 /admin/companies 建公司后再用本端点',
+      );
+    }
+
     // 校验公司存在 + 是当前用户创建的
     const company = await this.prisma.company.findUnique({ where: { id: BigInt(dto.companyId) } });
     if (!company) throw new NotFoundException(`公司 ID ${dto.companyId} 不存在`);
