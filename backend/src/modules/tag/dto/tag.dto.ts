@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min, Max, Length, Matches } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, Min, Max, Length, Matches, IsIn } from 'class-validator';
 
 /**
  * 标签 slug 规则：小写字母/数字/中划线，1-50 字符
@@ -84,6 +84,10 @@ export class FindAllTagDto {
   q?: string;
 
   @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(200)
@@ -93,6 +97,22 @@ export class FindAllTagDto {
   @IsInt()
   @Min(0)
   offset?: number;
+
+  /**
+   * [P1-04] V1.0 验收修复: 前端 tagApi.list({ pageSize: 100 }) 期望分页格式
+   * 但 findAll 用的是 limit/offset;为兼容前端调用, 同时接受 pageSize
+   * 后端服务实现时按 limit=Math.min(pageSize, 200) 处理
+   */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  pageSize?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number;
 }
 
 export class FindHotTagDto {
@@ -101,6 +121,15 @@ export class FindHotTagDto {
   @Min(1)
   @Max(100)
   limit?: number;
+
+  /**
+   * [P1-06] V1.0 验收修复: 热门标签按 type 过滤
+   * 业务场景: 房屋租售页面只显示 house 标签, 不显示 lifebiz 标签
+   */
+  @IsOptional()
+  @IsString()
+  @IsIn(['house', 'secondhand', 'job', 'lifebiz'])
+  type?: 'house' | 'secondhand' | 'job' | 'lifebiz';
 }
 
 /**

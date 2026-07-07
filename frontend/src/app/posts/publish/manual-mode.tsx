@@ -142,17 +142,22 @@ function ManualPublishForm() {
   }, [type]);
 
   const subCategories = (() => {
-    // V1.0 页面合理性修复:
-    // 1) 必须 parentId != null — 否则 4 个顶级会混进"分类"下拉
-    // 2) 按 (parentId, name) 去重 — 防御 seed/reset 产生孤儿
-    const filtered = categories.filter((c) => c.code === type && c.parentId != null && c.parentId !== '');
+    // V1.0 子分类重整后，subCategories 的 code 是独立（如 'house-rental'），与顶级 code（'house'）不同
+    // 修复：先按顶级 code 找父分类，再按 parentId 拿子分类（home-content.tsx 同款逻辑）
+    // 冲突合并保留 HEAD 的"按 parentId/name 去重"防御 seed/reset 孤儿 (一行化)
+    const parentCategory = categories.find(
+      (c) => c.code === type && (c.parentId == null || c.parentId === '' || c.parentId === '0'),
+    );
+    if (!parentCategory) return [];
     const seen = new Set<string>();
-    return filtered.filter((c) => {
-      const key = `${c.parentId ?? 'top'}:${c.name}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return categories
+      .filter((c) => String(c.parentId) === String(parentCategory.id))
+      .filter((c) => {
+        const key = `${c.parentId ?? 'top'}:${c.name}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
   })();
   const currentTypeMeta = TYPE_OPTIONS.find((t) => t.code === type);
   const Icon = currentTypeMeta?.icon;
@@ -262,8 +267,10 @@ function ManualPublishForm() {
           usageDuration: shUsageDuration || undefined,
         };
       } else if (type === 'job') {
+        // [P0-fix] 不再硬编码 companyId=1；后端会按需自动创建"个人招聘·{phone 后 4 位}"公司
+        // 仅当用户在 admin 端通过 /admin/companies 显式建过公司并选了 jobCompanyId 时才传
         detail = {
-          companyId: Number(jobCompanyId || 1), // V1 默认 1（占位）
+          ...(jobCompanyId ? { companyId: Number(jobCompanyId) } : {}),
           jobType,
           salaryMin: jobSalaryMin ? Number(jobSalaryMin) : undefined,
           salaryMax: jobSalaryMax ? Number(jobSalaryMax) : undefined,

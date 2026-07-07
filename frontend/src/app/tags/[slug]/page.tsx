@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { TagDetailContent } from './content';
+import { getServerApiUrl } from '@/lib/server-api';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE = getServerApiUrl();
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
 
 export const dynamic = 'force-dynamic';

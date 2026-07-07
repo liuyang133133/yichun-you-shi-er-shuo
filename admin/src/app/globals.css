@@ -1,9 +1,10 @@
 /**
- * Admin 全局样式 — 引用 frontend design tokens 实现设计一致性
- * 主色/圆角/间距/阴影 与用户端完全一致
- * 路径修正：原 4 级相对路径多一层，改为 3 级（admin/src/app → workspace → frontend）
+ * Admin 全局样式 — 本地 tokens.css (从 frontend/src/styles/tokens.css 复制)
+ * 之前跨项目 @import '../../../frontend/src/styles/tokens.css' 被 webpack 拒绝
+ * (Next.js 编译时 Module not found, 容器内也没 frontend 兄弟目录)
+ * 后续设计 token 变更需手动同步两边 (admin 端改动小, 同步成本低)
  */
-@import '../../../frontend/src/styles/tokens.css';
+@import '../styles/tokens.css';
 
 @tailwind base;
 @tailwind components;

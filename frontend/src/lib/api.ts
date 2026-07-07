@@ -5,8 +5,22 @@
 
 import { ACCESS_TOKEN_KEY, clearAuth } from './auth';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// 解析 API base URL：
+// - SSR（typeof window === 'undefined'）：优先用 API_URL（容器内指向后端服务名 backend:3001）
+// - CSR（浏览器）：用 NEXT_PUBLIC_API_URL（指向宿主机 localhost:3001）
+// - 本地 dev（无 Docker）：两者都没有则回退到 localhost
+function resolveApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3001/api/v1'
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -367,7 +381,6 @@ export const meApi = {
 export const uploadApi = {
   /** 单图上传 (FormData 字段名: file)，返回 { url, size, mimeType, filename } */
   image: async (file: File): Promise<{ url: string; size: number; mimeType: string; filename: string }> => {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
     const fd = new FormData();
     fd.append('file', file);
     const headers: Record<string, string> = {};

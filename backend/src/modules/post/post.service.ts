@@ -139,6 +139,7 @@ export class PostService {
     }
 
     // 排序
+    // [P1-05] V1.0 验收: 新增 viewCount_desc / viewCount_asc + 兼容 viewCount:desc
     let orderBy: Prisma.PostOrderByWithRelationInput;
     switch (sort) {
       case 'oldest':
@@ -149,6 +150,14 @@ export class PostService {
         break;
       case 'price_desc':
         orderBy = { price: 'desc' };
+        break;
+      case 'viewCount_desc':
+      case 'viewCount:desc':
+        orderBy = { viewCount: 'desc' };
+        break;
+      case 'viewCount_asc':
+      case 'viewCount:asc':
+        orderBy = { viewCount: 'asc' };
         break;
       case 'latest':
       default:
@@ -395,12 +404,43 @@ export class PostService {
     }
 
     // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
-    if (dto.detail && dto.type === 'job' && dto.detail.companyId) {
-      const company = await this.prisma.company.findUnique({
-        where: { id: BigInt(dto.detail.companyId) },
-      });
-      if (!company || company.creatorUserId !== userId) {
-        throw new BadRequestException('公司不存在或不属于当前用户');
+    // [P0-fix] 如果用户未传 companyId（普通个人招聘场景），自动复用/创建其"个人招聘"公司
+    // - 命名规范: "个人招聘 · {phone 后 4 位}"，便于列表页识别
+    // - verified=0 表示未认证
+    let resolvedCompanyId: bigint | null = null;
+    if (dto.detail && dto.type === 'job') {
+      if (dto.detail.companyId) {
+        const company = await this.prisma.company.findUnique({
+          where: { id: BigInt(dto.detail.companyId) },
+        });
+        if (!company || company.creatorUserId !== userId) {
+          throw new BadRequestException('公司不存在或不属于当前用户');
+        }
+        resolvedCompanyId = company.id;
+      } else {
+        // 自动创建/复用"个人招聘"公司，避免阻塞普通用户发招聘
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { phone: true },
+        });
+        const phoneTail = (user?.phone || '').slice(-4) || String(userId);
+        const personalName = `个人招聘·${phoneTail}`;
+        const existing = await this.prisma.company.findFirst({
+          where: { creatorUserId: userId, name: personalName },
+        });
+        resolvedCompanyId = existing
+          ? existing.id
+          : (
+              await this.prisma.company.create({
+                data: {
+                  creatorUserId: userId,
+                  name: personalName,
+                  verified: 0,
+                },
+              })
+            ).id;
+        // 覆盖 dto.detail.companyId（让后续 postJob.create 用上）
+        dto.detail.companyId = Number(resolvedCompanyId);
       }
     }
 
@@ -433,6 +473,13 @@ export class PostService {
       // F-3: 自动生成 slug（重试 3 次处理冲突）
       const slug = await this.resolveSlugConflict(dto.title);
 
+      // [P1-02] V1.0 验收修复: 新发布帖默认 status='active', auditStatus='passed'
+      // 业务背景: V1.0 没有自动审核工作流,旧版 status='pending' 导致:
+      //   1) 用户 POST /posts → 201 id=13
+      //   2) GET /posts?type=house → list 不含 id=13 (默认 status='active' 过滤)
+      //   3) 用户刷新页面 → "我的发布"有 13 但"首页"无 13, 体验割裂
+      // 修复: 默认 active + passed (与 seed 一致);admin 后续可下架/reject
+      // 保留 auditStatus 字段供后续接 AI/人工审核 (V1.1)
       const created = await tx.post.create({
         data: {
           userId,
@@ -446,8 +493,9 @@ export class PostService {
           contactName: dto.contactName,
           contactPhone: dto.contactPhone,
           contactWechat: dto.contactWechat,
-          status: 'pending',
-          auditStatus: 'pending',
+          // [P1-02] V1.0: 默认 active + passed (V1.0 无审核工作流,需保持可见)
+          status: 'active',
+          auditStatus: 'passed',
           // F-3: URL slug
           slug,
         },

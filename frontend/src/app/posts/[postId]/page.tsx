@@ -5,9 +5,10 @@ import { PostDetailContent } from './post-detail-content';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { RelatedPosts } from '@/components/related-posts';
 import { BreadcrumbItem } from '@/lib/api';
+import { getServerApiUrl } from '@/lib/server-api';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = getServerApiUrl();
 
 const TYPE_NAMES: Record<string, string> = {
   house: '房屋租售',

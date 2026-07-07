@@ -832,6 +832,21 @@ async function main() {
   // T-018: 7. 协议（terms / privacy / about）
   // ============================================
   await seedAgreements();
+
+  // ============================================
+  // [P0-fix] 8. 公告（Announcement）— 5 条（让 /announcements 有内容）
+  // ============================================
+  await seedAnnouncements();
+
+  // ============================================
+  // [P0-fix] 9. Banner（首页轮播）— 4 张（让首页 hero 有图）
+  // ============================================
+  await seedBanners();
+
+  // ============================================
+  // [P0-fix] 10. 扩充示例帖子 — 每 type 再补 4-6 条（让 /posts 列表不空）
+  // ============================================
+  await seedMorePosts();
 }
 
 /**
@@ -1258,6 +1273,325 @@ async function seedAgreements() {
   }
 
   console.log(`  - 协议: ${AGREEMENTS_SEED.length} 个`);
+}
+
+/**
+ * [P0-fix] 公告种子 — 5 条平台公告
+ * 幂等：按 title 查重
+ */
+async function seedAnnouncements() {
+  console.log('  📢 创建公告...');
+  const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
+  const adminId = admin?.id ?? BigInt(1);
+  const now = new Date();
+  const oneWeekLater = new Date(now.getTime() + 7 * 86400_000);
+  const oneMonthLater = new Date(now.getTime() + 30 * 86400_000);
+
+  const ANNOUNCEMENTS_SEED = [
+    {
+      title: '🎉 伊春有事儿说 1.0 正式上线',
+      content: '伊春本地分类信息平台正式上线！欢迎伊春居民免费发布房屋出租、二手交易、招聘求职、便民服务信息。\n\n平台特色：\n- ✅ 真实信息：手机号 + 实名认证\n- ✅ 本地优先：专注伊春，不做全国通用\n- ✅ AI 智能发布：自然语言 1 键生成规范信息\n- ✅ 完全免费：发布、浏览、联系 0 费用\n\n客服邮箱：support@yichun.com',
+      priority: 1,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: '🛡️ 信息发布规范与审核标准',
+      content: '为保障平台信息质量，所有发布的信息需经机器+人工双重审核。\n\n**禁止发布：**\n- 虚假信息、夸大宣传\n- 违法违规内容（黄赌毒、违禁品）\n- 重复刷屏、垃圾广告\n- 未授权的第三方品牌信息\n\n**审核时长：**\n- 工作时间：30 分钟内\n- 夜间/节假日：2 小时内\n\n违规将下架并影响账号信用，详见《用户协议》。',
+      priority: 2,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: '📞 客服联系方式与反馈渠道',
+      content: '如有问题或建议，欢迎通过以下方式联系我们：\n\n- 客服邮箱：support@yichun.com\n- 商务合作：bd@yichun.com\n- 站内反馈：登录后点击"我的 → 意见反馈"\n\n工作时间：周一至周五 9:00-18:00\n紧急投诉：support@yichun.com（24h 内响应）',
+      priority: 0,
+      startsAt: now,
+      endsAt: null,
+    },
+    {
+      title: '✨ AI 智能发布功能上线',
+      content: '现在你可以用自然语言一句话发布信息，AI 自动识别并填写表单！\n\n例如：\n> "伊美区万象城 2 室 1 厅 80 平 精装 月租 1800 明天看房 13800001234 王先生"\n\n系统会自动识别：分类、区域、户型、面积、装修、价格、联系人、联系电话，1 键生成规范信息。\n\n点击首页"AI 发布"按钮体验。',
+      priority: 1,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: '🗺️ 覆盖范围：伊春市 + 12 区县',
+      content: '平台已覆盖伊春市全部行政区：\n\n- 伊美区（市区）\n- 南岔县、友好区、红星区、西林区、金林区、乌翠区\n- 汤旺县、嘉荫县、大箐山县、丰林县\n- 铁力市\n\n后续将覆盖更多周边市县，欢迎提供建议。',
+      priority: 0,
+      startsAt: now,
+      endsAt: null,
+    },
+  ];
+
+  let created = 0;
+  for (const a of ANNOUNCEMENTS_SEED) {
+    const exists = await prisma.announcement.findFirst({ where: { title: a.title } });
+    if (exists) continue;
+    await prisma.announcement.create({
+      data: {
+        title: a.title,
+        content: a.content,
+        status: 1,
+        priority: a.priority,
+        startsAt: a.startsAt,
+        endsAt: a.endsAt,
+        createdBy: adminId,
+      },
+    });
+    created++;
+  }
+  console.log(`  - 公告: 总 ${ANNOUNCEMENTS_SEED.length} 个 / 新增 ${created} 个`);
+}
+
+/**
+ * [P0-fix] Banner 种子 — 4 张首页轮播图
+ * 幂等：按 title 查重
+ */
+async function seedBanners() {
+  console.log('  🖼️  创建 Banner...');
+  const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
+  const adminId = admin?.id ?? BigInt(1);
+  const now = new Date();
+  const oneMonthLater = new Date(now.getTime() + 30 * 86400_000);
+
+  const BANNERS_SEED = [
+    {
+      title: '伊春有事儿说 - 让伊春生活更便捷',
+      imageUrl: 'https://placehold.co/1200x400/10b981/ffffff?text=伊春有事儿说+%7C+本地分类信息',
+      linkType: 'url',
+      linkTarget: '/?type=house',
+      position: 'home_top',
+      sortOrder: 1,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: 'AI 智能发布 - 一句话生成规范信息',
+      imageUrl: 'https://placehold.co/1200x400/f59e0b/ffffff?text=AI+智能发布+自然语言一键生成',
+      linkType: 'url',
+      linkTarget: '/posts/publish',
+      position: 'home_top',
+      sortOrder: 2,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: '房屋租售 - 真实本地房源',
+      imageUrl: 'https://placehold.co/1200x400/3b82f6/ffffff?text=房屋租售+%7C+伊美区+南岔+友好+铁力',
+      linkType: 'url',
+      linkTarget: '/?type=house',
+      position: 'home_top',
+      sortOrder: 3,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+    {
+      title: '招聘求职 - 本地企业直招',
+      imageUrl: 'https://placehold.co/1200x400/8b5cf6/ffffff?text=招聘求职+%7C+销售+餐饮+IT+家政',
+      linkType: 'url',
+      linkTarget: '/?type=job',
+      position: 'home_top',
+      sortOrder: 4,
+      startsAt: now,
+      endsAt: oneMonthLater,
+    },
+  ];
+
+  let created = 0;
+  for (const b of BANNERS_SEED) {
+    const exists = await prisma.banner.findFirst({ where: { title: b.title } });
+    if (exists) continue;
+    await prisma.banner.create({
+      data: {
+        title: b.title,
+        imageUrl: b.imageUrl,
+        linkType: b.linkType,
+        linkTarget: b.linkTarget,
+        position: b.position,
+        sortOrder: b.sortOrder,
+        status: 1,
+        startsAt: b.startsAt,
+        endsAt: b.endsAt,
+        createdBy: adminId,
+      },
+    });
+    created++;
+  }
+  console.log(`  - Banner: 总 ${BANNERS_SEED.length} 个 / 新增 ${created} 个`);
+}
+
+/**
+ * [P0-fix] 扩充示例帖子 — 每个 type 再补 4-6 条
+ * 幂等：按 title 查重
+ */
+async function seedMorePosts() {
+  console.log('  📝 扩充示例帖子...');
+  const testUser = await prisma.user.findFirst({ where: { phone: '13800000000' } });
+  if (!testUser) {
+    console.log('    ⚠ 未找到测试用户，跳过');
+    return;
+  }
+
+  // 找各 type 的子分类
+  const findSub = async (code: string) =>
+    prisma.category.findFirst({ where: { code, parentId: { not: null } } });
+
+  // 实际数据库子分类 code (house-second-hand/house-new/sh-appliance/lb-cleaning 等)
+  // 之前误用 house-shared/house-sale/sh-furniture/lb-housekeeping, 跑 seed 时 null.id 崩溃
+  const sub = {
+    'house-rental': await findSub('house-rental'),
+    'house-second-hand': await findSub('house-second-hand'),
+    'house-new': await findSub('house-new'),
+    'house-shop': await findSub('house-shop'),
+    'sh-phone': await findSub('sh-phone'),
+    'sh-appliance': await findSub('sh-appliance'),
+    'sh-baby': await findSub('sh-baby'),
+    'job-fulltime': await findSub('job-fulltime'),
+    'job-parttime': await findSub('job-parttime'),
+    'job-driver': await findSub('job-driver'),
+    'lb-carpool': await findSub('lb-carpool'),
+    'lb-cleaning': await findSub('lb-cleaning'),
+  };
+
+  const morePosts = [
+    // 房屋
+    {
+      type: 'house', categoryId: sub['house-rental']!.id,
+      title: '【南岔县】中心广场旁 两室一厅 简单装修',
+      description: '南岔中心广场旁，5 楼，两室一厅，简单装修，家具家电齐全，月租 1200，看房方便。',
+      price: 1200, priceUnit: '元/月',
+      contactName: '赵女士', contactPhone: '13800000011',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'house', categoryId: sub['house-second-hand']!.id,
+      title: '【伊美区】万象城合租 主卧出租 限女生',
+      description: '合租万象城小区，主卧带独卫，月租 900，无中介费，仅限女生。',
+      price: 900, priceUnit: '元/月',
+      contactName: '陈同学', contactPhone: '13800000012',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'house', categoryId: sub['house-new']!.id,
+      title: '【友好区】友好街道 68 平两室 出售',
+      description: '友好街道，5 楼两室一厅 68 平，中等装修，售价 18 万，看房随时。',
+      price: 180000, priceUnit: '元',
+      contactName: '周先生', contactPhone: '13800000013',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'house', categoryId: sub['house-shop']!.id,
+      title: '【铁力市】铁力镇中心 商铺出租 50 平',
+      description: '铁力镇中心位置，50 平商铺，门前停车方便，适合餐饮/便利店，月租 3500。',
+      price: 3500, priceUnit: '元/月',
+      contactName: '吴经理', contactPhone: '13800000014',
+      status: 'active', auditStatus: 'passed',
+    },
+    // 二手
+    {
+      type: 'secondhand', categoryId: sub['sh-appliance']!.id,
+      title: '九成新实木餐桌椅一套 出售',
+      description: '实木餐桌+4 把椅子，使用 1 年，无划痕，自提价 800。',
+      price: 800, priceUnit: '元',
+      contactName: '孙女士', contactPhone: '13800000015',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'secondhand', categoryId: sub['sh-baby']!.id,
+      title: '宝宝学步车+餐椅 打包出售',
+      description: '宝宝长大了用不上，学步车+餐椅打包 200，干净卫生，自提。',
+      price: 200, priceUnit: '元',
+      contactName: '徐妈妈', contactPhone: '13800000016',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'secondhand', categoryId: sub['sh-phone']!.id,
+      title: '出售华为 Mate 60 512G 国行',
+      description: 'Mate 60 Pro+ 512G 国行，95 新，原装无拆修，配件齐全，4500 元。',
+      price: 4500, priceUnit: '元',
+      contactName: '马同学', contactPhone: '13800000017',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'secondhand', categoryId: sub['sh-appliance']!.id,
+      title: '品牌冰柜 300 升 9 成新',
+      description: '海尔冰柜 300 升，家用商用均可，9 成新，因搬家出售 600 元。',
+      price: 600, priceUnit: '元',
+      contactName: '冯大姐', contactPhone: '13800000018',
+      status: 'active', auditStatus: 'passed',
+    },
+    // 招聘
+    {
+      type: 'job', categoryId: sub['job-parttime']!.id,
+      title: '招聘：周末家教 高中数学 200元/次',
+      description: '南岔中学高一学生，数学基础弱，每周六下午 2 小时，200 元/次，有经验优先。',
+      price: 200, priceUnit: '元/天',
+      contactName: '韩家长', contactPhone: '13800000019',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'job', categoryId: sub['job-driver']!.id,
+      title: '招聘 B2 司机 跑运输 6000-8000/月',
+      description: '招聘 B2 司机，木材运输，公司车，月休 4 天，月薪 6000-8000。',
+      price: 7000, priceUnit: '元/月',
+      contactName: '杨老板', contactPhone: '13800000020',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'job', categoryId: sub['job-fulltime']!.id,
+      title: '招聘：导游/景区讲解员 4500-5500/月',
+      description: '五营森林公园招聘导游，要求普通话标准，有导游证优先，4500-5500/月。',
+      price: 5000, priceUnit: '元/月',
+      contactName: '景区刘主任', contactPhone: '13800000021',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'job', categoryId: sub['job-fulltime']!.id,
+      title: '招聘：会计 4000-6000 双休',
+      description: '招聘会计 1 名，要求初级以上职称，熟悉用友/金蝶，月薪 4000-6000，双休。',
+      price: 5000, priceUnit: '元/月',
+      contactName: '朱总', contactPhone: '13800000022',
+      status: 'active', auditStatus: 'passed',
+    },
+    // 便民
+    {
+      type: 'lifebiz', categoryId: sub['lb-carpool']!.id,
+      title: '【拼车】伊春→哈尔滨 周末往返 长途',
+      description: '本人每周五晚出发去哈尔滨，周日返程，可拼 2-3 人，油费均摊。',
+      price: 100, priceUnit: '元/人',
+      contactName: '蒋师傅', contactPhone: '13800000023',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'lifebiz', categoryId: sub['lb-cleaning']!.id,
+      title: '专业家庭保洁 50元/时 起',
+      description: '提供家庭日常保洁、深度保洁、新居开荒等服务，50 元/时起，自带工具。',
+      price: 50, priceUnit: '元/时',
+      contactName: '魏大姐', contactPhone: '13800000024',
+      status: 'active', auditStatus: 'passed',
+    },
+    {
+      type: 'lifebiz', categoryId: sub['lb-carpool']!.id,
+      title: '【拼车】伊美区通勤 旭日街道 → 区政府',
+      description: '工作日通勤拼车，旭日街道至区政府方向，6 人商务车，每人 5 元/天。',
+      price: 5, priceUnit: '元/人',
+      contactName: '沈司机', contactPhone: '13800000025',
+      status: 'active', auditStatus: 'passed',
+    },
+  ];
+
+  let created = 0;
+  for (const post of morePosts) {
+    const exists = await prisma.post.findFirst({ where: { title: post.title } });
+    if (exists) continue;
+    await prisma.post.create({
+      data: { userId: testUser.id, ...post },
+    });
+    created++;
+  }
+  console.log(`  - 扩充帖子: 总 ${morePosts.length} 个 / 新增 ${created} 个`);
 }
 
 main()

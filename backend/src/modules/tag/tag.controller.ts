@@ -47,7 +47,10 @@ export class TagController {
   findAll(@Query() query: FindAllTagDto) {
     return this.tagService.findAll({
       q: query.q,
+      keyword: query.keyword,
       limit: query.limit,
+      pageSize: query.pageSize,
+      page: query.page,
       offset: query.offset,
     });
   }
@@ -55,7 +58,7 @@ export class TagController {
   @Public()
   @Get('hot')
   findHot(@Query() query: FindHotTagDto) {
-    return this.tagService.findHot(query.limit);
+    return this.tagService.findHot(query.limit, query.type);
   }
 
   @Public()
