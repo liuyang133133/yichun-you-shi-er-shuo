@@ -280,9 +280,19 @@ async function expectStatus(actual, expected, label) {
   }, '4.详情');
 
   // ═══ 5. 评论 ═══
-  await safeRun('5.1 GET /posts/2/comments', async () => {
-    const r = await api(page, '/posts/2/comments');
+  // [P2-06] 测试改用动态真实 post id (而非硬编码 2), 兼容多次 seed 重置
+  await safeRun('5.1 GET /posts/{realId}/comments', async () => {
+    const list = await api(page, '/posts?pageSize=1&sort=oldest');
+    const firstId = list.body?.data?.list?.[0]?.id;
+    if (!firstId) throw new Error('no posts in seed');
+    const r = await api(page, `/posts/${firstId}/comments`);
     await expectStatus(r.status, [200], 'comments');
+  }, '5.评论');
+
+  // [P2-06] 配套: 不存在的 post id 应 404
+  await safeRun('5.1b GET /posts/99999/comments (不存在帖应 404)', async () => {
+    const r = await api(page, '/posts/99999/comments');
+    await expectStatus(r.status, [404], 'comments (404)');
   }, '5.评论');
 
   // ═══ 6. 鉴权流程 ═══
