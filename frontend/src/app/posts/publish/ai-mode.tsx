@@ -125,7 +125,7 @@ export default function AiPublishMode({ initialType = 'house' }: Props) {
           <h1 className="text-2xl md:text-3xl font-bold">把您要发的内容写出来，AI 帮您整理</h1>
           <p className="text-sm text-muted-foreground">
             不用填表，像聊天一样发信息 ——
-            {initialType === 'house' ? '房屋出租' : '其他类型'} 也能用
+            {initialType === 'house' ? '房屋租售' : '其他类型'} 也能用
           </p>
         </div>
 

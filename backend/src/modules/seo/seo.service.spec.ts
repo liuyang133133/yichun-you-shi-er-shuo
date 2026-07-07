@@ -219,4 +219,78 @@ describe('SeoService', () => {
       expect(dto).toBeNull();
     });
   });
+
+  // =====================================================
+  // F-3 新增: getPageTdk 通用 TDK 端点
+  // =====================================================
+
+  describe('F-3 getPageTdk', () => {
+    it('F-3-1: /posts/123 → 返回帖子 TDK（title/description/keywords）', async () => {
+      mockPrisma.post.findUnique.mockResolvedValue({
+        id: 123n,
+        title: '整租伊春区金水湾两室一厅',
+        description: '<p>精装南北通透，<br/>近学校</p> 拎包入住',
+        category: { id: 1n, name: '房屋出租', code: 'house', slug: 'house' },
+        area: { id: 2n, name: '伊春区', slug: 'yichun' },
+        postTags: [{ tag: { name: '精装' } }, { tag: { name: '拎包入住' } }],
+      });
+      const tdk = await service.getPageTdk('/posts/123');
+      expect(tdk).not.toBeNull();
+      expect(tdk!.title).toContain('整租伊春区金水湾');
+      expect(tdk!.title).toContain('伊春房屋出租');
+      // description 应去 HTML + 截断
+      expect(tdk!.description).not.toContain('<p>');
+      expect(tdk!.description.length).toBeLessThanOrEqual(165); // 160 + '...'
+      // keywords 应包含 标签/分类/区域
+      expect(tdk!.keywords).toContain('伊春房屋出租');
+      expect(tdk!.keywords).toContain('伊春伊春区');
+      expect(tdk!.keywords).toContain('精装');
+    });
+
+    it('F-3-2: /posts/123-slug → 忽略 slug 仍命中', async () => {
+      mockPrisma.post.findUnique.mockResolvedValue({
+        id: 123n,
+        title: '帖子', description: 'desc',
+        category: { id: 1n, name: '房屋出租', code: 'house', slug: 'house' },
+        area: null, postTags: [],
+      });
+      const tdk = await service.getPageTdk('/posts/123-some-slug-here');
+      expect(tdk).not.toBeNull();
+      expect(tdk!.title).toContain('帖子');
+    });
+
+    it('F-3-3: /c/house → 走 CategorySeo', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({
+        id: 1n, slug: 'house', name: '房屋出租', parentId: null, icon: null,
+        seoTitle: '伊春房屋出租', seoKeywords: '伊春租房,伊春合租', seoDescription: '伊春房屋...',
+        _count: { posts: 100 },
+      });
+      const tdk = await service.getPageTdk('/c/house');
+      expect(tdk).not.toBeNull();
+      expect(tdk!.title).toBe('伊春房屋出租');
+      expect(tdk!.keywords).toContain('伊春租房');
+    });
+
+    it('F-3-4: /a/yimei → 走 AreaSeo', async () => {
+      mockPrisma.area.findUnique.mockResolvedValue({
+        id: 2n, slug: 'yimei', name: '伊美区', parentId: 1n, level: 2, adCode: null,
+        seoTitle: '伊美区信息', seoKeywords: '伊美区', seoDescription: '伊美区描述',
+        _count: { posts: 50 },
+      });
+      const tdk = await service.getPageTdk('/a/yimei');
+      expect(tdk).not.toBeNull();
+      expect(tdk!.title).toBe('伊美区信息');
+    });
+
+    it('F-3-5: path 不匹配 → 返回 null', async () => {
+      const tdk = await service.getPageTdk('/unknown/path');
+      expect(tdk).toBeNull();
+    });
+
+    it('F-3-6: post 不存在 → 返回 null', async () => {
+      mockPrisma.post.findUnique.mockResolvedValue(null);
+      const tdk = await service.getPageTdk('/posts/999');
+      expect(tdk).toBeNull();
+    });
+  });
 });

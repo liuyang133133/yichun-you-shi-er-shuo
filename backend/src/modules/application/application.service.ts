@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -6,11 +6,28 @@ export class ApplicationService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续投递/改状态
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 投递简历到职位
    * POST /api/v1/applications
    * 自动取当前用户的 resume（必须有）
    */
   async apply(userId: bigint, postJobId: bigint, coverLetter?: string) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
     // 1. 校验 post_job 存在
     const postJob = await this.prisma.postJob.findUnique({
       where: { id: postJobId },
@@ -107,6 +124,9 @@ export class ApplicationService {
    * PATCH /api/v1/applications/:id/status
    */
   async updateStatus(userId: bigint, id: bigint, status: '已查看' | '已回复') {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const app = await this.prisma.jobApplication.findUnique({
       where: { id },
       include: { postJob: { include: { post: { select: { userId: true } } } } },

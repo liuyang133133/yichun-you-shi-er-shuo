@@ -1,6 +1,8 @@
 /**
  * modules.tsx — 4 大业务模块元数据集中地
  *
+ * V1.0: 房屋租售 / 二手交易 / 招聘求职 / 便民信息
+ *
  * 统一 PostCard / Hero / Detail 页面三处对模块视觉的处理
  */
 
@@ -30,15 +32,15 @@ export interface ModuleMeta {
 export const MODULES: ModuleMeta[] = [
   {
     code: 'house',
-    title: '房屋出租',
-    subtitle: 'House Rental',
+    title: '房屋租售',
+    subtitle: 'House Rental & Sale',
     desc: '整租 / 合租 / 短租 / 商铺',
     icon: Home,
     gradient: 'from-blue-500 via-blue-600 to-indigo-700',
     emoji: '🏠',
     cardGradient: 'from-blue-500 via-blue-600 to-indigo-700',
     chipTone: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-800',
-    keywords: ['伊春租房', '伊春二手房', '伊春房屋出租', '伊春卖房'],
+    keywords: ['伊春租房', '伊春二手房', '伊春房屋租售', '伊春卖房'],
   },
   {
     code: 'secondhand',

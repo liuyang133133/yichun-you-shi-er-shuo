@@ -7,9 +7,15 @@ import { Type, Transform } from 'class-transformer';
  *                            + &tagIds=1,2,3  + &tagSlugs=shanlin,xueshan
  */
 export class ListPostQueryDto {
+  /**
+   * V1.0 验收 BUG-5 修复: type 改为可选
+   * 业务背景: 首页"全部信息"混合流 + SEO sitemap 入口需要不带 type 的列表
+   * 旧版必填导致 GET /api/v1/posts 一直 400, 整个首页推荐流不可用
+   */
+  @IsOptional()
   @IsString()
   @IsIn(['house', 'secondhand', 'job', 'lifebiz'])
-  type!: 'house' | 'secondhand' | 'job' | 'lifebiz';
+  type?: 'house' | 'secondhand' | 'job' | 'lifebiz';
 
   @IsOptional()
   @IsInt()
@@ -42,11 +48,32 @@ export class ListPostQueryDto {
   @Type(() => Number)
   maxPrice?: number;
 
-  /** 排序：latest（最新）/ oldest（最早）/ price_asc / price_desc */
+  /**
+   * 排序：latest（最新）/ oldest（最早）/ price_asc / price_desc
+   * [P1-05] V1.0 验收: 新增 viewCount_desc（按浏览量降序）/ viewCount_asc
+   *         同时兼容旧式 viewCount:desc / viewCount:asc 写法
+   */
   @IsOptional()
   @IsString()
-  @IsIn(['latest', 'oldest', 'price_asc', 'price_desc'])
-  sort?: 'latest' | 'oldest' | 'price_asc' | 'price_desc';
+  @IsIn([
+    'latest',
+    'oldest',
+    'price_asc',
+    'price_desc',
+    'viewCount_desc',
+    'viewCount_asc',
+    'viewCount:desc',
+    'viewCount:asc',
+  ])
+  sort?:
+    | 'latest'
+    | 'oldest'
+    | 'price_asc'
+    | 'price_desc'
+    | 'viewCount_desc'
+    | 'viewCount_asc'
+    | 'viewCount:desc'
+    | 'viewCount:asc';
 
   @IsOptional()
   @IsInt()

@@ -5,6 +5,7 @@ import { MapPin, Eye, Heart, MessageCircle, Clock, Hash } from 'lucide-react';
 import { formatRelative } from '@/lib/date';
 import { MODULE_BY_CODE } from '@/config/modules';
 import { cn } from '@/lib/utils';
+import { buildPostUrl } from '@/lib/api';
 
 export interface PostCardData {
   id: string;
@@ -23,6 +24,8 @@ export interface PostCardData {
   coverImage?: string | null;
   /** T-014: 标签列表（最多展示 3 个） */
   tags?: Array<{ id: string | number; slug: string; name: string }>;
+  /** F-3 V2: slug（用于详情页 URL /posts/{id}-{slug}） */
+  slug?: string | null;
 }
 
 /**
@@ -39,7 +42,7 @@ export function PostCard({ post, index = 0 }: { post: PostCardData; index?: numb
   const animDelay = `${Math.min(index, 12) * 40}ms`;
   return (
     <Link
-      href={`/posts/${post.id}`}
+      href={buildPostUrl(post)}
       className="group block animate-slide-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
       style={{ animationDelay: animDelay }}
     >

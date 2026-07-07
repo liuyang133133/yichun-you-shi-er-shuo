@@ -1,5 +1,10 @@
 # T-P1-01: 所有密码/密钥强制从 .env 读,无默认值 (避免 yichun123456 兜底泄露)
 # 启动前必须复制 .env.example 为 .env 并填入真实值
+#
+# 端口说明:
+#   - 默认使用 3000/3001/3307 标准端口 (生产环境可直接使用)
+#   - Windows 开发机需要用 15300/15301/3308 (避开动态端口范围 1024-15000 + 本机 MySQL 服务)
+#     通过 docker-compose.override.yml (gitignore) 实现本地覆盖,不影响仓库主干
 
 services:
   mysql:
@@ -63,6 +68,9 @@ services:
       # T-P1-01: JWT_SECRET 启动期强校验(≥ 32 字符,否则 main.ts process.exit(1))
       JWT_SECRET: '${JWT_SECRET:?JWT_SECRET_is_required_and_must_be_at_least_32_chars_Generate_with_openssl_rand_hex_32}'
       JWT_EXPIRES_IN: 7d
+      # CORS: 显式注入环境变量(避免依赖镜像内 .env),同时兼容标准端口 3000/3002 和 Windows 端口 15300/15302
+      # 生产环境应改成真实域名 (例 https://yichun.com,https://admin.yichun.com)
+      CORS_ORIGINS: 'http://localhost:3000,http://localhost:3002,http://localhost:15300,http://localhost:15302,http://127.0.0.1:3000,http://127.0.0.1:3002,http://127.0.0.1:15300,http://127.0.0.1:15302'
     depends_on:
       mysql:
         condition: service_healthy
@@ -86,12 +94,41 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
+      # 浏览器端 API URL：用户访问宿主机 localhost:3001
       NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+      # SSR API URL：容器内用 Docker 服务名 `backend` 走内网 DNS
+      # 解决致命-01: 容器内 localhost 指向自己导致 SSR fetch 失败
+      API_URL: http://backend:3001/api/v1
     depends_on:
       - backend
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+    command: npm run dev
+    networks:
+      - yichun-network
+
+  # T-P1-06 修复-02: 管理后台 (独立 Next.js 项目) — 本地 compose 缺此服务导致 v1-acceptance 4 个 admin FAIL
+  # 端口: 默认 3002 (Windows 开发机用 15302, 通过 docker-compose.override.yml 覆盖)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: development
+    container_name: yichun-admin
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      # 浏览器端 API URL: admin 用户访问宿主机
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+      # Admin 是纯 CSR, 不需要 SSR, 不需要 API_URL 服务名
+    depends_on:
+      - backend
+    volumes:
+      - ./admin/src:/app/src
+      - ./admin/public:/app/public
     command: npm run dev
     networks:
       - yichun-network

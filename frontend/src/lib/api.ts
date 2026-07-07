@@ -5,8 +5,22 @@
 
 import { ACCESS_TOKEN_KEY, clearAuth } from './auth';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// 解析 API base URL：
+// - SSR（typeof window === 'undefined'）：优先用 API_URL（容器内指向后端服务名 backend:3001）
+// - CSR（浏览器）：用 NEXT_PUBLIC_API_URL（指向宿主机 localhost:3001）
+// - 本地 dev（无 Docker）：两者都没有则回退到 localhost
+function resolveApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3001/api/v1'
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -175,6 +189,8 @@ export interface Post {
   description?: string;
   type: 'house' | 'secondhand' | 'job' | 'lifebiz';
   price?: number | string | null;
+  /** F-3 V2: slug 字段（来自后端 Post.slug，写库时自动填） */
+  slug?: string | null;
   /** Phase 2: AI 生成的 SEO meta（如未生成则为 null） */
   seoMeta?: {
     metaTitle: string;
@@ -186,6 +202,33 @@ export interface Post {
   } | null;
   /** Phase 2: 内容质量分（0-100，AI 评分） */
   qualityScore?: number | null;
+}
+
+/**
+ * F-3 V2: 生成帖子详情页 URL（/posts/[id]-[slug]）
+ * - slug 不存在时退化为 /posts/[id]，避免 404
+ * - id 可能为 string 或 number，统一转字符串
+ * - 服务端 / 客户端均可调用（无副作用）
+ */
+export function buildPostUrl(post: { id: string | number; slug?: string | null }): string {
+  const idStr = String(post.id);
+  if (post.slug && post.slug.trim()) {
+    return `/posts/${idStr}-${encodeURIComponent(post.slug)}`;
+  }
+  return `/posts/${idStr}`;
+}
+
+/**
+ * F-3 V2: 从 /posts/[id]-[slug] 路径段中解出 id
+ * - slug 中可能含 '-'，所以 split('-', 1) 只切第一个
+ * - 若整段不是数字，退化返回原始字符串（让详情页兜底 404）
+ */
+export function parsePostIdFromSegment(segment: string): string {
+  if (!segment) return segment;
+  const idx = segment.indexOf('-');
+  if (idx === -1) return segment;
+  const id = segment.slice(0, idx);
+  return /^\d+$/.test(id) ? id : segment;
 }
 
 export const postApi = {
@@ -234,6 +277,11 @@ export const postApi = {
   get: (id: string | number) => api.get<any>(`/posts/${id}`),
   /** T-P1-02: 获取联系方式(已登录,个保法) */
   getContact: (id: string | number) => api.get<any>(`/posts/${id}/contact`),
+  /** F-3 V2: 面包屑数据（首页 → 类型 → 分类 → 区县 → 帖子） */
+  breadcrumb: (id: string | number) => api.get<BreadcrumbItem[]>(`/posts/${id}/breadcrumb`),
+  /** F-3 V2: 相关推荐（同分类 / 同区域 / 同标签，最多 limit 条） */
+  related: (id: string | number, limit = 5) =>
+    api.get<any[]>(`/posts/${id}/related`, { limit }),
   /** Phase 2: 全量 sitemap 数据 (公开，无需鉴权) */
   getSitemapData: (limit: number) =>
     api.get<any[]>(`/posts/sitemap-data?limit=${limit}`),
@@ -333,7 +381,6 @@ export const meApi = {
 export const uploadApi = {
   /** 单图上传 (FormData 字段名: file)，返回 { url, size, mimeType, filename } */
   image: async (file: File): Promise<{ url: string; size: number; mimeType: string; filename: string }> => {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
     const fd = new FormData();
     fd.append('file', file);
     const headers: Record<string, string> = {};
@@ -411,6 +458,32 @@ export const usersApi = {
     api.get<{ list: UserListItem[]; total: number }>('/users', { keyword }),
 };
 
+/**
+ * F-3 V2: 面包屑节点
+ * - href 为 null 时表示当前页（不可点击）
+ */
+export interface BreadcrumbItem {
+  label: string;
+  href: string | null;
+}
+
+/**
+ * F-3 V2: TDK 数据（来自后端 /seo/tdk）
+ */
+export interface TdkData {
+  title: string;
+  description: string;
+  keywords: string;
+}
+
+/**
+ * F-3 V2: SEO 相关 API
+ */
+export const seoApi = {
+  /** 根据 path 拿 TDK */
+  tdkByPath: (path: string) => api.get<TdkData>(`/seo/tdk?path=${encodeURIComponent(path)}`),
+};
+
 // ============================================
 // T-014 标签系统 API
 // ============================================
@@ -432,8 +505,20 @@ export const tagApi = {
       '/tags',
       params as Record<string, string>,
     ),
-  /** 热门标签（isHot=true 或 useCount>0，按 useCount desc） */
-  hot: (limit = 20) => api.get<Tag[]>(`/tags/hot?limit=${limit}`),
+  /**
+   * 热门标签（isHot=true 或 useCount>0，按 useCount desc）
+   * V1.0 页面合理性修复: 支持按 type 过滤, 避免房屋租售页显示 lifebiz 标签
+   * @param type 可选 'house' | 'secondhand' | 'job' | 'lifebiz'
+   */
+  hot: (
+    limit = 20,
+    type?: 'house' | 'secondhand' | 'job' | 'lifebiz',
+  ) => {
+    const params = new URLSearchParams();
+    params.set('limit', String(limit));
+    if (type) params.set('type', type);
+    return api.get<Tag[]>(`/tags/hot?${params.toString()}`);
+  },
   /** 单个标签详情 */
   get: (slug: string) => api.get<Tag>(`/tags/${slug}`),
   /** 标签下的帖子（公开，分页） */

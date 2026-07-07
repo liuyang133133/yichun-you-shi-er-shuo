@@ -270,6 +270,9 @@ export class CreatePostDto {
   @Type(() => Number)
   areaId?: number;
 
+  /**
+   * 4 大模块 type 枚举（V1.0 — house/secondhand/job/lifebiz）
+   */
   @IsString()
   @IsIn(['house', 'secondhand', 'job', 'lifebiz'])
   type!: 'house' | 'secondhand' | 'job' | 'lifebiz';

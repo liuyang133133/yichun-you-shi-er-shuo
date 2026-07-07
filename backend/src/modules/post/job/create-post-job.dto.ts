@@ -9,9 +9,12 @@ export const JOB_EXPERIENCES = ['不限', '1年以下', '1-3年', '3-5年', '5-1
 export const SALARY_UNITS = ['元/月', '元/天', '元/时'] as const;
 
 export class CreatePostJobDto {
+  // [P0-fix] companyId 可选 — 普通个人招聘场景下不传，服务端自动给用户创建"个人招聘"公司
+  // 保留 IsInt+Type 是为了在传值时仍做类型校验
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  companyId!: number;
+  companyId?: number;
 
   @IsString()
   @IsIn(JOB_TYPES as unknown as string[], {

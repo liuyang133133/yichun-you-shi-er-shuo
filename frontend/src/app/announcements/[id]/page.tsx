@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronLeft, Megaphone } from 'lucide-react';
 import { AnnouncementDetailContent } from './announcement-detail-content';
+import { getServerApiUrl } from '@/lib/server-api';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API = getServerApiUrl();
 
 async function fetchOne(id: string) {
   try {

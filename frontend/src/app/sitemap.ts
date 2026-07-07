@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { getServerApiUrl } from '@/lib/server-api';
 
 /**
  * T-P15-02 V1: sitemap 升级
@@ -7,7 +8,7 @@ import type { MetadataRoute } from 'next';
  * - 失败降级：返回基础静态页（构建时无网络避免脏数据）
  */
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = getServerApiUrl();
 
 interface SitemapEntry {
   loc: string;

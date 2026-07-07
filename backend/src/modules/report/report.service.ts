@@ -22,6 +22,21 @@ export class ReportService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续举报
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 提交举报
    * POST /api/v1/reports
    * body: { postId, reason, description? }
@@ -32,6 +47,9 @@ export class ReportService {
     reason: string,
     description?: string,
   ) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     // 1. 校验 reason
     if (!REPORT_REASONS.includes(reason as ReportReason)) {
       throw new BadRequestException(

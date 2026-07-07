@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { RewritePopover } from '@/components/ai/rewrite-popover';
 import { TagSelector } from '@/components/post/tag-selector';
-import { postApi, categoryApi, areaApi, uploadApi } from '@/lib/api';
+import { postApi, categoryApi, areaApi, uploadApi, buildPostUrl } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { Home, ShoppingBag, Briefcase, Megaphone, ArrowLeft, ArrowRight, Check, Upload, X, ImageIcon, Loader2, Hash } from 'lucide-react';
 
 const TYPE_OPTIONS = [
-  { code: 'house', title: '房屋出租', icon: Home, gradient: 'from-blue-500 to-indigo-600' },
+  { code: 'house', title: '房屋租售', icon: Home, gradient: 'from-blue-500 to-indigo-600' },
   { code: 'secondhand', title: '二手交易', icon: ShoppingBag, gradient: 'from-pink-500 to-fuchsia-600' },
   { code: 'job', title: '招聘求职', icon: Briefcase, gradient: 'from-emerald-500 to-teal-600' },
   { code: 'lifebiz', title: '便民信息', icon: Megaphone, gradient: 'from-amber-500 to-red-600' },
@@ -54,7 +54,7 @@ function ManualPublishForm() {
     : [];
 
   const [loggedIn, setLoggedIn] = useState(false);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string }>>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; code: string; parentId?: string | null }>>([]);
   const [areas, setAreas] = useState<Array<{ id: string; name: string; level: number }>>([]);
 
   const [title, setTitle] = useState(prefillTitle);
@@ -141,7 +141,23 @@ function ManualPublishForm() {
     setStep(1); // 切 type 重置
   }, [type]);
 
-  const subCategories = categories.filter((c) => c.code === type);
+  const subCategories = (() => {
+    // V1.0 子分类重整后，subCategories 的 code 是独立（如 'house-rental'），与顶级 code（'house'）不同
+    // 修复：先按顶级 code 找父分类，再按 parentId 拿子分类（home-content.tsx 同款逻辑）
+    const parentCategory = categories.find(
+      (c) => c.code === type && (c.parentId == null || c.parentId === '' || c.parentId === '0'),
+    );
+    if (!parentCategory) return [];
+    const seen = new Set<string>();
+    return categories
+      .filter((c) => String(c.parentId) === String(parentCategory.id))
+      .filter((c) => {
+        const key = `${c.parentId ?? 'top'}:${c.name}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  })();
   const currentTypeMeta = TYPE_OPTIONS.find((t) => t.code === type);
   const Icon = currentTypeMeta?.icon;
 
@@ -250,8 +266,10 @@ function ManualPublishForm() {
           usageDuration: shUsageDuration || undefined,
         };
       } else if (type === 'job') {
+        // [P0-fix] 不再硬编码 companyId=1；后端会按需自动创建"个人招聘·{phone 后 4 位}"公司
+        // 仅当用户在 admin 端通过 /admin/companies 显式建过公司并选了 jobCompanyId 时才传
         detail = {
-          companyId: Number(jobCompanyId || 1), // V1 默认 1（占位）
+          ...(jobCompanyId ? { companyId: Number(jobCompanyId) } : {}),
           jobType,
           salaryMin: jobSalaryMin ? Number(jobSalaryMin) : undefined,
           salaryMax: jobSalaryMax ? Number(jobSalaryMax) : undefined,
@@ -291,7 +309,8 @@ function ManualPublishForm() {
         // T-014: 标签关联（后端 CreatePostDto Max=5，事务内 attachToPost）
         tagIds: tagIds.length > 0 ? tagIds : undefined,
       } as any);
-      router.push(`/posts/${post.id}`);
+      // F-3 V2: 跳详情页走 slug 格式 /posts/[id]-[slug]
+      router.push(buildPostUrl(post));
     } catch (e: any) {
       setError(e?.message || '发布失败');
     } finally {
@@ -353,23 +372,25 @@ function ManualPublishForm() {
         </div>
 
         <CardContent className="p-6 md:p-8 space-y-6">
-          {/* 类型切换 */}
-          <div className="grid grid-cols-4 gap-2">
-            {TYPE_OPTIONS.map((t) => {
-              const TIcon = t.icon;
-              return (
-                <Link key={t.code} href={`/posts/publish?type=${t.code}`}>
-                  <div className={`p-3 rounded-xl text-center transition-all ${
-                    type === t.code
-                      ? `bg-gradient-to-br ${t.gradient} text-white shadow-md scale-105`
-                      : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
-                  }`}>
-                    <TIcon className="h-5 w-5 mx-auto mb-1" />
-                    <div className="text-xs font-medium">{t.title}</div>
-                  </div>
-                </Link>
-              );
-            })}
+          {/* 类型切换 — 4 大模块 */}
+          <div className="-mx-2 px-2 overflow-x-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-fit">
+              {TYPE_OPTIONS.map((t) => {
+                const TIcon = t.icon;
+                return (
+                  <Link key={t.code} href={`/posts/publish?type=${t.code}`}>
+                    <div className={`p-2 sm:p-3 rounded-xl text-center transition-all min-w-[68px] ${
+                      type === t.code
+                        ? `bg-gradient-to-br ${t.gradient} text-white shadow-md scale-105`
+                        : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
+                    }`}>
+                      <TIcon className="h-5 w-5 mx-auto mb-1" />
+                      <div className="text-[11px] sm:text-xs font-medium whitespace-nowrap">{t.title}</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           {/* Step 1: 基本信息 */}

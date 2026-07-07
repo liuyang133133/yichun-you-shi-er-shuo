@@ -12,6 +12,8 @@ import { AiService } from '../ai/ai.service';
 import { SeoService } from '../seo/seo.service';
 // T-013: 标签系统
 import { TagService } from '../tag/tag.service';
+// F-3: URL slug 生成
+import { generateSlug } from '../../common/utils/slug.util';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -33,6 +35,21 @@ export class PostService {
   private static readonly LIST_CACHE_TTL = 300;
 
   /**
+   * [P0-001] 写入口封禁检查
+   * - auth.service 已拦截登录，但 access_token 在 7 天有效期内仍可调用
+   * - 写操作必须在入口再校验一次，避免封禁用户在被封禁期间继续发帖/改状态
+   */
+  private async assertUserNotBanned(userId: bigint): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+    if (user?.status === 1) {
+      throw new ForbiddenException('账号已被封禁，无法操作');
+    }
+  }
+
+  /**
    * 列表查询（统一入口，type 必填）
    * 支持：分类/区域/关键词/价格区间/标签/排序/分页
    */
@@ -52,7 +69,9 @@ export class PostService {
       tagSlugs,
     } = query;
 
-    const where: Prisma.PostWhereInput = { type, status };
+    // V1.0 验收 BUG-5 修复: type 可选
+    const where: Prisma.PostWhereInput = { status };
+    if (type) where.type = type;
     let categoryOrFilter: Prisma.PostWhereInput[] | undefined;
     if (categoryId) {
       // [Bug fix] 子类目过滤：兼容父类目直接挂的旧数据
@@ -120,6 +139,7 @@ export class PostService {
     }
 
     // 排序
+    // [P1-05] V1.0 验收: 新增 viewCount_desc / viewCount_asc + 兼容 viewCount:desc
     let orderBy: Prisma.PostOrderByWithRelationInput;
     switch (sort) {
       case 'oldest':
@@ -130,6 +150,14 @@ export class PostService {
         break;
       case 'price_desc':
         orderBy = { price: 'desc' };
+        break;
+      case 'viewCount_desc':
+      case 'viewCount:desc':
+        orderBy = { viewCount: 'desc' };
+        break;
+      case 'viewCount_asc':
+      case 'viewCount:asc':
+        orderBy = { viewCount: 'asc' };
         break;
       case 'latest':
       default:
@@ -342,6 +370,9 @@ export class PostService {
    * dto.detail 不传时保持旧行为（只写主表），前端可继续用两次 HTTP 路径。
    */
   async create(userId: bigint, dto: CreatePostDto) {
+    // ===== [P0-001] 封禁检查（写入口必须） =====
+    await this.assertUserNotBanned(userId);
+
     // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
     // [P1-007] 移到事务内，消除 read-then-write race window
     const oneDayAgo = new Date();
@@ -373,12 +404,43 @@ export class PostService {
     }
 
     // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
-    if (dto.detail && dto.type === 'job' && dto.detail.companyId) {
-      const company = await this.prisma.company.findUnique({
-        where: { id: BigInt(dto.detail.companyId) },
-      });
-      if (!company || company.creatorUserId !== userId) {
-        throw new BadRequestException('公司不存在或不属于当前用户');
+    // [P0-fix] 如果用户未传 companyId（普通个人招聘场景），自动复用/创建其"个人招聘"公司
+    // - 命名规范: "个人招聘 · {phone 后 4 位}"，便于列表页识别
+    // - verified=0 表示未认证
+    let resolvedCompanyId: bigint | null = null;
+    if (dto.detail && dto.type === 'job') {
+      if (dto.detail.companyId) {
+        const company = await this.prisma.company.findUnique({
+          where: { id: BigInt(dto.detail.companyId) },
+        });
+        if (!company || company.creatorUserId !== userId) {
+          throw new BadRequestException('公司不存在或不属于当前用户');
+        }
+        resolvedCompanyId = company.id;
+      } else {
+        // 自动创建/复用"个人招聘"公司，避免阻塞普通用户发招聘
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { phone: true },
+        });
+        const phoneTail = (user?.phone || '').slice(-4) || String(userId);
+        const personalName = `个人招聘·${phoneTail}`;
+        const existing = await this.prisma.company.findFirst({
+          where: { creatorUserId: userId, name: personalName },
+        });
+        resolvedCompanyId = existing
+          ? existing.id
+          : (
+              await this.prisma.company.create({
+                data: {
+                  creatorUserId: userId,
+                  name: personalName,
+                  verified: 0,
+                },
+              })
+            ).id;
+        // 覆盖 dto.detail.companyId（让后续 postJob.create 用上）
+        dto.detail.companyId = Number(resolvedCompanyId);
       }
     }
 
@@ -408,6 +470,16 @@ export class PostService {
       // [P1-014] post-success 配额占用（仅事务内创建后才 INCR；失败回滚无副作用）
       await this.registerThrottle.recordPostAttempt(userId);
 
+      // F-3: 自动生成 slug（重试 3 次处理冲突）
+      const slug = await this.resolveSlugConflict(dto.title);
+
+      // [P1-02] V1.0 验收修复: 新发布帖默认 status='active', auditStatus='passed'
+      // 业务背景: V1.0 没有自动审核工作流,旧版 status='pending' 导致:
+      //   1) 用户 POST /posts → 201 id=13
+      //   2) GET /posts?type=house → list 不含 id=13 (默认 status='active' 过滤)
+      //   3) 用户刷新页面 → "我的发布"有 13 但"首页"无 13, 体验割裂
+      // 修复: 默认 active + passed (与 seed 一致);admin 后续可下架/reject
+      // 保留 auditStatus 字段供后续接 AI/人工审核 (V1.1)
       const created = await tx.post.create({
         data: {
           userId,
@@ -421,8 +493,11 @@ export class PostService {
           contactName: dto.contactName,
           contactPhone: dto.contactPhone,
           contactWechat: dto.contactWechat,
-          status: 'pending',
-          auditStatus: 'pending',
+          // [P1-02] V1.0: 默认 active + passed (V1.0 无审核工作流,需保持可见)
+          status: 'active',
+          auditStatus: 'passed',
+          // F-3: URL slug
+          slug,
         },
       });
 
@@ -660,6 +735,9 @@ export class PostService {
    * 更新（只能改自己的）
    */
   async update(userId: bigint, id: bigint, dto: UpdatePostDto) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
@@ -679,6 +757,11 @@ export class PostService {
         : {}),
       ...(dto.price !== undefined ? { price: new Prisma.Decimal(dto.price) } : {}),
     };
+
+    // F-3: title 改了 → 重新生成 slug（排除自己当前 slug 避免误冲突）
+    if (dto.title && dto.title !== post.title) {
+      data.slug = await this.resolveSlugConflict(dto.title, post.id);
+    }
 
     return this.prisma.post.update({
       where: { id },
@@ -703,6 +786,9 @@ export class PostService {
    * - 中间件会自动过滤掉 deletedAt 非空的记录，list 不再返回
    */
   async remove(userId: bigint, id: bigint) {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
@@ -739,6 +825,9 @@ export class PostService {
    * [P1-009] 状态机白名单：拒绝 rejected/deleted 绕过审核直接 active
    */
   async changeStatus(userId: bigint, id: bigint, newStatus: 'active' | 'sold' | 'expired') {
+    // ===== [P0-001] 封禁检查 =====
+    await this.assertUserNotBanned(userId);
+
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
@@ -835,5 +924,177 @@ export class PostService {
     return this.prisma.post.count({
       where: { ...(type ? { type } : {}), status: 'active' },
     });
+  }
+
+  // =====================================================
+  // F-3: URL slug + 面包屑 + 相关推荐
+  // =====================================================
+
+  /**
+   * F-3: 生成 slug 并处理唯一性冲突
+   * - 重试 3 次（-1, -2, -3 后缀）
+   * - excludePostId：更新自己时排除自己，避免误冲突
+   */
+  private async resolveSlugConflict(title: string, excludePostId?: bigint): Promise<string> {
+    const base = generateSlug(title);
+    // 第一次先查 base 是否冲突
+    const exists = await this.prisma.post.findFirst({
+      where: {
+        slug: base,
+        ...(excludePostId ? { NOT: { id: excludePostId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!exists) return base;
+    // 重试 -1/-2/-3
+    for (let i = 1; i <= 3; i++) {
+      const candidate = `${base}-${i}`;
+      const dup = await this.prisma.post.findFirst({
+        where: {
+          slug: candidate,
+          ...(excludePostId ? { NOT: { id: excludePostId } } : {}),
+        },
+        select: { id: true },
+      });
+      if (!dup) return candidate;
+    }
+    // 极端：超过 3 次冲突 → 用 -<timestamp> 兜底
+    return `${base}-${Date.now().toString(36).slice(-4)}`;
+  }
+
+  /**
+   * F-3: 公开端点 - 面包屑数据（首页 → 顶级分类 → [子分类] → [区域] → 当前帖）
+   */
+  async getBreadcrumb(postId: bigint) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        category: { select: { id: true, name: true, code: true, slug: true, parentId: true } },
+        area: { select: { id: true, name: true, slug: true } },
+      },
+    });
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
+
+    // 顶级分类（parent.category；或自身即为顶级）
+    const topCategory = post.category.parentId
+      ? await this.prisma.category.findUnique({
+          where: { id: post.category.parentId },
+          select: { id: true, name: true, code: true, slug: true },
+        })
+      : post.category;
+
+    // 是否有 subCategory（当 post.category 有 parentId 时）
+    const subCategory =
+      post.category.parentId
+        ? {
+            id: post.category.id.toString(),
+            name: post.category.name,
+            slug: post.category.slug || '',
+            url: `/?type=${post.type}&category=${post.category.slug || post.category.id.toString()}`,
+          }
+        : null;
+
+    return {
+      home: '/',
+      category: topCategory
+        ? {
+            id: topCategory.id.toString(),
+            name: topCategory.name,
+            slug: topCategory.slug || '',
+            url: `/?type=${topCategory.code || ''}`.replace(/\?type=$/, '/'),
+          }
+        : null,
+      subCategory,
+      area: post.area
+        ? {
+            id: post.area.id.toString(),
+            name: post.area.name,
+            slug: post.area.slug || '',
+            url: `/?type=${post.type}&area=${post.area.slug || post.area.id.toString()}`,
+          }
+        : null,
+      post: {
+        id: post.id.toString(),
+        title: post.title,
+        url: `/posts/${post.id}${post.slug ? `-${post.slug}` : ''}`,
+      },
+    };
+  }
+
+  /**
+   * F-3: 公开端点 - 相关推荐（同分类/同区域/同标签 任一匹配）
+   * - 排序：匹配维度数 DESC（命中分类+标签的排前），然后 createdAt DESC
+   * - 默认 5 条，最大 20
+   */
+  async getRelated(postId: bigint, limit = 5) {
+    const safeLimit = Math.min(Math.max(limit, 1), 20);
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        categoryId: true,
+        areaId: true,
+        postTags: { select: { tagId: true } },
+      },
+    });
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
+
+    const tagIds = post.postTags.map((pt) => pt.tagId);
+
+    // 任一匹配：同 categoryId OR 同 areaId OR 同 tagId
+    const OR: Prisma.PostWhereInput[] = [];
+    OR.push({ categoryId: post.categoryId });
+    if (post.areaId) OR.push({ areaId: post.areaId });
+    if (tagIds.length > 0) OR.push({ postTags: { some: { tagId: { in: tagIds } } } });
+
+    const candidates = await this.prisma.post.findMany({
+      where: {
+        OR,
+        status: 'active',
+        auditStatus: 'passed',
+        NOT: { id: postId },
+        deletedAt: null,
+      },
+      take: 50, // 多取一些，然后按匹配维度数排序
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        price: true,
+        createdAt: true,
+        categoryId: true,
+        areaId: true,
+        images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { url: true } },
+        area: { select: { name: true } },
+        postTags: { select: { tagId: true } },
+      },
+    });
+
+    // 计算每个候选的匹配维度数 + 排序
+    const scored = candidates
+      .map((c) => {
+        let score = 0;
+        if (c.categoryId === post.categoryId) score++;
+        if (post.areaId && c.areaId === post.areaId) score++;
+        if (tagIds.length > 0 && c.postTags.some((pt) => tagIds.includes(pt.tagId))) score++;
+        return { ...c, _score: score };
+      })
+      // score DESC, createdAt DESC
+      .sort((a, b) => {
+        if (b._score !== a._score) return b._score - a._score;
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      })
+      .slice(0, safeLimit);
+
+    return scored.map((c) => ({
+      id: c.id.toString(),
+      slug: c.slug || '',
+      title: c.title,
+      price: Number(c.price),
+      coverImage: c.images[0]?.url || null,
+      areaName: c.area?.name || null,
+      createdAt: c.createdAt.toISOString(),
+      matchScore: c._score,
+    }));
   }
 }
