@@ -27,7 +27,9 @@ describe('AdminPostService T-001 软删除 + 恢复', () => {
     prisma = new PrismaService();
     // NotificationService 用 mock，集成测试不需要真实推送
     const notificationService = { emit: jest.fn().mockResolvedValue(null) } as any;
-    service = new AdminPostService(prisma, notificationService);
+    // [B-P1-08] P1 修复: Redis mock (限频 incr/expire)
+    const redisMock = { incr: jest.fn().mockResolvedValue(1), expire: jest.fn().mockResolvedValue(1) };
+    service = new AdminPostService(prisma, notificationService, redisMock as any);
     await prisma.$connect();
 
     // 找一个 admin user，没有就用第一个 user 当 admin

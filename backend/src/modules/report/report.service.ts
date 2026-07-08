@@ -159,4 +159,40 @@ export class ReportService {
   getReasons() {
     return REPORT_REASONS;
   }
+
+  /**
+   * [C-P1-05] P1 修复: 用户撤回自己的举报 (软删)
+   * 原: report 表 schema 有 deletedAt 但 service 无对应处理, 数据脏
+   * 修复: 软删 + 提供 restore 端点 (admin 后台可恢复误删)
+   */
+  async remove(userId: bigint, reportId: bigint) {
+    const r = await this.prisma.report.findUnique({ where: { id: reportId } });
+    if (!r) throw new NotFoundException(`举报 ID ${reportId} 不存在`);
+    if (r.userId !== userId) {
+      throw new ForbiddenException('只能撤回自己的举报');
+    }
+    await this.prisma.report.update({
+      where: { id: reportId },
+      data: { deletedAt: new Date(), deletedBy: userId, updatedBy: userId },
+    });
+    return { id: reportId.toString(), withdrawn: true };
+  }
+
+  /**
+   * [C-P1-05] restore 端点 (admin 用, 误删恢复)
+   */
+  async restore(reportId: bigint) {
+    const r = await this.prisma.report.findFirst({
+      where: { id: reportId, includeDeleted: true } as any,
+    });
+    if (!r) throw new NotFoundException(`举报 ID ${reportId} 不存在`);
+    if (!r.deletedAt) {
+      return { id: reportId.toString(), alreadyActive: true };
+    }
+    await this.prisma.report.update({
+      where: { id: reportId },
+      data: { deletedAt: null, deletedBy: null },
+    });
+    return { id: reportId.toString(), restored: true };
+  }
 }

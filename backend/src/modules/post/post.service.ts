@@ -419,6 +419,16 @@ export class PostService {
       }
     }
 
+    // [B-P1-05] P1 修复: type='job' 必传 detail (含 postJob 必填字段), 否则 400
+    // 原: type='job' + 不传 detail 时, tx.postJob.create 跳过 → 数据孤儿 (post.type='job' 但无 postJob)
+    //     后续 user 点"投递"按钮 → 报"职位不存在"
+    // 修复: job 类帖子必须有 detail, 缺则直接 400, 阻止事务开始
+    if (dto.type === 'job' && !dto.detail) {
+      throw new BadRequestException(
+        '招聘类帖子必须包含 detail (公司 ID/职位类型/薪资等), 请使用单事务创建接口',
+      );
+    }
+
     // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
     // [P0-fix] 如果用户未传 companyId（普通个人招聘场景），自动复用/创建其"个人招聘"公司
     // - 命名规范: "个人招聘 · {phone 后 4 位}"，便于列表页识别
@@ -429,8 +439,14 @@ export class PostService {
         const company = await this.prisma.company.findUnique({
           where: { id: BigInt(dto.detail.companyId) },
         });
+        // [B-P1-04] P1 修复: 校验 company 未被软删
+        // 原: 仅校验存在 + 归属, deletedAt 仍可为非空 → 软删公司被新帖引用
+        // 修复: 加 deletedAt === null 检查 (中间件 default 过滤, 显式 include deleted 时才返回)
         if (!company || company.creatorUserId !== userId) {
           throw new BadRequestException('公司不存在或不属于当前用户');
+        }
+        if (company.deletedAt !== null) {
+          throw new BadRequestException('该公司已被删除, 无法引用');
         }
         resolvedCompanyId = company.id;
       } else {

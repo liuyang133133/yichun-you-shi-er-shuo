@@ -10,8 +10,16 @@ import {
   Length,
   IsDateString,
   ValidateNested,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+// [G-P1-02] P1 修复: 联系方式格式严格校验
+// 中国大陆手机号: 11 位数字, 以 1[3-9] 开头
+// 不允许填其他用户手机 (虽然技术可行, 但格式错误会被前端发现)
+export const PHONE_REGEX = /^1[3-9]\d{9}$/;
+// 微信号: 6-20 位字母/数字/下划线/减号 (官方规则)
+export const WECHAT_REGEX = /^[a-zA-Z][a-zA-Z0-9_-]{4,19}$/;
 
 import {
   JOB_TYPES,
@@ -301,14 +309,24 @@ export class CreatePostDto {
   @Length(0, 50)
   contactName?: string;
 
+  // [G-P1-02] P1 修复: 手机号格式严格校验 (11位 1[3-9]开头)
+  // 原: 仅长度 11-20, 可填 "abcdefg" 或 "12345" 等任意字符串
+  // 修复: 用 PHONE_REGEX 强制 11 位 1[3-9]\d{9}
   @IsOptional()
   @IsString()
-  @Length(11, 20)
+  @Length(11, 11)
+  @Matches(PHONE_REGEX, {
+    message: '手机号格式不正确,需为 11 位 1[3-9] 开头的中国大陆手机号',
+  })
   contactPhone?: string;
 
+  // [G-P1-02] P1 修复: 微信号格式校验 (字母开头 6-20 位字母数字_-)
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(6, 20)
+  @Matches(WECHAT_REGEX, {
+    message: '微信号格式不正确,需以字母开头,共 6-20 位字母/数字/下划线/减号',
+  })
   contactWechat?: string;
 
   /**
