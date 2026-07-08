@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-07-07T15:41:34.211Z",
+  "results": [
+    {
+      "id": "V0.admin-login",
+      "desc": "Admin 登录获取 token",
+      "ok": true,
+      "skipped": false
+    },
+    {
+      "id": "V1.notFound",
+      "desc": "GET /users/999999999999 应 404",
+      "ok": true,
+      "detail": "状态=404",
+      "skipped": false
+    },
+    {
+      "id": "V2.admin-protected",
+      "desc": "软删 admin 自己应被拒 (400/403)",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"不能删除自己，请联系其他管理员\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/users/1\",\"timestamp\":\"2026-07-",
+      "skipped": false
+    },
+    {
+      "id": "V3.first",
+      "desc": "首次举报 201",
+      "ok": true,
+      "detail": "状态=201",
+      "skipped": false
+    },
+    {
+      "id": "V3.dupBlocked",
+      "desc": "重复举报应被拒 (400 \"已举报\")",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"您已举报过该信息, 等待管理员处理中（举报 ID: 3）\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/",
+      "skipped": false
+    },
+    {
+      "id": "V4.l1",
+      "desc": "1 级回复应 201",
+      "ok": true,
+      "detail": "状态=201",
+      "skipped": false
+    },
+    {
+      "id": "V4.l2-blocked",
+      "desc": "2 级回复应被拒 (400 \"深度\")",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"回复嵌套深度不能超过 2 层，请回复顶级留言\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/pos",
+      "skipped": false
+    },
+    {
+      "id": "V5.cascade",
+      "desc": "删除父留言应级联隐藏子 (1+1=2)",
+      "ok": true,
+      "detail": "del=200 子残留=false",
+      "skipped": false
+    },
+    {
+      "id": "V5.commentCount",
+      "desc": "commentCount 应扣 2 (before=6, after=6)",
+      "ok": true,
+      "detail": "before=6 after=6",
+      "skipped": false
+    },
+    {
+      "id": "V6.add",
+      "desc": "首次收藏 201",
+      "ok": true,
+      "detail": "状态=201 body={\"code\":0,\"message\":\"ok\",\"data\":{\"postId\":\"45\",\"alreadyFavorited\":false},\"timestamp\":\"2026-07-07T15:",
+      "skipped": false
+    },
+    {
+      "id": "V6.remove",
+      "desc": "取消收藏 200",
+      "ok": true,
+      "detail": "状态=200",
+      "skipped": false
+    },
+    {
+      "id": "V6.reAdd",
+      "desc": "再次收藏应成功 (restored=true)",
+      "ok": true,
+      "detail": "状态=201 restored=true body={\"code\":0,\"message\":\"ok\",\"data\":{\"postId\":\"45\",\"alreadyFavorited\":false,\"restored\":true},\"timestamp\"",
+      "skipped": false
+    },
+    {
+      "id": "V6.count",
+      "desc": "favoriteCount 净变化 = 0 (before=0, after=0)",
+      "ok": true,
+      "detail": "before=0 after=0",
+      "skipped": false
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0
+  }
+}
