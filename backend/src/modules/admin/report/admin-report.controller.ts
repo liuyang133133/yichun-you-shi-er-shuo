@@ -5,6 +5,7 @@ import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user
 import { AdminGuard } from '../guards/admin-auth.guard';
 import { PermissionGuard } from '../../rbac/guards/permission.guard';
 import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
+import { AdminReportHandleDto } from './dto/admin-report.dto';
 
 /**
  * T-003: @RequirePermission 装饰
@@ -36,7 +37,7 @@ export class AdminReportController {
   handle(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { action: 'handled' | 'ignored'; postAction?: 'down' },
+    @Body() body: AdminReportHandleDto,
   ) {
     return this.adminReportService.handle(
       BigInt(user.sub),
