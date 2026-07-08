@@ -73,12 +73,43 @@ export class ResumeService {
   /**
    * 删除我的简历
    * DELETE /api/v1/resumes/me
+   * [D-P1-08] P1 修复: 改硬删为软删 (T-021)
+   * 原: hard delete, 与 T-001 软删规范不一致, 数据无法恢复
+   * 修复: 软删 (deletedAt) + 新增 restore 端点
+   *      注: 由于 schema 是 userId 唯一, 没指定 ID, restore 用 userId 定位
    */
   async remove(userId: bigint) {
-    const r = await this.prisma.resume.findUnique({ where: { userId } });
+    const r = await this.prisma.resume.findFirst({
+      where: { userId, includeDeleted: true } as any,
+    });
     if (!r) throw new NotFoundException('简历不存在');
-    await this.prisma.resume.delete({ where: { userId } });
-    return { deleted: true };
+    if (r.deletedAt) {
+      return { userId: userId.toString(), alreadyDeleted: true };
+    }
+    await this.prisma.resume.update({
+      where: { userId },
+      data: { deletedAt: new Date(), deletedBy: userId, updatedBy: userId },
+    });
+    return { userId: userId.toString(), softDeleted: true };
+  }
+
+  /**
+   * [D-P1-08] P1 修复: 恢复软删简历
+   * POST /api/v1/resumes/me/restore
+   */
+  async restore(userId: bigint) {
+    const r = await this.prisma.resume.findFirst({
+      where: { userId, includeDeleted: true } as any,
+    });
+    if (!r) throw new NotFoundException('简历不存在');
+    if (!r.deletedAt) {
+      return { userId: userId.toString(), alreadyActive: true };
+    }
+    await this.prisma.resume.update({
+      where: { userId },
+      data: { deletedAt: null, deletedBy: null, updatedBy: userId },
+    });
+    return { userId: userId.toString(), restored: true };
   }
 
   /**

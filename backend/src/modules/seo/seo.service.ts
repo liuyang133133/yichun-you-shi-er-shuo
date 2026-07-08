@@ -81,7 +81,8 @@ export class SeoService {
 
   async batchGenerateSeoMeta(limit = 100) {
     const posts = await this.prisma.post.findMany({
-      where: { seoMetaUpdatedAt: null, status: 'passed' },
+      // [P3-02] 修复: status='passed' (V1.0 实际字段不存在) → auditStatus='passed'
+      where: { seoMetaUpdatedAt: null, auditStatus: 'passed', status: 'active' },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: { id: true },
@@ -105,7 +106,8 @@ export class SeoService {
   async getSitemapData(limit = 50000) {
     const baseUrl = this.config.get<string>('NEXT_PUBLIC_SITE_URL') || 'https://example.com';
     const posts = await this.prisma.post.findMany({
-      where: { status: 'passed' },
+      // [P3-02] 同上, 改 status='passed' → auditStatus='passed' + status='active'
+      where: { auditStatus: 'passed', status: 'active' },
       orderBy: [{ qualityScore: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       select: { id: true, updatedAt: true, qualityScore: true },
@@ -201,8 +203,9 @@ ${urls}
     const cat = await this.prisma.category.findUnique({
       where: { slug },
       include: {
+        // [P3-02] 同上, 改 status='passed' → auditStatus='passed' + status='active'
         _count: {
-          select: { posts: { where: { status: 'passed' } } },
+          select: { posts: { where: { auditStatus: 'passed', status: 'active' } } },
         },
       },
     });
@@ -320,8 +323,9 @@ ${urls}
     const area = await this.prisma.area.findUnique({
       where: { slug },
       include: {
+        // [P3-02] 同上, 改 status='passed' → auditStatus='passed' + status='active'
         _count: {
-          select: { posts: { where: { status: 'passed' } } },
+          select: { posts: { where: { auditStatus: 'passed', status: 'active' } } },
         },
       },
     });
@@ -368,7 +372,8 @@ ${urls}
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const posts = await this.prisma.post.findMany({
-        where: { seoMetaUpdatedAt: { gte: sevenDaysAgo }, status: 'passed' },
+        // [P3-02] 同上
+        where: { seoMetaUpdatedAt: { gte: sevenDaysAgo }, auditStatus: 'passed', status: 'active' },
         select: { id: true },
         take: 5000,
       });

@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Put, Delete,
+  Controller, Get, Put, Post, Delete,
   Body, Param, Query, HttpCode,
 } from '@nestjs/common';
 import { ResumeService } from './resume.service';
@@ -43,6 +43,16 @@ export class ResumeController {
   @Delete('me')
   remove(@CurrentUser() user: JwtPayload) {
     return this.resumeService.remove(BigInt(user.sub));
+  }
+
+  /**
+   * [D-P1-08] P1 修复: 恢复软删的简历
+   * POST /api/v1/resumes/me/restore
+   */
+  @HttpCode(200)
+  @Post('me/restore')
+  restore(@CurrentUser() user: JwtPayload) {
+    return this.resumeService.restore(BigInt(user.sub));
   }
 
   @Public()

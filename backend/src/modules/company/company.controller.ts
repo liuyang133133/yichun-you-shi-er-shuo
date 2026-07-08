@@ -71,9 +71,20 @@ export class CompanyController {
 
   /**
    * DELETE /api/v1/companies/:id
+   * [D-P1-06] 改硬删为软删, 返回 {softDeleted: true}
    */
   @Delete(':id')
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.companyService.remove(BigInt(user.sub), BigInt(id));
+  }
+
+  /**
+   * [D-P1-06] 恢复软删公司 (公开 API, 仅创建者可恢复)
+   * POST /api/v1/companies/:id/restore
+   */
+  @Post(':id/restore')
+  @HttpCode(200)
+  restore(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.companyService.restore(BigInt(user.sub), BigInt(id));
   }
 }
