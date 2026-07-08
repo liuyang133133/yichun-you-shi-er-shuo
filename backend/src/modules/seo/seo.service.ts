@@ -110,6 +110,118 @@ export class SeoService {
     return { success, failed, results };
   }
 
+  // ===== V1.1: 异步 batch job (in-memory) =====
+  // 避免 sync batchGenerateSeoMeta 阻塞 HTTP event loop
+  // 客户端 submitBatchJob → 立即返 jobId → setImmediate 后台跑 → GET 端点查状态
+  // 不引入 BullMQ, 用 Map<jobId, Job> 即可 (单实例, 重启丢任务, V1.1 足够)
+
+  private readonly batchJobs = new Map<string, {
+    jobId: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    limit: number;
+    submittedAt: string;
+    startedAt?: string;
+    completedAt?: string;
+    success: number;
+    failed: number;
+    total: number;
+    results: Array<{ postId: string; ok: boolean; error?: string }>;
+    error?: string;
+  }>();
+
+  /**
+   * 提交异步 batch 任务, 立即返 jobId
+   * 后台 setImmediate 跑 batchGenerateSeoMeta
+   */
+  submitBatchJob(limit = 50): { jobId: string; status: 'pending'; limit: number } {
+    const jobId = `seo_batch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    this.batchJobs.set(jobId, {
+      jobId,
+      status: 'pending',
+      limit,
+      submittedAt: new Date().toISOString(),
+      success: 0,
+      failed: 0,
+      total: 0,
+      results: [],
+    });
+    // 限制 Map 大小, 防止内存泄漏 (保留最近 100 个)
+    if (this.batchJobs.size > 100) {
+      const firstKey = this.batchJobs.keys().next().value;
+      if (firstKey) this.batchJobs.delete(firstKey);
+    }
+    // setImmediate: 跑在下一轮 event loop, 让 HTTP 响应先返
+    setImmediate(() => {
+      this.runBatchJob(jobId, limit).catch((e) => {
+        this.logger.error(`Batch job ${jobId} crashed: ${e?.message}`, e?.stack);
+        const job = this.batchJobs.get(jobId);
+        if (job) {
+          job.status = 'failed';
+          job.error = e?.message;
+          job.completedAt = new Date().toISOString();
+        }
+      });
+    });
+    return { jobId, status: 'pending', limit };
+  }
+
+  /**
+   * 查 job 状态
+   */
+  getBatchJobStatus(jobId: string) {
+    const job = this.batchJobs.get(jobId);
+    if (!job) {
+      // 区分: 不存在 vs 已过期清理
+      // V1.1 简化: 一律返 null, 客户端按 "not found" 处理
+      return null;
+    }
+    return job;
+  }
+
+  /**
+   * 实际跑 batch job (setImmediate 调用)
+   */
+  private async runBatchJob(jobId: string, limit: number) {
+    const job = this.batchJobs.get(jobId);
+    if (!job) return;
+    job.status = 'running';
+    job.startedAt = new Date().toISOString();
+    this.logger.log(`Batch job ${jobId} started (limit=${limit})`);
+
+    // 取待处理 posts
+    const posts = await this.prisma.post.findMany({
+      where: { seoMetaUpdatedAt: null, auditStatus: 'passed', status: 'active' },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: { id: true },
+    });
+    job.total = posts.length;
+    if (posts.length === 0) {
+      job.status = 'completed';
+      job.completedAt = new Date().toISOString();
+      this.logger.log(`Batch job ${jobId} completed: no posts to process`);
+      return;
+    }
+
+    for (const p of posts) {
+      try {
+        await this.generateSeoMeta(p.id);
+        job.success++;
+        job.results.push({ postId: p.id.toString(), ok: true });
+      } catch (e: any) {
+        job.failed++;
+        job.results.push({ postId: p.id.toString(), ok: false, error: e?.message?.slice(0, 200) });
+      }
+      // 每 5 条休息 1s, 避免 LLM 限流
+      if ((job.success + job.failed) % 5 === 0) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+    job.status = 'completed';
+    job.completedAt = new Date().toISOString();
+    this.logger.log(`Batch job ${jobId} completed: ${job.success} ok, ${job.failed} failed, ${job.total} total`);
+  }
+
   async getSitemapData(limit = 50000) {
     const baseUrl = this.config.get<string>('NEXT_PUBLIC_SITE_URL') || 'https://example.com';
     const posts = await this.prisma.post.findMany({
