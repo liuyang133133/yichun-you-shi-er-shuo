@@ -49,6 +49,10 @@ const INVALID_TYPE = {
   boolAsObject: { isPublic: { yes: true } },
   // 嵌套溢出 (简化版, 100 层单独 oversized)
   jsonNested: (function () { let o = {}; let cur = o; for (let i = 0; i < 100; i++) { cur.next = {}; cur = cur.next; } return o; })(),
+  // [V1.1-fix] 维度 13 用了这个名字, 但 payloads.js 之前没定义 → undefined
+  // dim runner 会 Object.keys(undefined) 抛 "Cannot convert undefined or null to object"
+  // 真正测 ValidationPipe 的 forbidNonWhitelisted: 故意传 DTO 不接受的字段
+  forbidNonWhitelisted: { __invalidKey__: 'audit-leak-attempt', admin: true },
 };
 
 // ===== 维度 3: 空/缺失 =====

@@ -139,7 +139,7 @@ async function dim2_invalid(method, path, opts) {
     INVALID_TYPE.invalidDate,
     INVALID_TYPE.numericFloat,
     INVALID_TYPE.forbidNonWhitelisted,
-  ];
+  ].filter((b) => b !== undefined && b !== null); // [V1.1-fix] 兜底: 缺失 payload 不能炸
   for (const body of payloads) {
     const res = await call(method, url, {
       method, body: method !== 'GET' ? body : undefined,
@@ -157,8 +157,9 @@ async function dim2_invalid(method, path, opts) {
       : isOk
         ? { outcome: 'PASS', note: `invalid body → ${res.status}` }
         : { outcome: 'ISSUE', severity: 'P2', note: `unexpected ${res.status}` };
+    const keysLabel = (Object.keys(body || {}).slice(0, 2).join(',')) || '(empty)';
     record({
-      method, path, dim: 2, testName: `异常类型 (${Object.keys(body).slice(0, 2).join(',')})`,
+      method, path, dim: 2, testName: `异常类型 (${keysLabel})`,
       ...cls, actualStatus: res.status, expected: '4xx (含 401/403 auth 拦截)',
     });
   }
@@ -168,7 +169,8 @@ async function dim2_invalid(method, path, opts) {
 async function dim3_missing(method, path, opts) {
   const url = API + path;
   const token = pickToken(opts, path);
-  const cases = [MISSING.emptyObject, MISSING.nullFields, MISSING.emptyString, MISSING.whitespace];
+  const cases = [MISSING.emptyObject, MISSING.nullFields, MISSING.emptyString, MISSING.whitespace]
+    .filter((b) => b !== undefined && b !== null); // [V1.1-fix] 兜底
   for (const body of cases) {
     const res = await call(method, url, {
       method, body: method !== 'GET' ? body : undefined,
@@ -177,8 +179,9 @@ async function dim3_missing(method, path, opts) {
     });
     // 401/403 auth 拦截也算 OK
     const isOk = (res.status >= 400 && res.status < 500) || res.status === 401 || res.status === 403;
+    const valsLabel = (Object.values(body || {}).slice(0, 1).join(',')) || '(empty)';
     record({
-      method, path, dim: 3, testName: `空/缺失 (${Object.values(body).slice(0, 1).join(',')})`,
+      method, path, dim: 3, testName: `空/缺失 (${valsLabel})`,
       outcome: isOk ? 'PASS' : (res.status >= 500 ? 'FAIL' : 'ISSUE'),
       severity: res.status >= 500 ? 'P0' : (isOk ? undefined : 'P3'),
       actualStatus: res.status, expected: '4xx (含 401/403)',
