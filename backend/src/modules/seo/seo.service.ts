@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -43,10 +43,10 @@ export class SeoService {
       where: { id: postId },
       include: { area: true },
     });
-    if (!post) throw new Error('Post not found');
+    if (!post) throw new NotFoundException(`信息 ID ${postId} 不存在`);
 
     if (!this.llm.isAvailable()) {
-      throw new Error('AI 暂不可用');
+      throw new ServiceUnavailableException('AI 服务暂不可用，请稍后重试');
     }
 
     const fields: Record<string, any> = {
@@ -80,6 +80,13 @@ export class SeoService {
   }
 
   async batchGenerateSeoMeta(limit = 100) {
+    // [P0-fix] 防止单批过大导致 LLM 调用链超时 (单条约 5s, N=50 → 250s > 默认 30s timeout)
+    const MAX_BATCH = 20;
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), MAX_BATCH);
+    if (safeLimit < limit) {
+      this.logger.warn(`batchGenerateSeoMeta: 请求 limit=${limit} 已截断为 ${safeLimit}`);
+    }
+    limit = safeLimit;
     const posts = await this.prisma.post.findMany({
       // [P3-02] 修复: status='passed' (V1.0 实际字段不存在) → auditStatus='passed'
       where: { seoMetaUpdatedAt: null, auditStatus: 'passed', status: 'active' },
@@ -365,7 +372,7 @@ ${urls}
 
   async pushBaiduSitemap(postIds?: bigint[]) {
     if (!this.baiduPushToken) {
-      throw new Error('BAIDU_PUSH_TOKEN 未配置');
+      throw new ServiceUnavailableException('BAIDU_PUSH_TOKEN 未配置，无法执行推送');
     }
     let ids = postIds;
     if (!ids || ids.length === 0) {
