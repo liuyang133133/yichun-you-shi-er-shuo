@@ -1,0 +1,757 @@
+{
+  "generated": "2026-07-08T02:15:44.523Z",
+  "totalUniqCases": 2168,
+  "pass": 1814,
+  "fail": 230,
+  "issue": 124,
+  "skip": 0,
+  "severity": {
+    "P0": 93,
+    "P1": 96,
+    "P2": 69,
+    "P3": 1164
+  },
+  "dimensions": {
+    "0": {
+      "pass": 0,
+      "fail": 96,
+      "issue": 0,
+      "skip": 0
+    },
+    "1": {
+      "pass": 192,
+      "fail": 4,
+      "issue": 0,
+      "skip": 0
+    },
+    "2": {
+      "pass": 68,
+      "fail": 44,
+      "issue": 0,
+      "skip": 0
+    },
+    "3": {
+      "pass": 54,
+      "fail": 2,
+      "issue": 0,
+      "skip": 0
+    },
+    "4": {
+      "pass": 84,
+      "fail": 84,
+      "issue": 0,
+      "skip": 0
+    },
+    "5": {
+      "pass": 280,
+      "fail": 0,
+      "issue": 0,
+      "skip": 0
+    },
+    "6": {
+      "pass": 252,
+      "fail": 0,
+      "issue": 0,
+      "skip": 0
+    },
+    "7": {
+      "pass": 0,
+      "fail": 0,
+      "issue": 28,
+      "skip": 0
+    },
+    "8": {
+      "pass": 0,
+      "fail": 0,
+      "issue": 28,
+      "skip": 0
+    },
+    "9": {
+      "pass": 340,
+      "fail": 0,
+      "issue": 0,
+      "skip": 0
+    },
+    "10": {
+      "pass": 68,
+      "fail": 0,
+      "issue": 0,
+      "skip": 0
+    },
+    "11": {
+      "pass": 408,
+      "fail": 0,
+      "issue": 68,
+      "skip": 0
+    },
+    "12": {
+      "pass": 68,
+      "fail": 0,
+      "issue": 0,
+      "skip": 0
+    }
+  },
+  "modules": {
+    "houses": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "secondhands": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "lifebizs": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "jobs": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "search": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "search/hot": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "health": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "areas": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "areas/count": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "areas/999999999": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "posts/999999999": {
+      "total": 682,
+      "pass": 585,
+      "fail": 55,
+      "issue": 42
+    },
+    "ai/health": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "posts": {
+      "total": 51,
+      "pass": 43,
+      "fail": 5,
+      "issue": 3
+    },
+    "posts/count": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "posts/sitemap-data": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "auth/sms-code": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "auth/login-sms": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "auth/login-password": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "auth/refresh": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "users": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "issue": 0
+    },
+    "users/count": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "users/999999999": {
+      "total": 51,
+      "pass": 40,
+      "fail": 8,
+      "issue": 3
+    },
+    "categories": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "issue": 0
+    },
+    "categories/tree": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "categories/count": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "categories/999999999": {
+      "total": 3,
+      "pass": 3,
+      "fail": 0,
+      "issue": 0
+    },
+    "announcements/active": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "announcements": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "announcements/999999999": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "agreements": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "agreements/terms": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "banners/active": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "tags": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "tags/hot": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "tags/house": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "issue": 0
+    },
+    "seo/sitemap-full": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "sitemap.xml": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "seo/categories": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "seo/areas": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "seo/tdk": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "reports/reasons": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "companies": {
+      "total": 51,
+      "pass": 39,
+      "fail": 9,
+      "issue": 3
+    },
+    "companies/999999999": {
+      "total": 81,
+      "pass": 68,
+      "fail": 8,
+      "issue": 5
+    },
+    "resumes": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "resumes/999999999": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "upload/image": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "favorites": {
+      "total": 66,
+      "pass": 56,
+      "fail": 6,
+      "issue": 4
+    },
+    "favorites/count": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "favorites/999999999": {
+      "total": 15,
+      "pass": 14,
+      "fail": 0,
+      "issue": 1
+    },
+    "comments/999999999": {
+      "total": 15,
+      "pass": 14,
+      "fail": 0,
+      "issue": 1
+    },
+    "ai/draft": {
+      "total": 200,
+      "pass": 168,
+      "fail": 20,
+      "issue": 12
+    },
+    "posts/me": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "auth/logout": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "auth/me": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "users/me": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "notifications/me": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "notifications/unread-count": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "notifications/999999999": {
+      "total": 30,
+      "pass": 28,
+      "fail": 0,
+      "issue": 2
+    },
+    "notifications/read-all": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "notifications/settings": {
+      "total": 66,
+      "pass": 52,
+      "fail": 10,
+      "issue": 4
+    },
+    "devices/register": {
+      "total": 50,
+      "pass": 38,
+      "fail": 9,
+      "issue": 3
+    },
+    "devices/fake-device-token": {
+      "total": 15,
+      "pass": 14,
+      "fail": 0,
+      "issue": 1
+    },
+    "applications/me": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "applications/post-job": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "applications": {
+      "total": 50,
+      "pass": 38,
+      "fail": 9,
+      "issue": 3
+    },
+    "applications/999999999": {
+      "total": 49,
+      "pass": 38,
+      "fail": 8,
+      "issue": 3
+    },
+    "messages": {
+      "total": 50,
+      "pass": 38,
+      "fail": 9,
+      "issue": 3
+    },
+    "messages/inbox": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "messages/outbox": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "messages/with": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "messages/unread-count": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "messages/read-all": {
+      "total": 16,
+      "pass": 14,
+      "fail": 1,
+      "issue": 1
+    },
+    "messages/999999999": {
+      "total": 45,
+      "pass": 42,
+      "fail": 0,
+      "issue": 3
+    },
+    "reports": {
+      "total": 66,
+      "pass": 52,
+      "fail": 10,
+      "issue": 4
+    },
+    "reports/999999999": {
+      "total": 30,
+      "pass": 28,
+      "fail": 0,
+      "issue": 2
+    },
+    "resumes/me": {
+      "total": 98,
+      "pass": 80,
+      "fail": 12,
+      "issue": 6
+    },
+    "admin/permissions": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/roles": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/ai-usage": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/categories": {
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/dashboard": {
+      "total": 1,
+      "pass": 1,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/posts": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/reports": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/users": {
+      "total": 6,
+      "pass": 6,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/audit-logs": {
+      "total": 4,
+      "pass": 4,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/login-logs": {
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/notifications": {
+      "total": 8,
+      "pass": 8,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/announcements": {
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/banners": {
+      "total": 5,
+      "pass": 5,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/companies": {
+      "total": 6,
+      "pass": 6,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/tags": {
+      "total": 6,
+      "pass": 6,
+      "fail": 0,
+      "issue": 0
+    },
+    "admin/ai": {
+      "total": 2,
+      "pass": 0,
+      "fail": 2,
+      "issue": 0
+    },
+    "admin/seo": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "posts/:id": {
+      "total": 17,
+      "pass": 0,
+      "fail": 17,
+      "issue": 0
+    },
+    "favorites/:postId": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "posts/:postId": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "comments/:id": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "users/:id": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "notifications/:id": {
+      "total": 2,
+      "pass": 0,
+      "fail": 2,
+      "issue": 0
+    },
+    "devices/:token": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "applications/:id": {
+      "total": 1,
+      "pass": 0,
+      "fail": 1,
+      "issue": 0
+    },
+    "messages/:id": {
+      "total": 3,
+      "pass": 0,
+      "fail": 3,
+      "issue": 0
+    },
+    "reports/:id": {
+      "total": 2,
+      "pass": 0,
+      "fail": 2,
+      "issue": 0
+    },
+    "companies/:id": {
+      "total": 3,
+      "pass": 0,
+      "fail": 3,
+      "issue": 0
+    }
+  },
+  "runs": [
+    {
+      "runId": "run-2026-07-08T01-37-47",
+      "layer": "1",
+      "total": 50
+    },
+    {
+      "runId": "run-2026-07-08T01-42-09",
+      "layer": "1",
+      "total": 68
+    },
+    {
+      "runId": "run-2026-07-08T01-44-18",
+      "layer": "1",
+      "total": 78
+    },
+    {
+      "runId": "run-2026-07-08T01-47-06",
+      "layer": "2",
+      "total": 328
+    },
+    {
+      "runId": "run-2026-07-08T02-07-11",
+      "layer": "2",
+      "total": 2056
+    },
+    {
+      "runId": "run-2026-07-08T02-11-26",
+      "layer": "3",
+      "total": 45
+    },
+    {
+      "runId": "run-2026-07-08T02-12-49",
+      "layer": "1",
+      "total": 196
+    }
+  ]
+}

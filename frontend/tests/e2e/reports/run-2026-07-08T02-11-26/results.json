@@ -1,0 +1,498 @@
+{
+  "runId": "run-2026-07-08T02-11-26",
+  "layer": "3",
+  "results": [
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 400,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 11
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 9,
+      "testName": "权限 bypass: 空 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 9,
+      "testName": "权限 bypass: null token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 9,
+      "testName": "权限 bypass: 过期 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 9,
+      "testName": "权限 bypass: 错签名 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 9,
+      "testName": "权限 bypass: alg=none",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 10,
+      "testName": "Token 过期",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"null\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"undefined\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" fake\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"fake \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+      "outcome": "ISSUE",
+      "severity": "P3",
+      "actualStatus": 0,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/upload/image",
+      "dim": 12,
+      "testName": "响应统一",
+      "outcome": "PASS",
+      "actualStatus": 400,
+      "expected": "{code:number, data:any}",
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 200,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 10
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 9,
+      "testName": "权限 bypass: 空 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 9,
+      "testName": "权限 bypass: null token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 9,
+      "testName": "权限 bypass: 过期 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 9,
+      "testName": "权限 bypass: 错签名 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 9,
+      "testName": "权限 bypass: alg=none",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 10,
+      "testName": "Token 过期",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"null\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"undefined\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" fake\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"fake \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+      "outcome": "ISSUE",
+      "severity": "P3",
+      "actualStatus": 0,
+      "expected": 401
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "dim": 12,
+      "testName": "响应统一",
+      "outcome": "PASS",
+      "actualStatus": 401,
+      "expected": "{code:number, data:any}",
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 401,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 9,
+      "testName": "权限 bypass: 空 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 9,
+      "testName": "权限 bypass: null token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 9,
+      "testName": "权限 bypass: 过期 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 9,
+      "testName": "权限 bypass: 错签名 token",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 9,
+      "testName": "权限 bypass: alg=none",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 10,
+      "testName": "Token 过期",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401,
+      "note": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"null\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"undefined\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\" fake\"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"fake \"})",
+      "outcome": "PASS",
+      "severity": "P3",
+      "actualStatus": 401,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 11,
+      "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+      "outcome": "ISSUE",
+      "severity": "P3",
+      "actualStatus": 0,
+      "expected": 401
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "dim": 12,
+      "testName": "响应统一",
+      "outcome": "PASS",
+      "actualStatus": 401,
+      "expected": "{code:number, data:any}",
+      "note": ""
+    }
+  ],
+  "generated": "2026-07-08T02:11:26.830Z"
+}

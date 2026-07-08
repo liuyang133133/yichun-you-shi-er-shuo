@@ -1,0 +1,1379 @@
+{
+  "runId": "run-2026-07-08T01-44-18",
+  "layer": "1",
+  "results": [
+    {
+      "method": "POST",
+      "path": "/users",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/categories",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 400,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "PATCH",
+      "path": "/categories/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "DELETE",
+      "path": "/categories/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 8
+    },
+    {
+      "method": "GET",
+      "path": "/admin/permissions",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/permissions/modules",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "GET",
+      "path": "/admin/roles",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "GET",
+      "path": "/admin/roles/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "POST",
+      "path": "/admin/roles",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/roles/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/roles/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/roles/999999999/permissions",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/roles/999999999/permissions",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ai-usage/stats",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 12
+    },
+    {
+      "method": "GET",
+      "path": "/admin/categories",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/categories/tree",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "POST",
+      "path": "/admin/categories",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/categories/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 8
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/categories/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/posts",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/999999999/audit",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/999999999/offline",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/audit-batch",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/offline-batch",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/purge",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/posts/999999999/restore",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reports",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/reports/999999999/handle",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 10
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/999999999/ban",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/999999999/unban",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/999999999/roles",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/999999999/roles",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/users/999999999/roles/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 4
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs/options",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 4
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs/export",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login-logs",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login-logs/options",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 8
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login-logs/abnormal-ips",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login-logs/export",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "GET",
+      "path": "/admin/login-logs/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 4
+    },
+    {
+      "method": "GET",
+      "path": "/admin/notifications/templates",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 2
+    },
+    {
+      "method": "GET",
+      "path": "/admin/notifications/templates/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications/templates",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 4
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/notifications/templates/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/notifications/templates/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications/templates/999999999/toggle",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications/templates/999999999/preview",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications/broadcast",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 3
+    },
+    {
+      "method": "GET",
+      "path": "/admin/announcements",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/announcements",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/announcements/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 8
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/announcements/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "POST",
+      "path": "/admin/announcements/999999999/restore",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 10
+    },
+    {
+      "method": "GET",
+      "path": "/admin/banners",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 14
+    },
+    {
+      "method": "POST",
+      "path": "/admin/banners",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 8
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/banners/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/banners/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "POST",
+      "path": "/admin/banners/999999999/restore",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 9
+    },
+    {
+      "method": "GET",
+      "path": "/admin/companies",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "GET",
+      "path": "/admin/companies/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 5
+    },
+    {
+      "method": "POST",
+      "path": "/admin/companies/999999999/verify",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "POST",
+      "path": "/admin/companies/999999999/unverify",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/companies/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 4
+    },
+    {
+      "method": "POST",
+      "path": "/admin/companies/999999999/restore",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 403,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 7
+    },
+    {
+      "method": "GET",
+      "path": "/admin/tags",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 200,
+      "expected": [
+        200,
+        401,
+        403,
+        404
+      ],
+      "latencyMs": 13
+    },
+    {
+      "method": "POST",
+      "path": "/admin/tags",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 400,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/tags/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 404,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 31
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/tags/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 200,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 11
+    },
+    {
+      "method": "POST",
+      "path": "/admin/tags/999999999/merge",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 400,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 6
+    },
+    {
+      "method": "POST",
+      "path": "/admin/tags/migrate-from-json",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "PASS",
+      "actualStatus": 201,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "latencyMs": 10
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/regenerate-seo/999999999",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "FAIL",
+      "severity": "P0",
+      "actualStatus": 500,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "note": "server bug: 5xx on input",
+      "latencyMs": 12
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/regenerate-seo-batch",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "FAIL",
+      "severity": "P2",
+      "actualStatus": 0,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "note": "connection failed",
+      "latencyMs": 30023
+    },
+    {
+      "method": "POST",
+      "path": "/admin/seo/push-baidu",
+      "dim": 1,
+      "testName": "正常参数",
+      "outcome": "FAIL",
+      "severity": "P0",
+      "actualStatus": 500,
+      "expected": [
+        200,
+        201,
+        204,
+        400,
+        401,
+        403,
+        404,
+        409
+      ],
+      "note": "server bug: 5xx on input",
+      "latencyMs": 14
+    }
+  ],
+  "generated": "2026-07-08T01:44:18.278Z"
+}

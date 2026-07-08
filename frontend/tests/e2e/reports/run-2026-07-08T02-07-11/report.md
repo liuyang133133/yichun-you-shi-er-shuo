@@ -1,0 +1,2262 @@
+# API 安全审计详细报告 (L2)
+
+## DELETE /comments/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /companies/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /devices/fake-device-token (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /favorites/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /messages/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /notifications/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /posts/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /posts/999999999/house (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /posts/999999999/job (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /posts/999999999/lifebiz (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /posts/999999999/secondhand (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /reports/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## DELETE /resumes/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /applications/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /applications/post-job/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /auth/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /favorites (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /favorites/count (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /messages/inbox (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /messages/outbox (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /messages/unread-count (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /messages/with/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /notifications/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /notifications/settings (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /notifications/unread-count (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /posts/999999999/contact (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /posts/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /reports (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /reports/999999999 (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /resumes/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## GET /users/me (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /applications/999999999/status (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 15ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /companies/999999999 (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 13ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /posts/999999999 (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 14ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /posts/999999999/house (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 404)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 404)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 404)
+- dim2 异常类型 (page): **PASS** (invalid body → 404)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 19ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /posts/999999999/job (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 404)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 404)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 404)
+- dim2 异常类型 (page): **PASS** (invalid body → 404)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 17ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /posts/999999999/lifebiz (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 404)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 404)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 404)
+- dim2 异常类型 (page): **PASS** (invalid body → 404)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 19ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /posts/999999999/secondhand (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 404)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 404)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 404)
+- dim2 异常类型 (page): **PASS** (invalid body → 404)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 14ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PATCH /users/999999999 (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 17ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /ai/draft/extract (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 15ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /ai/draft/rewrite (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 12ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /ai/draft/score (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 13ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /ai/draft/suggest-title (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 12ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /applications (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 11ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /auth/logout (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /companies (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 16ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /companies/999999999/restore (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /devices/register (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 14ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /favorites (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 13ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /messages (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 13ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /messages/999999999/read (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /messages/999999999/recall (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /messages/read-all (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /notifications/999999999/read (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /notifications/read-all (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 13ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/boost (36/52)
+
+- dim1 正常参数: **FAIL** — 期望 [200,201,204,400,401,403,404,409], 实际 503 [P0] (server bug: 5xx on input)
+- dim2 异常类型 (page[]): **FAIL** — 期望 "4xx (含 401/403 auth 拦截)", 实际 503 [P0] (5xx on invalid body: {"code":503,"message":"加急置顶功能即将上线, 请期待","data":null,"error":"Internal Server Err)
+- dim2 异常类型 (status,auditStatus): **FAIL** — 期望 "4xx (含 401/403 auth 拦截)", 实际 503 [P0] (5xx on invalid body: {"code":503,"message":"加急置顶功能即将上线, 请期待","data":null,"error":"Internal Server Err)
+- dim2 异常类型 (createdAt): **FAIL** — 期望 "4xx (含 401/403 auth 拦截)", 实际 503 [P0] (5xx on invalid body: {"code":503,"message":"加急置顶功能即将上线, 请期待","data":null,"error":"Internal Server Err)
+- dim2 异常类型 (page): **FAIL** — 期望 "4xx (含 401/403 auth 拦截)", 实际 503 [P0] (5xx on invalid body: {"code":503,"message":"加急置顶功能即将上线, 请期待","data":null,"error":"Internal Server Err)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **FAIL** — 期望 "4xx (含 401/403)", 实际 503 [P0] (503)
+- dim3 空/缺失 (): **FAIL** — 期望 "4xx (含 401/403)", 实际 503 [P0] (503)
+- dim3 空/缺失 (): **FAIL** — 期望 "4xx (含 401/403)", 实际 503 [P0] (503)
+- dim3 空/缺失 (   ): **FAIL** — 期望 "4xx (含 401/403)", 实际 503 [P0] (503)
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 14ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/comments (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 24ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/house (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 28ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/job (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 15ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/lifebiz (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 18ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/secondhand (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 18ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /posts/999999999/status (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 400)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 400)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 400)
+- dim2 异常类型 (page): **PASS** (invalid body → 400)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 429,429,429 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 429:5 [P2] (elapsed 17ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /reports (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 16ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /resumes/me/restore (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## POST /upload/image (14/15)
+
+- dim1 正常参数: **PASS**
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PUT /notifications/settings/system (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 15ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
+## PUT /resumes/me (45/52)
+
+- dim1 正常参数: **PASS**
+- dim2 异常类型 (page[]): **PASS** (invalid body → 401)
+- dim2 异常类型 (status,auditStatus): **PASS** (invalid body → 401)
+- dim2 异常类型 (createdAt): **PASS** (invalid body → 401)
+- dim2 异常类型 (page): **PASS** (invalid body → 401)
+- dim0 dim runner error: **FAIL** — 期望 "execute", 实际 0 [P1] (Cannot convert undefined or null to object)
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (): **PASS**
+- dim3 空/缺失 (   ): **PASS**
+- dim4 超长 (hugeString): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeDescription): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim4 超长 (hugeArray): **PASS**
+- dim4 超长 (deepNested): **PASS**
+- dim4 超长 (hugeNumber): **PASS**
+- dim4 超长 (longBase64): **FAIL** — 期望 "4xx (不 OOM)", 实际 500 [P0]
+- dim5 SQL 注入 (' OR '1'='1...): **PASS** (拦截)
+- dim5 SQL 注入 (admin'--...): **PASS** (拦截)
+- dim5 SQL 注入 ('; DROP TABLE users;--...): **PASS** (拦截)
+- dim5 SQL 注入 (' UNION SELECT 1,2,3--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND SLEEP(5)--...): **PASS** (拦截)
+- dim5 SQL 注入 (1' AND 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 (1 OR 1=1...): **PASS** (拦截)
+- dim5 SQL 注入 (%' OR 1=1--...): **PASS** (拦截)
+- dim5 SQL 注入 ({"phone":{"contains":"%"}}...): **PASS** (拦截)
+- dim5 SQL 注入 (phone[$ne]=null...): **PASS** (拦截)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<img src=x onerror=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<svg/onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (javascript:alert(1)): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ("><svg onload=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ('-alert(1)-'): **PASS** (application/json; charset=utf-8)
+- dim6 XSS ({{constructor.constructor('ale): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<BODY ONLOAD=alert(1)>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<script>alert(1)</script>): **PASS** (application/json; charset=utf-8)
+- dim6 XSS (<iframe src=javascript:alert(1): **PASS** (application/json; charset=utf-8)
+- dim7 重复 x3: **ISSUE** — 期望 "201 + 409 or all-OK idempotent", 实际 401,401,401 [P3]
+- dim8 并发 N=5: **ISSUE** — 期望 "200/201 + no 5xx", 实际 401:5 [P2] (elapsed 14ms)
+- dim9 权限 bypass: 空 token: **PASS**
+- dim9 权限 bypass: null token: **PASS**
+- dim9 权限 bypass: 过期 token: **PASS**
+- dim9 权限 bypass: 错签名 token: **PASS**
+- dim9 权限 bypass: alg=none: **PASS**
+- dim10 Token 过期: **PASS**
+- dim11 Token 空 header ({"rawToken":""}): **PASS**
+- dim11 Token 空 header ({"rawToken":"null"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"undefined"}): **PASS**
+- dim11 Token 空 header ({"rawToken":" "}): **PASS**
+- dim11 Token 空 header ({"rawToken":" fake"}): **PASS**
+- dim11 Token 空 header ({"rawToken":"fake "}): **PASS**
+- dim11 Token 空 header ({"rawToken":"\nfake"}): **ISSUE** — 期望 401, 实际 0 [P3]
+- dim12 响应统一: **PASS**
+
