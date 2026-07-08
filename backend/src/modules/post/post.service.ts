@@ -14,6 +14,8 @@ import { SeoService } from '../seo/seo.service';
 import { TagService } from '../tag/tag.service';
 // F-3: URL slug 生成
 import { generateSlug } from '../../common/utils/slug.util';
+// P0-Fix (B-P0-01): 敏感词过滤
+import { SensitiveWordService } from '../../common/filters/sensitive-word.filter';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -29,6 +31,8 @@ export class PostService {
     private readonly seoService: SeoService,
     // T-013: 标签系统（attach/detach PostTag）
     private readonly tagService: TagService,
+    // P0-Fix (B-P0-01): 敏感词过滤
+    private readonly sensitiveWord: SensitiveWordService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -70,7 +74,12 @@ export class PostService {
     } = query;
 
     // V1.0 验收 BUG-5 修复: type 可选
+    // [B-P0-03] P0 修复: 公开列表只展示已通过审核的帖子
+    // 例外: 当查询 deleted/rejected (admin 端) 时, 不强制 auditStatus
     const where: Prisma.PostWhereInput = { status };
+    if (status === 'active') {
+      where.auditStatus = 'passed';
+    }
     if (type) where.type = type;
     let categoryOrFilter: Prisma.PostWhereInput[] | undefined;
     if (categoryId) {
@@ -372,6 +381,13 @@ export class PostService {
   async create(userId: bigint, dto: CreatePostDto) {
     // ===== [P0-001] 封禁检查（写入口必须） =====
     await this.assertUserNotBanned(userId);
+
+    // ===== [B-P0-01] P0 修复: 敏感词同步拦截 =====
+    // 发布前同步过滤 title/description/contactName (含敏感词直接 400)
+    await this.sensitiveWord.assertClean(
+      `${dto.title}\n${dto.description}\n${dto.contactName ?? ''}`,
+      '帖子内容',
+    );
 
     // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
     // [P1-007] 移到事务内，消除 read-then-write race window
@@ -881,6 +897,11 @@ export class PostService {
     const { status, type, page = 1, pageSize = 20 } = options;
     const where: Prisma.PostWhereInput = { userId };
     if (status) where.status = status;
+    // [B-P0-03] P0 修复: 当用户查询"在售(active)"时, 只展示已通过审核
+    // 其他状态(pending/rejected/sold/expired/deleted)用户可看自己的全部
+    if (status === 'active') {
+      where.auditStatus = 'passed';
+    }
     if (type) where.type = type; // [P1-010] 支持按 type 过滤
 
     const skip = (page - 1) * pageSize;
@@ -919,10 +940,11 @@ export class PostService {
 
   /**
    * 统计
+   * [B-P0-03] P0 修复: 只统计已通过审核的帖子
    */
   async count(type?: string) {
     return this.prisma.post.count({
-      where: { ...(type ? { type } : {}), status: 'active' },
+      where: { ...(type ? { type } : {}), status: 'active', auditStatus: 'passed' },
     });
   }
 

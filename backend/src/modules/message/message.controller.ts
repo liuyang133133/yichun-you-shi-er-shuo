@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, ParseIntPipe, DefaultValuePipe, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Delete, ParseIntPipe, DefaultValuePipe, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MessageService } from './message.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -93,5 +93,37 @@ export class MessageController {
   @ApiOperation({ summary: '标记单条已读' })
   markRead(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.messageService.markRead(BigInt(user.sub), BigInt(id));
+  }
+
+  // ============== [D-P0-03] P0 修复: 撤回 + 隐藏 ==============
+
+  /**
+   * 撤回消息 (发送方, 5 分钟内)
+   * POST /api/v1/messages/:id/recall
+   * - 未读: 硬删
+   * - 已读: 软删
+   */
+  @HttpCode(200)
+  @Post(':id/recall')
+  @ApiOperation({ summary: '撤回消息 (发送方, 5分钟内)' })
+  recall(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.messageService.recall(BigInt(user.sub), BigInt(id));
+  }
+
+  /**
+   * 隐藏消息 (收发双方)
+   * DELETE /api/v1/messages/:id
+   */
+  @HttpCode(200)
+  @Delete(':id')
+  @ApiOperation({ summary: '隐藏消息 (收发双方)' })
+  remove(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.messageService.remove(BigInt(user.sub), BigInt(id));
   }
 }

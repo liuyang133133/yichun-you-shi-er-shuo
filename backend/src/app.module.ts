@@ -7,6 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'crypto';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { CommonModule } from './common/common.module';
 import { UserModule } from './modules/user/user.module';
 import { CategoryModule } from './modules/category/category.module';
 import { PostModule } from './modules/post/post.module';
@@ -74,6 +75,7 @@ import { AgreementModule } from './modules/agreement/agreement.module'; // T-018
     }),
     PrismaModule,
     RedisModule,
+    CommonModule, // 全局敏感词 (SensitiveWordService)
     UserModule,
     CategoryModule,
     PostModule,

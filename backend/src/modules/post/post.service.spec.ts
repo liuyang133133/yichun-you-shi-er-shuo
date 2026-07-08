@@ -61,6 +61,8 @@ describe('PostService.create - 重复检测', () => {
       mockSeoService,
       // T-013: TagService (attachToPost mock)
       { attachToPost: jest.fn().mockResolvedValue(undefined) } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -138,6 +140,8 @@ describe('PostService.findOne - tags include (T-013b)', () => {
       { score: jest.fn() } as any,
       { generateSeoMeta: jest.fn() } as any,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -188,6 +192,8 @@ describe('PostService.findAll - tags include (T-013b)', () => {
       { score: jest.fn() } as any,
       { generateSeoMeta: jest.fn() } as any,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -255,6 +261,8 @@ describe('PostService 写入口 - 封禁用户拦截 (P0-001)', () => {
       mockAiService,
       mockSeoService,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -363,6 +371,8 @@ describe('PostService F-3 - slug 生成', () => {
       mockAiService,
       mockSeoService,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -451,6 +461,8 @@ describe('PostService F-3 - getBreadcrumb', () => {
       { score: jest.fn() } as any,
       { generateSeoMeta: jest.fn() } as any,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -506,6 +518,8 @@ describe('PostService F-3 - getRelated', () => {
       { score: jest.fn() } as any,
       { generateSeoMeta: jest.fn() } as any,
       { attachToPost: jest.fn() } as any,
+      // [B-P0-01] SensitiveWordService mock
+      { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 

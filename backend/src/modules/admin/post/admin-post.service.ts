@@ -82,6 +82,9 @@ export class AdminPostService {
           deletedAt: null,
           deletedBy: null,
           status: 'active',
+          // [B-P0-02] P0 修复: 强制重置 auditStatus='pending' 防止违规帖借 restore 复活
+          // 列表默认 auditStatus='passed' 过滤, 帖子在公开列表隐藏, 需 admin 重新审核
+          auditStatus: 'pending',
           updatedBy: adminId,
         },
       }),
@@ -92,7 +95,7 @@ export class AdminPostService {
           action: 'restore',
           targetType: 'post',
           targetId: postId,
-          reason: `从 ${post.deletedAt.toISOString()} 软删恢复`,
+          reason: `从 ${post.deletedAt.toISOString()} 软删恢复 (强制重审)`,
           metadata: { previousDeletedBy: post.deletedBy?.toString() ?? null },
         },
       }),
