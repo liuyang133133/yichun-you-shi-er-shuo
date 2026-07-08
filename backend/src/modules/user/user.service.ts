@@ -151,6 +151,9 @@ export class UserService {
   /**
    * 公开查询用户（脱敏 phone / status / role / lastLoginAt）
    * 用于公开 GET /users/:id
+   * [H-P1-01] P1 修复: 找不到抛 404, 与 comment/post 的 findOne 语义一致
+   * 原: 返回 null, 前端要 null-check
+   * 修复: 抛 NotFoundException (与其他资源端点保持一致)
    */
   async findOnePublic(id: bigint) {
     const user = await this.prisma.user.findUnique({
@@ -165,7 +168,10 @@ export class UserService {
         // 显式不选：phone, status, role, lastLoginAt, updatedAt
       },
     });
-    return user; // 找不到直接返回 null，不抛 404（保持 RESTful）
+    if (!user) {
+      throw new NotFoundException(`用户 ID ${id} 不存在`);
+    }
+    return user;
   }
 
   /**
@@ -187,22 +193,50 @@ export class UserService {
 
   /**
    * 更新用户
+   * [A-P0-03] P0 修复: admin 修改他人资料时写 AuditLog
+   * - 普通用户改自己 → 不写 AuditLog
+   * - admin 改他人 → 事务内写 AuditLog, 留下审计痕迹
    */
-  async update(id: bigint, dto: UpdateUserDto) {
+  async update(
+    id: bigint,
+    dto: UpdateUserDto,
+    operator?: { sub: string; role?: string },
+  ) {
     await this.findOne(id); // 检查存在
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: dto,
-      select: {
-        id: true,
-        phone: true,
-        nickname: true,
-        avatar: true,
-        gender: true,
-        bio: true,
-        status: true,
-        updatedAt: true,
-      },
+    const isAdminEditingOther =
+      operator &&
+      String(operator.sub) !== String(id) &&
+      operator.role === 'admin';
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const r = await tx.user.update({
+        where: { id },
+        data: dto,
+        select: {
+          id: true,
+          phone: true,
+          nickname: true,
+          avatar: true,
+          gender: true,
+          bio: true,
+          status: true,
+          updatedAt: true,
+        },
+      });
+      if (isAdminEditingOther) {
+        await tx.auditLog.create({
+          data: {
+            adminUserId: BigInt(operator!.sub),
+            module: 'user',
+            action: 'update_profile',
+            targetType: 'user',
+            targetId: id,
+            reason: `admin 修改用户资料: ${Object.keys(dto).join(',')}`,
+            metadata: { changedFields: Object.keys(dto) },
+          },
+        });
+      }
+      return r;
     });
     // SHOULD-38: 失效 JWT 鉴权缓存（nickname/avatar/bio/status 改了都会影响鉴权返回的 request.user）
     await this.invalidateAuthCache(id);
@@ -229,6 +263,14 @@ export class UserService {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('用户不存在');
+    }
+    // [F-P1-03] P1 修复: super_admin / admin 不允许软删
+    // 原: ban 已阻止 admin, 但 remove (status=2) 没校验, 可绕过
+    // 修复: 拒绝删除 role='admin' 或 role='super_admin' 的用户
+    if (existing.role === 'admin' || existing.role === 'super_admin') {
+      throw new BadRequestException(
+        `不能删除 ${existing.role} 账号, 请先降级为普通用户`,
+      );
     }
     if (existing.status === 2) {
       return { id: id.toString(), status: 2, alreadyDeleted: true };

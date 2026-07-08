@@ -74,7 +74,26 @@ export class ReportService {
       throw new ForbiddenException('不能举报自己发布的信息');
     }
 
-    // 4. 创建举报
+    // 4. [C-P1-04] P1 修复: 防同一用户对同一 post 重复举报
+    // 原: 同一用户可无限刷同 post 举报, 浪费 admin 审核时间 + 历史被覆盖
+    // 修复: 检查该用户对该 post 是否已有未处理 (pending) 举报, 有则报错
+    //      已处理的 (handled/rejected) 允许重新举报 (情况可能有变化)
+    const existing = await this.prisma.report.findFirst({
+      where: {
+        userId,
+        postId,
+        status: 'pending',
+        // 中间件自动加 deletedAt:null, 这里不再显式过滤
+      },
+      select: { id: true, createdAt: true },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        `您已举报过该信息, 等待管理员处理中（举报 ID: ${existing.id}）`,
+      );
+    }
+
+    // 5. 创建举报
     return this.prisma.report.create({
       data: {
         userId,
@@ -82,6 +101,8 @@ export class ReportService {
         reason,
         description: description || null,
         status: 'pending',
+        createdBy: userId,
+        updatedBy: userId,
       },
       include: {
         user: { select: { id: true, nickname: true, avatar: true } },
