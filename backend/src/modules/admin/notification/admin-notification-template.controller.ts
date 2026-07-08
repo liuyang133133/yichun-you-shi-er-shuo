@@ -1,5 +1,8 @@
 /**
  * T-009: 通知模板管理 Controller
+ *
+ * V1.1: 应用 class-validator DTO (admin-notification-template.dto.ts)
+ * 替换 4 个 raw @Body() body: {...} 端点, 避免超长 body / 字段溢出 → 500
  */
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards,
@@ -11,7 +14,12 @@ import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user
 import { AdminGuard } from '../guards/admin-auth.guard';
 import { PermissionGuard } from '../../rbac/guards/permission.guard';
 import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
-import { NotificationEventCode } from '../../notification/notification-event';
+import {
+  AdminNotificationTemplateCreateDto,
+  AdminNotificationTemplateUpdateDto,
+  AdminNotificationTemplatePreviewDto,
+  AdminNotificationBroadcastDto,
+} from './dto/admin-notification-template.dto';
 
 @ApiTags('admin')
 @ApiBearerAuth('JWT')
@@ -54,16 +62,7 @@ export class AdminNotificationTemplateController {
   @ApiOperation({ summary: '创建通知模板' })
   create(
     @CurrentUser() user: JwtPayload,
-    @Body() body: {
-      event: NotificationEventCode;
-      channel?: string;
-      key: string;
-      title: string;
-      body: string;
-      variables?: any;
-      enabled?: boolean;
-      priority?: number;
-    },
+    @Body() body: AdminNotificationTemplateCreateDto,
   ) {
     return this.service.create(BigInt(user.sub), body);
   }
@@ -74,13 +73,7 @@ export class AdminNotificationTemplateController {
   update(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: {
-      title?: string;
-      body?: string;
-      variables?: any;
-      enabled?: boolean;
-      priority?: number;
-    },
+    @Body() body: AdminNotificationTemplateUpdateDto,
   ) {
     return this.service.update(BigInt(user.sub), id, body);
   }
@@ -104,7 +97,7 @@ export class AdminNotificationTemplateController {
   @ApiOperation({ summary: '预览模板（替换变量）' })
   preview(
     @Param('id') id: string,
-    @Body() body: Record<string, string>,
+    @Body() body: AdminNotificationTemplatePreviewDto,
   ) {
     return this.service.preview(id, body);
   }
@@ -114,14 +107,7 @@ export class AdminNotificationTemplateController {
   @ApiOperation({ summary: '群发通知（按 event + 角色筛选）' })
   broadcast(
     @CurrentUser() user: JwtPayload,
-    @Body() body: {
-      title: string;
-      body: string;
-      event: NotificationEventCode;
-      role?: 'user' | 'admin';
-      payload?: any;
-      priority?: number;
-    },
+    @Body() body: AdminNotificationBroadcastDto,
   ) {
     return this.service.broadcast(BigInt(user.sub), body);
   }
