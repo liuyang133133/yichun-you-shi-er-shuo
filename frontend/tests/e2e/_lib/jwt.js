@@ -8,6 +8,19 @@
  *   signJwt({ sub: '1', role: 'admin' }, { secret: 'wrong' }) // 错签名
  */
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+// [V1.2-fix] 镜像 auth.js 的 env 读取, 不再要求外部 export JWT_SECRET_DEFAULT
+// 优先级: opts.secret > backend/.env JWT_SECRET > process.env.JWT_SECRET_DEFAULT
+function readJwtSecret() {
+  try {
+    const txt = fs.readFileSync(path.join(__dirname, '../../../../backend/.env'), 'utf8');
+    const m = txt.match(/^JWT_SECRET=(.+)$/m);
+    if (m) return m[1].trim();
+  } catch {}
+  return process.env.JWT_SECRET_DEFAULT || process.env.JWT_SECRET || '';
+}
 
 function b64url(input) {
   return Buffer.from(input).toString('base64')
@@ -37,9 +50,9 @@ function signJwt(payload, opts = {}) {
   if (alg === 'none') {
     return `${signingInput}.`; // 无签名段
   }
-  const secret = opts.secret || process.env.JWT_SECRET_DEFAULT;
+  const secret = opts.secret || readJwtSecret();
   if (!secret) {
-    throw new Error('JWT_SECRET env not set (export JWT_SECRET_DEFAULT=...)');
+    throw new Error('JWT_SECRET not found (check backend/.env)');
   }
   const sig = crypto.createHmac('sha256', secret).update(signingInput).digest('base64')
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -85,4 +98,4 @@ const tokenFactory = {
   },
 };
 
-module.exports = { signJwt, tokenFactory };
+module.exports = { signJwt, tokenFactory, readJwtSecret };

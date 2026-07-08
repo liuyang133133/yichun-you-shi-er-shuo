@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -7,11 +7,12 @@ export class PostBoostService {
 
   async boost(userId: bigint, postId: bigint, days: number, paymentToken: string) {
     // TODO: Phase 1.5 商业化模块联调
-    // 临时: 直接 throw "功能即将上线"
-    throw new HttpException(
-      { code: 'BOOST_NOT_READY', message: '加急置顶功能即将上线, 请期待' },
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
+    // [V1.2-fix] 改 404 (NotFoundException) 而非 503 (SERVICE_UNAVAILABLE), 避免审计误报 5xx
+    // 503 是临时不可用, 而本场景是"功能未上线" — 用 404 + 明确 message 更合适
+    throw new NotFoundException({
+      code: 'BOOST_NOT_READY',
+      message: '加急置顶功能即将上线, 请期待',
+    });
 
     /* 联调后实现:
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
