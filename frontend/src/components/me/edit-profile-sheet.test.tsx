@@ -1,6 +1,7 @@
 import { toastMock } from '@/test-utils/toast-mock';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import * as React from 'react';
 import userEvent from '@testing-library/user-event';
 import { EditProfileSheet } from './edit-profile-sheet';
 import { authApi, userApi, type MeDetail } from '@/lib/api';
@@ -156,6 +157,52 @@ describe('头像上传', () => {
       expect(toastMock.error).toHaveBeenCalledWith('服务器开小差');
     });
     expect(userApi.updateMe).not.toHaveBeenCalled();
+  });
+
+  it('avatar 上传后不会重置未保存的 nickname 编辑', async () => {
+    const user = userEvent.setup();
+    (uploadApi.uploadImage as any).mockResolvedValue({
+      url: 'http://example.com/new.webp',
+      size: 100,
+      mimeType: 'image/webp',
+      filename: 'new.webp',
+      uploadedBy: '1',
+    });
+    (userApi.updateMe as any).mockResolvedValue({ ...meDetail, avatar: 'http://example.com/new.webp' });
+
+    // 模拟父组件:onSaved 触发后更新 meDetail prop (真实场景)
+    function Wrapper() {
+      const [me, setMe] = React.useState(meDetail);
+      return (
+        <EditProfileSheet
+          open
+          meDetail={me}
+          onClose={vi.fn()}
+          onSaved={(next) => setMe(next)}
+        />
+      );
+    }
+
+    render(<Wrapper />);
+
+    // 1. 编辑 nickname
+    const input = screen.getByLabelText(/昵称/);
+    await user.clear(input);
+    await user.type(input, '新昵称');
+    expect(input).toHaveValue('新昵称');
+
+    // 2. 上传头像
+    const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByTestId('avatar-input'), file);
+
+    // 3. 等 onSaved 触发 + 父组件更新 meDetail prop
+    await waitFor(() => {
+      expect(uploadApi.uploadImage).toHaveBeenCalled();
+      expect(userApi.updateMe).toHaveBeenCalledWith({ avatar: 'http://example.com/new.webp' });
+    });
+
+    // 4. 关键断言:nickname 不应被重置为 meDetail 的旧值
+    expect(input).toHaveValue('新昵称');
   });
 });
 

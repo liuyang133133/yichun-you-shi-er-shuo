@@ -37,14 +37,17 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
   const [uploading, setUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // 抽屉打开时,用最新 meDetail 重新初始化
+  // 只在抽屉从关闭→打开 那一刻 reset,避免 avatar PATCH 后 meDetail 引用变化
+  // 偷偷重置用户未保存的 nickname/gender/bio 编辑。
+  const prevOpen = React.useRef(false);
   React.useEffect(() => {
-    if (open) {
+    if (open && !prevOpen.current) {
       setNickname(meDetail?.nickname || '');
       setAvatar(meDetail?.avatar ?? null);
       setGender(isValidGender(meDetail?.gender) ? (meDetail!.gender as GenderValue) : 0);
       setBio(meDetail?.bio || '');
     }
+    prevOpen.current = open;
   }, [open, meDetail]);
 
   // 检测"用户改过任意字段" → 关闭时确认
@@ -242,9 +245,14 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
             onChange={(e) => setBio(e.target.value)}
             placeholder="说点什么…"
             rows={4}
+            aria-describedby="ep-bio-count"
             data-testid="ep-bio"
           />
-          <div className="text-xs text-muted-foreground text-right" data-testid="ep-bio-count">
+          <div
+            id="ep-bio-count"
+            data-testid="ep-bio-count"
+            className="text-xs text-muted-foreground text-right"
+          >
             {bio.length}/{BIO_MAX_UI}
           </div>
         </div>
