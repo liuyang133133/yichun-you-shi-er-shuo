@@ -559,7 +559,8 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
       const { url } = await uploadApi.uploadImage(file);
       await userApi.updateMe({ avatar: url });
       setAvatar(url);
-      // 同步 localStorage (用 onSaved 通知父组件同步 meDetail)
+      // 同步 meDetail 通过 onSaved 通知父组件;
+      // 父 setMeDetail 触发子 useEffect reset,无需二次调 /auth/me(优化)
       onSaved({ ...meDetail!, avatar: url });
       const cur = getStoredUser();
       if (cur) setStoredUser({ ...cur, avatar: url });
