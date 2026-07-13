@@ -37,6 +37,8 @@ export function Sheet({
   footer,
   closeOnOverlay = true,
 }: SheetProps) {
+  const titleId = React.useId();
+
   // Esc 关闭
   React.useEffect(() => {
     if (!open) return;
@@ -67,6 +69,13 @@ export function Sheet({
         ? 'inset-x-0 bottom-0 max-h-[90vh]'
         : 'inset-y-0 right-0 md:max-w-md w-full';
 
+  const slideAnim =
+    side === 'left'
+      ? 'animate-slide-in-left'
+      : side === 'bottom'
+        ? 'animate-slide-in-bottom'
+        : 'animate-slide-in'; // right (default) — keeps existing class for backward compat
+
   return (
     <div className="fixed inset-0 z-[90] animate-fade-in" data-testid="sheet-root">
       {/* 遮罩 */}
@@ -80,10 +89,10 @@ export function Sheet({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
+        aria-labelledby={title ? titleId : undefined}
         className={cn(
           'absolute bg-popover text-popover-foreground shadow-elevated flex flex-col',
-          'animate-slide-in',
+          slideAnim,
           slideClass,
           contentClassName,
         )}
@@ -91,7 +100,7 @@ export function Sheet({
       >
         {title && (
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="font-display text-lg font-bold">{title}</h2>
+            <h2 id={titleId} className="font-display text-lg font-bold">{title}</h2>
             <button
               onClick={onClose}
               className="h-8 w-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground flex items-center justify-center transition-colors"
