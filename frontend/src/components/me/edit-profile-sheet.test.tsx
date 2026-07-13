@@ -1,23 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { toastMock } from '@/test-utils/toast-mock';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EditProfileSheet } from './edit-profile-sheet';
-import { userApi } from '@/lib/api';
+import { authApi, userApi, type MeDetail } from '@/lib/api';
 import { uploadApi } from '@/lib/api-upload';
 import { clearAuth } from '@/lib/auth';
 
-// vi.hoisted 保证 mock 引用在 vi.mock 工厂执行前已初始化
-const { toastMock } = vi.hoisted(() => ({
-  toastMock: {
-    success: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-    info: vi.fn(),
-  },
-}));
-
 // Mock api 模块
 vi.mock('@/lib/api', () => ({
+  authApi: {
+    me: vi.fn().mockResolvedValue({
+      sub: '1',
+      phone: '13800000000',
+      role: 'user',
+      nickname: '小李',
+      avatar: null,
+    }),
+  },
   userApi: {
     updateMe: vi.fn().mockResolvedValue({ id: '1', nickname: 'new' }),
   },
@@ -35,11 +35,6 @@ vi.mock('@/lib/auth', () => ({
   clearAuth: vi.fn(),
 }));
 
-// Mock toast - 必须放在测试文件顶层 (vi.mock hoisting)
-vi.mock('@/components/toast/toaster', () => ({
-  toast: toastMock,
-}));
-
 const meDetail = {
   sub: '1',
   phone: '13800000000',
@@ -51,10 +46,6 @@ const meDetail = {
 };
 
 describe('EditProfileSheet', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('默认打开时,4 字段按 meDetail 回填', () => {
     render(<EditProfileSheet open meDetail={meDetail} onClose={vi.fn()} onSaved={vi.fn()} />);
 
@@ -69,6 +60,11 @@ describe('EditProfileSheet', () => {
 // (注: 只清 calls/results, 不清 implementations — 测试间用 mockResolvedValue/mockRejectedValue 显式覆盖)
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('客户端校验', () => {
@@ -88,20 +84,25 @@ describe('客户端校验', () => {
     render(<EditProfileSheet open meDetail={meDetail} onClose={vi.fn()} onSaved={vi.fn()} />);
 
     const input = screen.getByLabelText(/昵称/);
-    await user.clear(input);
-    await user.type(input, 'a'.repeat(25)); // 超过 maxLength=20 也会被截
-    // maxLength 物理拦截,只取前 20
-    expect((input as HTMLInputElement).value.length).toBeLessThanOrEqual(20);
+    expect(input).not.toHaveAttribute('maxLength');
+    fireEvent.change(input, { target: { value: 'a'.repeat(21) } });
+    await user.click(screen.getByTestId('sheet-save'));
+
+    expect(userApi.updateMe).not.toHaveBeenCalled();
+    expect(toastMock.warning).toHaveBeenCalledWith('昵称 1-20 字');
   });
 
-  it('bio 81 字被 maxLength 拦截', async () => {
+  it('bio 81 字 → toast 警告', async () => {
     const user = userEvent.setup();
     render(<EditProfileSheet open meDetail={meDetail} onClose={vi.fn()} onSaved={vi.fn()} />);
 
-    const ta = screen.getByTestId('ep-bio') as HTMLTextAreaElement;
-    await user.clear(ta);
-    await user.type(ta, 'a'.repeat(100));
-    expect(ta.value.length).toBeLessThanOrEqual(80);
+    const ta = screen.getByTestId('ep-bio');
+    expect(ta).not.toHaveAttribute('maxLength');
+    fireEvent.change(ta, { target: { value: 'a'.repeat(81) } });
+    await user.click(screen.getByTestId('sheet-save'));
+
+    expect(userApi.updateMe).not.toHaveBeenCalled();
+    expect(toastMock.warning).toHaveBeenCalledWith('简介最多 80 字');
   });
 });
 
@@ -112,15 +113,19 @@ describe('头像上传', () => {
     onSaved = vi.fn();
   });
 
-  it('选图片 → uploadImage 成功 → 头像预览刷新 + onSaved 通知父', async () => {
+  it('选图片 → uploadImage 成功 → 写后读权威头像 + onSaved 通知父', async () => {
     const user = userEvent.setup();
+    const uploadedUrl = 'http://example.com/a.webp';
+    const authoritativeUrl = 'https://cdn.example.com/a.webp';
     (uploadApi.uploadImage as any).mockResolvedValue({
-      url: 'http://example.com/a.webp',
+      url: uploadedUrl,
       size: 100,
       mimeType: 'image/webp',
       filename: 'a.webp',
       uploadedBy: '1',
     });
+    (userApi.updateMe as any).mockResolvedValue({ ...meDetail, avatar: uploadedUrl });
+    (authApi.me as any).mockResolvedValue({ ...meDetail, avatar: authoritativeUrl });
 
     render(<EditProfileSheet open meDetail={meDetail} onClose={vi.fn()} onSaved={onSaved} />);
     const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
@@ -130,10 +135,12 @@ describe('头像上传', () => {
       expect(uploadApi.uploadImage).toHaveBeenCalledWith(file);
     });
     await waitFor(() => {
-      expect(userApi.updateMe).toHaveBeenCalledWith({ avatar: 'http://example.com/a.webp' });
+      expect(userApi.updateMe).toHaveBeenCalledWith({ avatar: uploadedUrl });
+      expect(authApi.me).toHaveBeenCalledOnce();
     });
+    expect(screen.getByRole('img')).toHaveAttribute('src', authoritativeUrl);
     expect(onSaved).toHaveBeenCalledWith(
-      expect.objectContaining({ avatar: 'http://example.com/a.webp' }),
+      expect.objectContaining({ avatar: authoritativeUrl }),
     );
   });
 
@@ -161,9 +168,18 @@ describe('保存链路', () => {
     onSaved = vi.fn();
   });
 
-  it('改昵称 → 点保存 → PATCH 成功 → 抽屉关闭 + onSaved 通知', async () => {
+  it('改昵称 → 点保存 → 写后读成功 + 保存期间禁用头像与关闭', async () => {
     const user = userEvent.setup();
-    (userApi.updateMe as any).mockResolvedValue({ ...meDetail, nickname: '新昵称' });
+    let resolveUpdate!: (value: MeDetail) => void;
+    const updatePromise = new Promise<MeDetail>((resolve) => {
+      resolveUpdate = resolve;
+    });
+    (userApi.updateMe as any).mockReturnValue(updatePromise);
+    (authApi.me as any).mockResolvedValue({
+      ...meDetail,
+      nickname: '服务端昵称',
+      avatar: 'https://cdn.example.com/avatar.webp',
+    });
 
     render(<EditProfileSheet open meDetail={meDetail} onClose={onClose} onSaved={onSaved} />);
     const input = screen.getByLabelText(/昵称/);
@@ -177,10 +193,30 @@ describe('保存链路', () => {
         gender: 0,
         bio: '原简介',
       });
+      expect(screen.getByTestId('avatar-change')).toBeDisabled();
     });
-    expect(toastMock.success).toHaveBeenCalledWith('资料已保存');
-    expect(onClose).toHaveBeenCalled();
-    expect(onSaved).toHaveBeenCalled();
+
+    const file = new File(['x'], 'blocked.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByTestId('avatar-input'), { target: { files: [file] } });
+    expect(uploadApi.uploadImage).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId('sheet-close'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+
+    resolveUpdate({ ...meDetail, nickname: '新昵称' });
+    await waitFor(() => {
+      expect(authApi.me).toHaveBeenCalledOnce();
+      expect(toastMock.success).toHaveBeenCalledWith('资料已保存');
+      expect(onClose).toHaveBeenCalledOnce();
+    });
+    expect(onSaved).toHaveBeenCalledWith({
+      ...meDetail,
+      nickname: '服务端昵称',
+      gender: 0,
+      bio: '原简介',
+      avatar: 'https://cdn.example.com/avatar.webp',
+    });
   });
 
   it('PATCH 400 → toast 错误,抽屉不关', async () => {
@@ -200,29 +236,32 @@ describe('保存链路', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('PATCH 401 → 清 auth + 跳 /login', async () => {
-    const user = userEvent.setup();
+  it('PATCH 401 → toast + clearAuth + 跳 /login', async () => {
+    vi.useFakeTimers();
     const err = new Error('Token 失效');
     (err as any).status = 401;
     (userApi.updateMe as any).mockRejectedValue(err);
 
-    // mock window.location
     const origLocation = window.location;
     delete (window as any).location;
     (window as any).location = { href: '' };
 
-    render(<EditProfileSheet open meDetail={meDetail} onClose={onClose} onSaved={onSaved} />);
-    await user.clear(screen.getByLabelText(/昵称/));
-    await user.type(screen.getByLabelText(/昵称/), '新昵称');
-    await user.click(screen.getByTestId('sheet-save'));
+    try {
+      render(<EditProfileSheet open meDetail={meDetail} onClose={onClose} onSaved={onSaved} />);
+      fireEvent.change(screen.getByLabelText(/昵称/), { target: { value: '新昵称' } });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('sheet-save'));
+      });
 
-    await waitFor(() => {
       expect(toastMock.error).toHaveBeenCalledWith('登录已过期');
-    });
-    expect(clearAuth).toHaveBeenCalled();
+      expect(clearAuth).toHaveBeenCalled();
 
-    // 还原
-    (window as any).location = origLocation;
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(window.location.href).toBe('/login?expired=1');
+    } finally {
+      (window as any).location = origLocation;
+      vi.useRealTimers();
+    }
   });
 });
 

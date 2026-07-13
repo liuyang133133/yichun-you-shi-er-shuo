@@ -6,3 +6,7 @@ export const toastMock = {
   warning: vi.fn(),
   info: vi.fn(),
 };
+
+vi.mock('@/components/toast/toaster', () => ({
+  toast: toastMock,
+}));

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar } from '@/components/patterns/avatar';
 import { toast } from '@/components/toast/toaster';
 import { GENDER_OPTIONS, isValidGender, type GenderValue } from '@/lib/constants/gender';
-import { userApi, type MeDetail } from '@/lib/api';
+import { authApi, userApi, type MeDetail } from '@/lib/api';
 import { uploadApi } from '@/lib/api-upload';
 import { setStoredUser, getStoredUser, clearAuth } from '@/lib/auth';
 import { Camera, Loader2 } from 'lucide-react';
@@ -55,7 +55,8 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
     bio !== (meDetail?.bio || '');
 
   function handleClose() {
-    if (isDirty && !saving && !uploading) {
+    if (saving || uploading) return;
+    if (isDirty) {
       const ok = window.confirm('放弃修改?');
       if (!ok) return;
     }
@@ -64,6 +65,10 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
 
   // 头像"上传即落库"
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (saving || uploading) {
+      e.target.value = '';
+      return;
+    }
     const file = e.target.files?.[0];
     e.target.value = ''; // 重置 input,允许重选同一文件
     if (!file) return;
@@ -80,13 +85,14 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
     setUploading(true);
     try {
       const { url } = await uploadApi.uploadImage(file);
-      await userApi.updateMe({ avatar: url });
-      setAvatar(url);
-      // 同步 meDetail 通过 onSaved 通知父组件;
-      // 父 setMeDetail 触发子 useEffect reset,无需二次调 /auth/me(优化)
-      onSaved({ ...meDetail!, avatar: url });
+      const updated = await userApi.updateMe({ avatar: url });
+      const fresh = await authApi.me().catch(() => null);
+      const nextAvatar = fresh?.avatar ?? updated.avatar ?? url;
+      const nextNickname = fresh?.nickname ?? updated.nickname ?? meDetail?.nickname;
+      setAvatar(nextAvatar);
+      onSaved({ ...meDetail!, nickname: nextNickname, avatar: nextAvatar });
       const cur = getStoredUser();
-      if (cur) setStoredUser({ ...cur, avatar: url });
+      if (cur) setStoredUser({ ...cur, nickname: nextNickname, avatar: nextAvatar });
       toast.success('头像已更新');
     } catch (err: any) {
       toast.error(err?.message || '上传失败');
@@ -114,9 +120,12 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
     setSaving(true);
     try {
       const updated = await userApi.updateMe({ nickname: trimmed, gender, bio });
-      onSaved({ ...meDetail!, nickname: trimmed, gender, bio, avatar: updated.avatar ?? avatar });
+      const fresh = await authApi.me().catch(() => null);
+      const nextNickname = fresh?.nickname ?? updated.nickname ?? trimmed;
+      const nextAvatar = fresh?.avatar ?? updated.avatar ?? avatar;
+      onSaved({ ...meDetail!, nickname: nextNickname, gender, bio, avatar: nextAvatar });
       const cur = getStoredUser();
-      if (cur) setStoredUser({ ...cur, nickname: trimmed });
+      if (cur) setStoredUser({ ...cur, nickname: nextNickname, avatar: nextAvatar });
       toast.success('资料已保存');
       onClose();
     } catch (err: any) {
@@ -174,7 +183,7 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || saving}
             className="text-sm text-primary hover:underline flex items-center gap-1 disabled:opacity-50"
             data-testid="avatar-change"
           >
@@ -197,7 +206,6 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
           <Input
             id="ep-nickname"
             type="text"
-            maxLength={NICKNAME_MAX}
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             placeholder="如:小李、王老板"
@@ -230,7 +238,6 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
           <Label htmlFor="ep-bio">简介</Label>
           <Textarea
             id="ep-bio"
-            maxLength={BIO_MAX_UI}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="说点什么…"
