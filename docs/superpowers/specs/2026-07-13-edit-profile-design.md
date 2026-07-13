@@ -362,3 +362,13 @@ export type GenderValue = 0 | 1 | 2;
 ---
 
 **✅ 等待 writing-plans 阶段。**
+
+---
+
+## 12. 已知限制 (T-023 follow-up)
+
+- **后端 `authApi.me()` 当前不返回 `gender`/`bio`** (`backend/src/modules/auth/auth.service.ts:278-288`)。
+  - 影响:用户首次打开"编辑资料"抽屉时,`gender` 显示 0(不透露),`bio` 显示空,即使已设置过。
+  - 临时方案:用户改过 bio 后保存,后续关闭-再打开可以看到新值(因为父组件 `meDetail` 被 `onSaved` 更新)。
+  - 修复(T-024):后端 `getMeDetail` 加 `gender`/`bio` select,前端无需改动即可正确显示。
+- **401 重定向用 `window.location.href` 而非 `router.replace`**: 简单可靠,但会硬刷新。其它页面用 `router.replace` 软导航。这是 plan 范围内的设计选择,不是 bug。
