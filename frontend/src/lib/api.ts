@@ -377,25 +377,8 @@ export const meApi = {
   },
 };
 
-// 上传图片
-export const uploadApi = {
-  /** 单图上传 (FormData 字段名: file)，返回 { url, size, mimeType, filename } */
-  image: async (file: File): Promise<{ url: string; size: number; mimeType: string; filename: string }> => {
-    const fd = new FormData();
-    fd.append('file', file);
-    const headers: Record<string, string> = {};
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${API_BASE_URL}/upload/image`, { method: 'POST', body: fd, headers });
-    const json = await res.json();
-    if (!res.ok || json.code !== 0) {
-      throw new ApiError(json.message || `上传失败 (${res.status})`, json.code, res.status, json.data);
-    }
-    return json.data;
-  },
-};
+// 上传图片（单一实现位于 api-upload.ts；保留此出口兼容现有调用方）
+export { uploadApi } from './api-upload';
 
 // 站内信
 export interface MessageItem {
