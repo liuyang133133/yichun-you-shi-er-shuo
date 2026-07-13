@@ -102,6 +102,7 @@
   /* 微妙入场动画 */
   .animate-fade-in { animation: fadeIn var(--duration-slow) var(--easing-standard) both; }
   .animate-slide-up { animation: slideUp 500ms var(--easing-standard) both; }
+  .animate-slide-in { animation: slideInRight var(--duration-slow) var(--easing-standard) both; }
   .animate-float { animation: float 6s ease-in-out infinite; }
 }
 
