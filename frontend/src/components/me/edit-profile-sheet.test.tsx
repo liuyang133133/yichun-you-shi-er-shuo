@@ -36,7 +36,7 @@ vi.mock('@/lib/auth', () => ({
   clearAuth: vi.fn(),
 }));
 
-const meDetail = {
+const meDetail: MeDetail = {
   sub: '1',
   phone: '13800000000',
   role: 'user',
