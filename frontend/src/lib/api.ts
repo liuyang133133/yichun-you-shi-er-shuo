@@ -171,6 +171,9 @@ export const userApi = {
     ),
   get: (id: string | number) => api.get<any>(`/users/${id}`),
   count: () => api.get<number>('/users/count'),
+  /** [T-023] 当前登录用户改资料 (昵称/头像/简介/性别) — 编辑资料抽屉使用 */
+  updateMe: (data: { nickname?: string; avatar?: string; bio?: string; gender?: number }) =>
+    api.patch<MeDetail>('/users/me', data),
 };
 
 // 分类
@@ -323,6 +326,14 @@ export interface MeDetail {
   sub: string;
   phone: string;
   role: string;
+  nickname?: string;
+  avatar?: string | null;
+  /** [T-023] 是否已设置登录密码 — 用于「改密码/设置密码」表单切换 */
+  hasPassword?: boolean;
+  /** [T-023] 性别 (0=不透露 / 1=男 / 2=女) — 编辑资料抽屉使用 */
+  gender?: number;
+  /** [T-023] 个人简介 — 编辑资料抽屉使用 */
+  bio?: string;
 }
 
 export interface AuthLoginUser {
