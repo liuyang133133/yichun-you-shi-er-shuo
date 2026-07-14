@@ -14,6 +14,8 @@ import { SeoService } from '../seo/seo.service';
 import { TagService } from '../tag/tag.service';
 // F-3: URL slug 生成
 import { generateSlug } from '../../common/utils/slug.util';
+// P0-Fix (B-P0-01): 敏感词过滤
+import { SensitiveWordService } from '../../common/filters/sensitive-word.filter';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -29,6 +31,8 @@ export class PostService {
     private readonly seoService: SeoService,
     // T-013: 标签系统（attach/detach PostTag）
     private readonly tagService: TagService,
+    // P0-Fix (B-P0-01): 敏感词过滤
+    private readonly sensitiveWord: SensitiveWordService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -70,7 +74,12 @@ export class PostService {
     } = query;
 
     // V1.0 验收 BUG-5 修复: type 可选
+    // [B-P0-03] P0 修复: 公开列表只展示已通过审核的帖子
+    // 例外: 当查询 deleted/rejected (admin 端) 时, 不强制 auditStatus
     const where: Prisma.PostWhereInput = { status };
+    if (status === 'active') {
+      where.auditStatus = 'passed';
+    }
     if (type) where.type = type;
     let categoryOrFilter: Prisma.PostWhereInput[] | undefined;
     if (categoryId) {
@@ -373,6 +382,13 @@ export class PostService {
     // ===== [P0-001] 封禁检查（写入口必须） =====
     await this.assertUserNotBanned(userId);
 
+    // ===== [B-P0-01] P0 修复: 敏感词同步拦截 =====
+    // 发布前同步过滤 title/description/contactName (含敏感词直接 400)
+    await this.sensitiveWord.assertClean(
+      `${dto.title}\n${dto.description}\n${dto.contactName ?? ''}`,
+      '帖子内容',
+    );
+
     // ===== 重复检测：同一用户 1 天内同 title 拦截 =====
     // [P1-007] 移到事务内，消除 read-then-write race window
     const oneDayAgo = new Date();
@@ -403,6 +419,16 @@ export class PostService {
       }
     }
 
+    // [B-P1-05] P1 修复: type='job' 必传 detail (含 postJob 必填字段), 否则 400
+    // 原: type='job' + 不传 detail 时, tx.postJob.create 跳过 → 数据孤儿 (post.type='job' 但无 postJob)
+    //     后续 user 点"投递"按钮 → 报"职位不存在"
+    // 修复: job 类帖子必须有 detail, 缺则直接 400, 阻止事务开始
+    if (dto.type === 'job' && !dto.detail) {
+      throw new BadRequestException(
+        '招聘类帖子必须包含 detail (公司 ID/职位类型/薪资等), 请使用单事务创建接口',
+      );
+    }
+
     // detail 中 job.companyId 需要校验归属（用事务内 tx 读，避免 read-then-write 竞态）
     // [P0-fix] 如果用户未传 companyId（普通个人招聘场景），自动复用/创建其"个人招聘"公司
     // - 命名规范: "个人招聘 · {phone 后 4 位}"，便于列表页识别
@@ -413,8 +439,14 @@ export class PostService {
         const company = await this.prisma.company.findUnique({
           where: { id: BigInt(dto.detail.companyId) },
         });
+        // [B-P1-04] P1 修复: 校验 company 未被软删
+        // 原: 仅校验存在 + 归属, deletedAt 仍可为非空 → 软删公司被新帖引用
+        // 修复: 加 deletedAt === null 检查 (中间件 default 过滤, 显式 include deleted 时才返回)
         if (!company || company.creatorUserId !== userId) {
           throw new BadRequestException('公司不存在或不属于当前用户');
+        }
+        if (company.deletedAt !== null) {
+          throw new BadRequestException('该公司已被删除, 无法引用');
         }
         resolvedCompanyId = company.id;
       } else {
@@ -881,6 +913,11 @@ export class PostService {
     const { status, type, page = 1, pageSize = 20 } = options;
     const where: Prisma.PostWhereInput = { userId };
     if (status) where.status = status;
+    // [B-P0-03] P0 修复: 当用户查询"在售(active)"时, 只展示已通过审核
+    // 其他状态(pending/rejected/sold/expired/deleted)用户可看自己的全部
+    if (status === 'active') {
+      where.auditStatus = 'passed';
+    }
     if (type) where.type = type; // [P1-010] 支持按 type 过滤
 
     const skip = (page - 1) * pageSize;
@@ -919,10 +956,11 @@ export class PostService {
 
   /**
    * 统计
+   * [B-P0-03] P0 修复: 只统计已通过审核的帖子
    */
   async count(type?: string) {
     return this.prisma.post.count({
-      where: { ...(type ? { type } : {}), status: 'active' },
+      where: { ...(type ? { type } : {}), status: 'active', auditStatus: 'passed' },
     });
   }
 

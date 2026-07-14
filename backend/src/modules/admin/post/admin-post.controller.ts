@@ -8,6 +8,13 @@ import { CurrentUser, JwtPayload } from '../../../common/decorators/current-user
 import { AdminGuard } from '../guards/admin-auth.guard';
 import { PermissionGuard } from '../../rbac/guards/permission.guard';
 import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
+import {
+  AdminPostAuditDto,
+  AdminPostOfflineDto,
+  AdminPostAuditBatchDto,
+  AdminPostOfflineBatchDto,
+  AdminPostPurgeDto,
+} from './dto/admin-post.dto';
 
 /**
  * T-003: 所有端点已加 @RequirePermission 细粒度权限
@@ -57,7 +64,7 @@ export class AdminPostController {
   audit(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { action: 'pass' | 'reject'; reason?: string },
+    @Body() body: AdminPostAuditDto,
   ) {
     if (body.action === 'pass') {
       return this.adminPostService.pass(BigInt(user.sub), BigInt(id), body.reason);
@@ -78,7 +85,7 @@ export class AdminPostController {
   offline(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: AdminPostOfflineDto,
   ) {
     return this.adminPostService.offline(BigInt(user.sub), BigInt(id), body.reason);
   }
@@ -93,7 +100,7 @@ export class AdminPostController {
   @ApiOperation({ summary: '批量审核帖子(pass/reject)' })
   auditBatch(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { ids: string[]; action: 'pass' | 'reject'; reason?: string },
+    @Body() body: AdminPostAuditBatchDto,
   ) {
     const ids = body.ids.map((s) => BigInt(s));
     return this.adminPostService.auditBatch(
@@ -114,7 +121,7 @@ export class AdminPostController {
   @ApiOperation({ summary: '批量强制下架帖子' })
   offlineBatch(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { ids: string[]; reason: string },
+    @Body() body: AdminPostOfflineBatchDto,
   ) {
     const ids = body.ids.map((s) => BigInt(s));
     return this.adminPostService.offlineBatch(BigInt(user.sub), ids, body.reason);
@@ -129,7 +136,7 @@ export class AdminPostController {
   @ApiOperation({ summary: '硬清 30 天前软删的 post' })
   purge(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { daysOld?: number } = {},
+    @Body() body: AdminPostPurgeDto,
   ) {
     return this.adminPostService.purgeOldDeleted(BigInt(user.sub), body.daysOld ?? 30);
   }

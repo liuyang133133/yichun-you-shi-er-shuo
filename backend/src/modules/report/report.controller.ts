@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -77,5 +78,18 @@ export class ReportController {
     @Param('id') id: string,
   ) {
     return this.reportService.findOne(BigInt(id));
+  }
+
+  /**
+   * [C-P1-05] P1 修复: 用户撤回自己的举报
+   * DELETE /api/v1/reports/:id
+   */
+  @Delete(':id')
+  @ApiOperation({ summary: '撤回我的举报' })
+  remove(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.reportService.remove(BigInt(user.sub), BigInt(id));
   }
 }

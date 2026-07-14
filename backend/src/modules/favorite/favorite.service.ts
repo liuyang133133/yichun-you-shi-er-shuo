@@ -23,6 +23,9 @@ export class FavoriteService {
 
   /**
    * 收藏（幂等：重复收藏不报错）
+   * [C-P1-06] P1 修复: 改用软删后, add 时支持"复活"已软删的收藏
+   * 原: remove 硬删, 后 add 重新创建 → @@unique 没问题但违反 T-001 软删规范
+   * 修复: remove 软删保留行 + add 优先复用(undelete), 仅新用户首收才创建
    */
   async add(userId: bigint, postId: bigint) {
     // ===== [P0-001] 封禁检查 =====
@@ -39,7 +42,7 @@ export class FavoriteService {
       throw new BadRequestException('不能收藏已删除的信息');
     }
 
-    // 2. 检查是否已收藏
+    // 2. 检查是否已收藏（活跃行 — 中间件自动过滤 deletedAt:null）
     const existing = await this.prisma.favorite.findUnique({
       where: { userId_postId: { userId, postId } },
     });
@@ -47,9 +50,29 @@ export class FavoriteService {
       return { postId: postId.toString(), alreadyFavorited: true };
     }
 
-    // 3. 事务：创建收藏 + 增加 post 收藏数
+    // 3. [C-P1-06] 检查是否有软删行可复活（绕过中间件显式查 deletedAt: not null）
+    const softDeleted = await this.prisma.favorite.findFirst({
+      where: {
+        userId,
+        postId,
+        deletedAt: { not: null },
+      },
+      select: { id: true },
+    });
+    if (softDeleted) {
+      // 复活旧行：count 不动（remove 时已 -1），仅清 soft-delete 标记
+      await this.prisma.favorite.update({
+        where: { id: softDeleted.id },
+        data: { deletedAt: null, deletedBy: null, updatedBy: userId },
+      });
+      return { postId: postId.toString(), alreadyFavorited: false, restored: true };
+    }
+
+    // 4. 全新创建 + favoriteCount++
     await this.prisma.$transaction([
-      this.prisma.favorite.create({ data: { userId, postId } }),
+      this.prisma.favorite.create({
+        data: { userId, postId, createdBy: userId, updatedBy: userId },
+      }),
       this.prisma.post.update({
         where: { id: postId },
         data: { favoriteCount: { increment: 1 } },
@@ -61,11 +84,15 @@ export class FavoriteService {
 
   /**
    * 取消收藏
+   * [C-P1-06] P1 修复: 改为软删, 保留行供后续 add() 复活
+   * - 中间件默认查询 deletedAt:null, 因此 findUnique 时只能拿到活跃行
+   * - 改为 soft delete 后, 用户再次收藏走 add() 的"复活"路径, favoriteCount 保持一致
    */
   async remove(userId: bigint, postId: bigint) {
     // ===== [P0-001] 封禁检查 =====
     await this.assertUserNotBanned(userId);
 
+    // 1. 查活跃行（中间件自动加 deletedAt:null）
     const existing = await this.prisma.favorite.findUnique({
       where: { userId_postId: { userId, postId } },
     });
@@ -73,9 +100,11 @@ export class FavoriteService {
       return { postId: postId.toString(), alreadyRemoved: true };
     }
 
+    // 2. [C-P1-06] 软删行 + 减计数
     await this.prisma.$transaction([
-      this.prisma.favorite.delete({
-        where: { userId_postId: { userId, postId } },
+      this.prisma.favorite.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date(), deletedBy: userId, updatedBy: userId },
       }),
       this.prisma.post.update({
         where: { id: postId },

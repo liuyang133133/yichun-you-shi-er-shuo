@@ -30,6 +30,8 @@ export class CommentService {
    *   - 与同模块 create() 的行为不一致
    *   - 让前端难以区分"该帖无评论"与"该帖不存在"
    * 修复: 第一步先校验 post 存在 (与 create() 第 70-79 行同模式)
+   * [C-P1-05] P1 修复: children include 显式过滤已软删 (status=1)
+   * 中间件自动加 deletedAt:null, 行为已正确, 但 children 子查询 where 也加 status=0 保险
    */
   async findByPost(postId: bigint, options: { page?: number; pageSize?: number } = {}) {
     const { page = 1, pageSize = 20 } = options;
@@ -60,6 +62,7 @@ export class CommentService {
         include: {
           user: { select: { id: true, nickname: true, avatar: true } },
           children: {
+            // [C-P1-05] 同时过滤 status=0 和 (中间件自动) deletedAt:null
             where: { status: 0 },
             orderBy: { createdAt: 'asc' },
             include: {
@@ -77,6 +80,8 @@ export class CommentService {
   /**
    * 发留言（顶级或回复）
    * POST /api/v1/posts/:postId/comments
+   * [C-P1-02] P1 修复: parentId 仅允许指向顶级 (parent.parentId 必须为 null)
+   * 限制嵌套深度 ≤ 2 层 (顶级 + 1 层回复), 防止无限嵌套刷屏/渲染性能问题
    */
   async create(
     userId: bigint,
@@ -103,7 +108,7 @@ export class CommentService {
     if (parentId) {
       const parent = await this.prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, postId: true, status: true },
+        select: { id: true, postId: true, parentId: true, status: true },
       });
       if (!parent) {
         throw new NotFoundException(`父留言 ID ${parentId} 不存在`);
@@ -113,6 +118,12 @@ export class CommentService {
       }
       if (parent.status === 1) {
         throw new BadRequestException('父留言已隐藏');
+      }
+      // [C-P1-02] 深度限制: parentId 必须指向顶级 (parent.parentId = null)
+      if (parent.parentId !== null) {
+        throw new BadRequestException(
+          '回复嵌套深度不能超过 2 层，请回复顶级留言',
+        );
       }
     }
 
@@ -141,6 +152,9 @@ export class CommentService {
   /**
    * 删除留言
    * 权限：自己 / post 作者 / 管理员（V1 暂未实现 admin role）
+   * [C-P1-01] P1 修复: 删除父留言时级联软删所有 children, 并相应递减 commentCount
+   * 原: 仅软删父留言 + -1, 子留言 (status=0) 仍可见 → commentCount 漂移
+   * 修复: 软删父留言 + 所有未删 children + commentCount - (1 + childrenCount)
    */
   async remove(userId: bigint, commentId: bigint) {
     // ===== [P0-001] 封禁检查 =====
@@ -160,17 +174,35 @@ export class CommentService {
       throw new ForbiddenException('只能删除自己的留言或自己帖子下的留言');
     }
 
-    // 软删（status=1 隐藏）
-    await this.prisma.$transaction([
-      this.prisma.comment.update({
+    // [C-P1-01] 仅当删父留言 (parentId=null) 时级联 children
+    const isTopLevel = comment.parentId === null;
+    await this.prisma.$transaction(async (tx) => {
+      let cascadeCount = 0;
+      if (isTopLevel) {
+        // 先查未删 children 数量
+        const activeChildren = await tx.comment.count({
+          where: { parentId: commentId, status: 0 },
+        });
+        cascadeCount = activeChildren;
+        // 软删 children
+        await tx.comment.updateMany({
+          where: { parentId: commentId, status: 0 },
+          data: { status: 1, updatedBy: userId },
+        });
+      }
+      // 软删父留言本身 (如有 -1)
+      await tx.comment.update({
         where: { id: commentId },
-        data: { status: 1 },
-      }),
-      this.prisma.post.update({
+        data: { status: 1, updatedBy: userId },
+      });
+      // post.commentCount 总扣 (1 父 + childrenCount)
+      const totalDecrement = 1 + cascadeCount;
+      await tx.post.update({
         where: { id: comment.postId },
-        data: { commentCount: { decrement: 1 } },
-      }),
-    ]);
+        data: { commentCount: { decrement: totalDecrement } },
+      });
+      return { cascadeCount };
+    });
 
     return { id: commentId.toString(), deleted: true };
   }

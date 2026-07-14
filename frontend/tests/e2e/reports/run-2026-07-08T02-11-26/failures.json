@@ -1,0 +1,32 @@
+[
+  {
+    "method": "POST",
+    "path": "/upload/image",
+    "dim": 11,
+    "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+    "outcome": "ISSUE",
+    "severity": "P3",
+    "actualStatus": 0,
+    "expected": 401
+  },
+  {
+    "method": "POST",
+    "path": "/auth/logout",
+    "dim": 11,
+    "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+    "outcome": "ISSUE",
+    "severity": "P3",
+    "actualStatus": 0,
+    "expected": 401
+  },
+  {
+    "method": "GET",
+    "path": "/auth/me",
+    "dim": 11,
+    "testName": "Token 空 header ({\"rawToken\":\"\\nfake\"})",
+    "outcome": "ISSUE",
+    "severity": "P3",
+    "actualStatus": 0,
+    "expected": 401
+  }
+]

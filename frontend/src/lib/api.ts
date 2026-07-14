@@ -171,6 +171,9 @@ export const userApi = {
     ),
   get: (id: string | number) => api.get<any>(`/users/${id}`),
   count: () => api.get<number>('/users/count'),
+  /** [T-023] 当前登录用户改资料 (昵称/头像/简介/性别) — 编辑资料抽屉使用 */
+  updateMe: (data: { nickname?: string; avatar?: string; bio?: string; gender?: number }) =>
+    api.patch<MeDetail>('/users/me', data),
 };
 
 // 分类
@@ -323,6 +326,14 @@ export interface MeDetail {
   sub: string;
   phone: string;
   role: string;
+  nickname?: string;
+  avatar?: string | null;
+  /** [T-023] 是否已设置登录密码 — 用于「改密码/设置密码」表单切换 */
+  hasPassword?: boolean;
+  /** [T-023] 性别 (0=不透露 / 1=男 / 2=女) — 编辑资料抽屉使用 */
+  gender?: number;
+  /** [T-023] 个人简介 — 编辑资料抽屉使用 */
+  bio?: string;
 }
 
 export interface AuthLoginUser {
@@ -377,25 +388,8 @@ export const meApi = {
   },
 };
 
-// 上传图片
-export const uploadApi = {
-  /** 单图上传 (FormData 字段名: file)，返回 { url, size, mimeType, filename } */
-  image: async (file: File): Promise<{ url: string; size: number; mimeType: string; filename: string }> => {
-    const fd = new FormData();
-    fd.append('file', file);
-    const headers: Record<string, string> = {};
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${API_BASE_URL}/upload/image`, { method: 'POST', body: fd, headers });
-    const json = await res.json();
-    if (!res.ok || json.code !== 0) {
-      throw new ApiError(json.message || `上传失败 (${res.status})`, json.code, res.status, json.data);
-    }
-    return json.data;
-  },
-};
+// 上传图片（单一实现位于 api-upload.ts；保留此出口兼容现有调用方）
+export { uploadApi } from './api-upload';
 
 // 站内信
 export interface MessageItem {

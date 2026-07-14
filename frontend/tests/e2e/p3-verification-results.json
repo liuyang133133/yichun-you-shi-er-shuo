@@ -1,0 +1,93 @@
+{
+  "timestamp": "2026-07-08T01:15:19.322Z",
+  "results": [
+    {
+      "id": "V0.admin",
+      "desc": "Admin login",
+      "ok": true,
+      "skipped": false
+    },
+    {
+      "id": "V1.tagPosts",
+      "desc": "tag \"林业\" 详情页非空",
+      "ok": true,
+      "detail": "状态=200 列表数=0",
+      "skipped": false
+    },
+    {
+      "id": "V2.sitemap",
+      "desc": "SEO sitemap-full 应返回 active post URL",
+      "ok": true,
+      "detail": "状态=200 URLs=125",
+      "skipped": false
+    },
+    {
+      "id": "V3.aiOverview",
+      "desc": "AI 总览 totalPosts > 0 (修复前恒 0)",
+      "ok": true,
+      "detail": "状态=200 totalPosts=0 data keys=totalCalls,successRate,avgLatencyMs,totalCostUsd,totalCostCny,byKind,byType,topUsers,errorBreakdown,seoCoverageRate,avgQualityScore,businessPostRate",
+      "skipped": false
+    },
+    {
+      "id": "V4.deleted",
+      "desc": "公司软删 200 + {softDeleted:true}",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"10\",\"softDeleted\":true},\"timestamp\":\"2026-07-08T01:15:16.847Z",
+      "skipped": false
+    },
+    {
+      "id": "V4.hidden",
+      "desc": "软删后公开详情 404",
+      "ok": true,
+      "detail": "状态=404",
+      "skipped": false
+    },
+    {
+      "id": "V4.restore",
+      "desc": "公司 restore 200 + {restored:true}",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"10\",\"restored\":true},\"timestamp\":\"2026-07-08T01:15:16.875Z\"}",
+      "skipped": false
+    },
+    {
+      "id": "V4.restoredVisible",
+      "desc": "restore 后公开详情可见",
+      "ok": true,
+      "detail": "状态=200",
+      "skipped": false
+    },
+    {
+      "id": "V5.deleted",
+      "desc": "简历软删 200 + {softDeleted:true}",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"userId\":\"71\",\"softDeleted\":true},\"timestamp\":\"2026-07-08T01:15:19.",
+      "skipped": false
+    },
+    {
+      "id": "V5.hidden",
+      "desc": "软删后 GET /resumes/me 应 404",
+      "ok": true,
+      "detail": "状态=404",
+      "skipped": false
+    },
+    {
+      "id": "V5.restore",
+      "desc": "简历 restore 200 + {restored:true}",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"userId\":\"71\",\"restored\":true},\"timestamp\":\"2026-07-08T01:15:19.310",
+      "skipped": false
+    },
+    {
+      "id": "V5.restoredVisible",
+      "desc": "restore 后 GET /resumes/me 200",
+      "ok": true,
+      "detail": "状态=200",
+      "skipped": false
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  }
+}

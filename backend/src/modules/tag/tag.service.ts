@@ -186,7 +186,11 @@ export class TagService {
       this.prisma.postTag.findMany({
         where: {
           tagId,
-          post: { deletedAt: null, status: 'online', auditStatus: 'passed' },
+          // [F-P2-05] P1 修复: 死代码 status='online' → 真实字段是 'active'
+          // 原: post.status 实际为 'active'/'deleted'/'rejected'/'pending'/'sold'/'expired'
+          //     'online' 永不匹配 → 标签页永远空
+          // 修复: 改为 'active' (中中间件已默认 deletedAt:null)
+          post: { status: 'active', auditStatus: 'passed' },
         },
         include: {
           post: {
@@ -204,7 +208,8 @@ export class TagService {
       this.prisma.postTag.count({
         where: {
           tagId,
-          post: { deletedAt: null, status: 'online', auditStatus: 'passed' },
+          // [F-P2-05] 同上, 改 'online' 为 'active'
+          post: { status: 'active', auditStatus: 'passed' },
         },
       }),
     ]);

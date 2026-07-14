@@ -24,7 +24,9 @@ describe('AdminUserService (T-004)', () => {
     await prisma.$connect();
     // Mock RedisService - 仅需 del 方法
     redis = { del: async () => undefined };
-    service = new AdminUserService(prisma, redis);
+    // [A-P0-02] Mock AuthService (Kill Switch 方法)
+    const mockAuthService = { revokeAllTokensForUser: jest.fn().mockResolvedValue(0) };
+    service = new AdminUserService(prisma, redis, mockAuthService as any);
 
     const admin = await prisma.user.findFirst({ where: { role: 'admin' } });
     if (!admin) throw new Error('seed 未创建 admin 用户');

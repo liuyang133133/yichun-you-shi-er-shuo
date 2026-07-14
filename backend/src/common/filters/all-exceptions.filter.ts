@@ -44,6 +44,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       message = exception.message;
       error = exception.name;
+
+      // [P0-fix] 显式处理 body-parser / express 已知错误, 避免统一返 500
+      // 1. PayloadTooLargeError (默认 100KB) → 413 Request Entity Too Large
+      // 2. SyntaxError from bodyParser (JSON.parse 失败) → 400 Bad Request
+      if (exception.name === 'PayloadTooLargeError' || (exception as any).type === 'entity.too.large') {
+        status = HttpStatus.PAYLOAD_TOO_LARGE;
+        message = '请求体过大（默认限制 100KB）';
+        error = 'Payload Too Large';
+      } else if (exception.name === 'SyntaxError' && (exception as any).type === 'entity.parse.failed') {
+        status = HttpStatus.BAD_REQUEST;
+        message = '请求体 JSON 解析失败';
+        error = 'Bad Request';
+      } else if (exception.name === 'BadRequestError' && /request size|body-parser/i.test(exception.message)) {
+        // 部分 body-parser 版本抛 BadRequestError
+        status = HttpStatus.BAD_REQUEST;
+        message = '请求体格式错误';
+        error = 'Bad Request';
+      }
     }
 
     // 5xx 错误记录到日志

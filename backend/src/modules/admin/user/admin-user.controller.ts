@@ -8,6 +8,7 @@ import { PermissionGuard } from '../../rbac/guards/permission.guard';
 import { RequirePermission } from '../../rbac/decorators/require-permission.decorator';
 import { RbacService } from '../../rbac/rbac.service';
 import { AssignRoleDto } from '../../rbac/dto/assign-role.dto';
+import { AdminUserBanDto } from './dto/admin-user.dto';
 
 @ApiTags('admin')
 @Controller('admin/users')
@@ -45,7 +46,7 @@ export class AdminUserController {
   ban(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: AdminUserBanDto,
   ) {
     return this.adminUserService.ban(BigInt(user.sub), BigInt(id), body.reason);
   }

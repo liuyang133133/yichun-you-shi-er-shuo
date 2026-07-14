@@ -21,6 +21,10 @@ import { RbacModule } from '../rbac/rbac.module';
 import { AdminAuditLogModule } from './audit-log/admin-audit-log.module';
 // T-006: 登录日志
 import { AdminLoginLogModule } from './login-log/admin-login-log.module';
+// [V1.1-fix] AdminNotificationModule 之前漏注册, 导致 /admin/notifications/* 全 404
+import { AdminNotificationModule } from './notification/admin-notification.module';
+// [A-P0-02] P0 修复: 注入 AuthModule 拿 AuthService (Kill Switch)
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -28,7 +32,9 @@ import { AdminLoginLogModule } from './login-log/admin-login-log.module';
     AdminRoleModule, AdminPermissionModule,
     AdminAuditLogModule, // T-005
     AdminLoginLogModule, // T-006
+    AdminNotificationModule, // [V1.1-fix] 注册通知模板/广播 controller
     RbacModule,
+    AuthModule, // [A-P0-02] ban 时调 AuthService.revokeAllTokensForUser
   ],
   controllers: [
     AdminPostController,

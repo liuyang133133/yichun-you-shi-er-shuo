@@ -102,6 +102,10 @@
   /* 微妙入场动画 */
   .animate-fade-in { animation: fadeIn var(--duration-slow) var(--easing-standard) both; }
   .animate-slide-up { animation: slideUp 500ms var(--easing-standard) both; }
+  .animate-slide-in { animation: slideInRight var(--duration-slow) var(--easing-standard) both; }
+  /* 抽屉三方向入场动画 */
+  .animate-slide-in-left  { animation: slideInLeft  var(--duration-slow) var(--easing-standard) both; }
+  .animate-slide-in-bottom { animation: slideInBottom var(--duration-slow) var(--easing-standard) both; }
   .animate-float { animation: float 6s ease-in-out infinite; }
 }
 
@@ -124,6 +128,14 @@
 @keyframes slideOutRight {
   from { opacity: 1; transform: translateX(0); }
   to { opacity: 0; transform: translateX(20px); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 行数限制 */

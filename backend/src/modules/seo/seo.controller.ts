@@ -100,8 +100,22 @@ export class SeoController {
 
   @Post('admin/ai/regenerate-seo-batch')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async batchRegenerate(@Body() body: { postIds: string[] }) {
-    return this.service.batchGenerateSeoMeta(body.postIds?.length || 50);
+  // [V1.1] 改异步: 立即返 jobId, 后台 setImmediate 跑, 客户端 GET 端点查状态
+  // 解决: 同步 batch 在 20 条 × 5s/条 = 100s 时会拖垮 event loop + 触发 HTTP timeout
+  async batchRegenerate(@Body() body: { postIds?: string[]; limit?: number }) {
+    const limit = body.limit ?? 50;
+    return this.service.submitBatchJob(limit);
+  }
+
+  /** [V1.1] 查 batch job 状态 */
+  @Get('admin/ai/regenerate-seo-batch/:jobId')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getBatchJobStatus(@Param('jobId') jobId: string) {
+    const job = this.service.getBatchJobStatus(jobId);
+    if (!job) {
+      throw new NotFoundException(`Job '${jobId}' 不存在或已过期清理`);
+    }
+    return job;
   }
 
   @Post('admin/seo/push-baidu')

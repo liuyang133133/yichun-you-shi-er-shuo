@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RedisService } from '../../../redis/redis.service';
+// [A-P0-02] P0 修复: 注入 AuthService 做 JWT Kill Switch
+import { AuthService } from '../../auth/auth.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminUserService {
+  private readonly logger = new Logger(AdminUserService.name);
   /** JWT 鉴权缓存 key 模板，与 JwtStrategy / UserService 保持一致 */
   private static readonly AUTH_CACHE_KEY = (id: bigint | string) =>
     `auth:user:${id}`;
@@ -12,6 +15,8 @@ export class AdminUserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    // [A-P0-02] P0 修复: 注入 AuthService 触发 JWT Kill Switch
+    private readonly authService: AuthService,
   ) {}
 
   /**
@@ -116,6 +121,15 @@ export class AdminUserService {
     });
     // SHOULD-38: 失效鉴权缓存
     await this.invalidateAuthCache(userId);
+    // [A-P0-02] P0 修复: 撤销该用户所有未过期 token, 让 ban 即时生效
+    try {
+      await this.authService.revokeAllTokensForUser(userId);
+    } catch (e) {
+      // 不阻塞主流程, 仅记录
+      this.logger.warn(
+        `[A-P0-02] revokeAllTokensForUser failed for userId=${userId}: ${(e as Error).message}`,
+      );
+    }
     return updated;
   }
 

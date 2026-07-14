@@ -66,17 +66,20 @@ export class AiUsageService {
     const byType = { house: 0, job: 0, secondhand: 0, lifebiz: 0 };
 
     // Phase 2.2: 内容质量指标 (SEO 覆盖率 / 平均质量分 / 商家帖比例)
+    // [P3-03] 修复: 4 处 status='passed' → auditStatus='passed' + status='active'
+    // 原: status 字段枚举无 'passed' (是 'active'/'deleted'/'rejected'/'pending' 等)
+    //     错过滤导致所有 count/aggregate 全 0
     const [totalPosts, seoPosts, scoreAgg, businessPosts] = await Promise.all([
-      this.prisma.post.count({ where: { status: 'passed' } }),
+      this.prisma.post.count({ where: { auditStatus: 'passed', status: 'active' } }),
       this.prisma.post.count({
-        where: { status: 'passed', seoMeta: { not: Prisma.JsonNull } },
+        where: { auditStatus: 'passed', status: 'active', seoMeta: { not: Prisma.JsonNull } },
       }),
       this.prisma.post.aggregate({
-        where: { status: 'passed', qualityScore: { not: null } },
+        where: { auditStatus: 'passed', status: 'active', qualityScore: { not: null } },
         _avg: { qualityScore: true },
       }),
       this.prisma.post.count({
-        where: { status: 'passed', isBusiness: true },
+        where: { auditStatus: 'passed', status: 'active', isBusiness: true },
       }),
     ]);
 

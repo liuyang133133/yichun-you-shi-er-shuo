@@ -9,6 +9,7 @@ import { Avatar } from '@/components/patterns/avatar';
 import { PageLoading } from '@/components/patterns/empty-state';
 import { toast } from '@/components/toast/toaster';
 import { authApi, meApi, messagesApi, type MeDetail } from '@/lib/api';
+import { EditProfileSheet } from '@/components/me/edit-profile-sheet';
 import { clearAuth, getAccessToken, getStoredUser, type AuthUser } from '@/lib/auth';
 import {
   LogOut, FileText, Heart, MessageCircle, ChevronRight, Settings,
@@ -24,7 +25,7 @@ const QUICK_LINKS = [
 
 const SETTINGS = [
   { icon: Bell, label: '消息通知', desc: '接收新留言 / 系统通知' },
-  { icon: Shield, label: '账号安全', desc: '修改密码 / 实名认证' },
+  { icon: Shield, label: '账号安全', desc: '改昵称 / 修改密码 / 账号安全', href: '/me/security' },
   { icon: Settings, label: '隐私设置', desc: '控制谁能看到我的信息' },
   { icon: Compass, label: '使用指南', desc: '快速了解伊春有事儿说' },
 ];
@@ -41,6 +42,7 @@ export default function MePage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
   const [meDetail, setMeDetail] = useState<MeDetail | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [stats, setStats] = useState({ posts: 0, favorites: 0, comments: 0, unread: 0 });
 
   useEffect(() => {
@@ -96,6 +98,12 @@ export default function MePage() {
     return <PageLoading message="加载个人中心…" />;
   }
 
+  // [T-XXX-LOGIN] 优先用 meDetail (服务器权威) 的 nickname/avatar/phone,
+  // 兜底用 localStorage 的 user,最后兜底「用户 XXXX」
+  // 修复:之前只用 localStorage,登录响应只含 phone → 显示「用户 XXXX」让用户误以为"用户被重新生成"
+  const displayName =
+    meDetail?.nickname || user.nickname || `用户 ${user.phone.slice(-4)}`;
+
   return (
     <main className="container max-w-4xl py-8 space-y-6">
       {/* 资料 Hero 卡 */}
@@ -106,15 +114,15 @@ export default function MePage() {
 
         <div className="relative flex flex-col md:flex-row items-center md:items-end gap-6">
           <Avatar
-            src={undefined}
-            name={user.nickname || user.phone}
-            fallback={user.phone?.[0] || 'U'}
+            src={meDetail?.avatar || undefined}
+            name={displayName}
+            fallback={(meDetail?.phone || user.phone)?.[0] || 'U'}
             size="2xl"
             className="ring-4 ring-white/30 shadow-xl bg-white/20 backdrop-blur-md"
           />
           <div className="flex-1 text-center md:text-left space-y-1.5">
             <div className="font-display text-2xl font-black flex items-center gap-2 justify-center md:justify-start flex-wrap">
-              <span>{user.nickname || `用户 ${user.phone.slice(-4)}`}</span>
+              <span>{displayName}</span>
               {meDetail?.role === 'admin' && (
                 <span className="px-2 py-0.5 text-xs rounded-full bg-amber-400 text-amber-900 font-bold">
                   管理员
@@ -126,14 +134,15 @@ export default function MePage() {
             </div>
             <div className="flex items-center gap-2 text-xs text-white/70 justify-center md:justify-start">
               <BadgeCheck className="h-3.5 w-3.5" />
-              已认证用户 · 加入伊春有事儿说
+              {meDetail?.role === 'admin' ? '平台管理员' : '已注册用户'} · 加入伊春有事儿说
             </div>
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
               className="rounded-full bg-white/15 backdrop-blur-md border-white/30 text-white hover:bg-white/25 hover:text-white"
-              onClick={() => toast.info('资料编辑功能开发中', '提示')}
+              onClick={() => setEditOpen(true)}
+              data-testid="open-edit-profile"
             >
               编辑资料
             </Button>
@@ -195,11 +204,8 @@ export default function MePage() {
           <CardContent className="p-0 divide-y">
             {SETTINGS.map((it) => {
               const Icon = it.icon;
-              return (
-                <button
-                  key={it.label}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors text-left group"
-                >
+              const content = (
+                <>
                   <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                     <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
@@ -208,6 +214,23 @@ export default function MePage() {
                     <div className="text-xs text-muted-foreground">{it.desc}</div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                </>
+              );
+              return it.href ? (
+                <Link
+                  key={it.label}
+                  href={it.href}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors text-left group"
+                >
+                  {content}
+                </Link>
+              ) : (
+                <button
+                  key={it.label}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors text-left group"
+                  onClick={() => toast.info(`${it.label}功能开发中`, '提示')}
+                >
+                  {content}
                 </button>
               );
             })}
@@ -229,6 +252,14 @@ export default function MePage() {
       <p className="text-center text-xs text-muted-foreground pt-4">
         伊春有事儿说 v1.0 · 让本地信息流动起来
       </p>
+
+      {/* [T-023] 编辑资料 Sheet — 头像/昵称/简介/性别 抽屉 */}
+      <EditProfileSheet
+        open={editOpen}
+        meDetail={meDetail}
+        onClose={() => setEditOpen(false)}
+        onSaved={(next) => setMeDetail(next)}
+      />
     </main>
   );
 }

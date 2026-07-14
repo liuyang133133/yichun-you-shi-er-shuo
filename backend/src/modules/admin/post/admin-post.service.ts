@@ -1,17 +1,45 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationService } from '../../notification/notification.service';
 import { NotificationEvent } from '../../notification/notification-event';
+import { RedisService } from '../../../redis/redis.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminPostService {
   private readonly logger = new Logger(AdminPostService.name);
+  // [B-P1-08] P1 修复: 批量审核/下架限频, 防止 admin 误操作/账号劫持滥下架
+  private readonly BATCH_RATE_LIMIT = 5;          // 每分钟最多 5 次
+  private readonly BATCH_RATE_WINDOW = 60;       // 60 秒窗口
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    // [B-P1-08] 注入 RedisService 做限频
+    private readonly redis: RedisService,
   ) {}
+
+  /**
+   * [B-P1-08] P1 修复: per-admin per-minute 限频
+   * 检查并递增 Redis 计数器, 超限抛 429
+   */
+  private async checkBatchRateLimit(adminId: bigint, action: string): Promise<void> {
+    const minute = Math.floor(Date.now() / 1000 / 60);
+    const key = `audit_batch:${action}:${adminId}:${minute}`;
+    try {
+      const n = await this.redis.incr(key);
+      if (n === 1) await this.redis.expire(key, this.BATCH_RATE_WINDOW);
+      if (n > this.BATCH_RATE_LIMIT) {
+        throw new HttpException(
+          `批量操作过于频繁,每分钟最多 ${this.BATCH_RATE_LIMIT} 次,请稍后再试`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    } catch (e) {
+      if (e instanceof HttpException) throw e;
+      this.logger.warn(`[B-P1-08] 限频 Redis 出错 (降级放行): ${(e as Error).message}`);
+    }
+  }
 
   /**
    * 通知发送失败不应阻塞审核主流程（业务侧已写库成功）
@@ -82,6 +110,9 @@ export class AdminPostService {
           deletedAt: null,
           deletedBy: null,
           status: 'active',
+          // [B-P0-02] P0 修复: 强制重置 auditStatus='pending' 防止违规帖借 restore 复活
+          // 列表默认 auditStatus='passed' 过滤, 帖子在公开列表隐藏, 需 admin 重新审核
+          auditStatus: 'pending',
           updatedBy: adminId,
         },
       }),
@@ -92,7 +123,7 @@ export class AdminPostService {
           action: 'restore',
           targetType: 'post',
           targetId: postId,
-          reason: `从 ${post.deletedAt.toISOString()} 软删恢复`,
+          reason: `从 ${post.deletedAt.toISOString()} 软删恢复 (强制重审)`,
           metadata: { previousDeletedBy: post.deletedBy?.toString() ?? null },
         },
       }),
@@ -255,6 +286,8 @@ export class AdminPostService {
     action: 'pass' | 'reject',
     reason?: string,
   ) {
+    // [B-P1-08] per-admin 限频
+    await this.checkBatchRateLimit(adminId, 'audit');
     if (ids.length === 0) {
       throw new BadRequestException('ids 不能为空');
     }
@@ -307,6 +340,8 @@ export class AdminPostService {
    * 不限状态,强制下架;事务: updateMany + 单条 audit_log (metadata.ids)
    */
   async offlineBatch(adminId: bigint, ids: bigint[], reason: string) {
+    // [B-P1-08] per-admin 限频
+    await this.checkBatchRateLimit(adminId, 'offline');
     if (ids.length === 0) {
       throw new BadRequestException('ids 不能为空');
     }

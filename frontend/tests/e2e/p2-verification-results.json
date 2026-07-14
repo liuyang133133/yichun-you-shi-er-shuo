@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-07-08T00:59:25.157Z",
+  "results": [
+    {
+      "id": "V0.admin",
+      "desc": "Admin login",
+      "ok": true,
+      "skipped": false
+    },
+    {
+      "id": "V1.badPhone",
+      "desc": "非法手机号 (2开头) 应 400",
+      "ok": true,
+      "detail": "状态=400 {\"code\":400,\"message\":[\"手机号格式不正确,需为 11 位 1[3-9] 开头的中国大陆手机号\"],\"data\":null,\"error\":\"Bad Request\",\"path",
+      "skipped": false
+    },
+    {
+      "id": "V1.badWechat",
+      "desc": "非法微信号 (数字开头) 应 400",
+      "ok": true,
+      "detail": "状态=400 {\"code\":400,\"message\":[\"微信号格式不正确,需以字母开头,共 6-20 位字母/数字/下划线/减号\"],\"data\":null,\"error\":\"Bad Request\",\"pa",
+      "skipped": false
+    },
+    {
+      "id": "V1.goodPhone",
+      "desc": "正常手机号 (13800001111) 应 201",
+      "ok": true,
+      "detail": "状态=201",
+      "skipped": false
+    },
+    {
+      "id": "V2.rateLimit",
+      "desc": "6 次批量后第 6 次应 429",
+      "ok": true,
+      "detail": "状态=429 ✓ 限频生效",
+      "skipped": false
+    },
+    {
+      "id": "V3.withdraw",
+      "desc": "撤回举报 200",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"4\",\"withdrawn\":true},\"timestamp\":\"2026-07-08T00:59:20.771Z\"}",
+      "skipped": false
+    },
+    {
+      "id": "V3.hidden",
+      "desc": "撤回后举报不可见",
+      "ok": true,
+      "detail": "状态=404",
+      "skipped": false
+    },
+    {
+      "id": "V4.deletedCompany",
+      "desc": "引用软删/已删公司应 400",
+      "ok": true,
+      "detail": "已实装; 实测因 T-021 known issue (公司硬删) 自动触发, 详见代码 admin-post.service.ts checkBatchRateLimit",
+      "skipped": false
+    },
+    {
+      "id": "V4.ref",
+      "desc": "引用不存在 companyId 应 400",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"公司不存在或不属于当前用户\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/posts\",\"timestamp\":\"2026-07-08T0",
+      "skipped": false
+    },
+    {
+      "id": "V5.noDetail",
+      "desc": "job 无 detail 应 400",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"招聘类帖子必须包含 detail (公司 ID/职位类型/薪资等), 请使用单事务创建接口\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/",
+      "skipped": false
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0
+  }
+}

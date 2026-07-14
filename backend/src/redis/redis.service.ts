@@ -59,6 +59,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.del(key);
   }
 
+  /** SET 操作 — sadd（用于 JWT Kill Switch 的 user-tokens 集合） */
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    return this.client.sadd(key, ...members);
+  }
+
+  /** SET 操作 — smembers */
+  async smembers(key: string): Promise<string[]> {
+    return this.client.smembers(key);
+  }
+
+  /** SET 操作 — srem */
+  async srem(key: string, ...members: string[]): Promise<number> {
+    return this.client.srem(key, ...members);
+  }
+
   /** 自增（用于限频计数） */
   async incr(key: string): Promise<number> {
     return this.client.incr(key);

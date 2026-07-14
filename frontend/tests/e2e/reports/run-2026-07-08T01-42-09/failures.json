@@ -1,0 +1,23 @@
+[
+  {
+    "method": "POST",
+    "path": "/posts/999999999/boost",
+    "dim": 1,
+    "testName": "正常参数",
+    "outcome": "FAIL",
+    "severity": "P0",
+    "actualStatus": 503,
+    "expected": [
+      200,
+      201,
+      204,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "note": "server bug: 5xx on input",
+    "latencyMs": 14
+  }
+]

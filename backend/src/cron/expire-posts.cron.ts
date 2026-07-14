@@ -20,17 +20,21 @@ export class ExpirePostsCron {
     const t0 = Date.now();
     try {
       // 1. lifebiz 过期下架
+      // [P3-04] P1 修复: 加 auditStatus='passed' 过滤
+      // 原: pending/rejected 的帖子也会被 expire, 与公开列表语义不一致
+      //     (B-P0-03 修过后, 公开列表只看 auditStatus='passed'+status='active')
+      // 修复: 仅当已审核通过的帖子才会被 exp ired 状态覆盖
       const expiredLifebiz = await this.prisma.postLifebiz.findMany({
         where: {
           expireAt: { lt: new Date() },
-          post: { status: 'active' },
+          post: { status: 'active', auditStatus: 'passed' },
         },
         select: { postId: true },
       });
       if (expiredLifebiz.length > 0) {
         const postIds = expiredLifebiz.map((x) => x.postId);
         const r = await this.prisma.post.updateMany({
-          where: { id: { in: postIds }, status: 'active' },
+          where: { id: { in: postIds }, status: 'active', auditStatus: 'passed' },
           data: { status: 'expired' },
         });
         this.logger.log(`[Cron] lifebiz 过期下架 ${r.count} 条 (${Date.now() - t0}ms)`);

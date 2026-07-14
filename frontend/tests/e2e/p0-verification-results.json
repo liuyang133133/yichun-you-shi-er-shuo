@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-07-07T13:19:40.148Z",
+  "results": [
+    {
+      "id": "V0.admin-login",
+      "desc": "Admin 登录获取 token",
+      "ok": true,
+      "skipped": false
+    },
+    {
+      "id": "V1.post.sensitive",
+      "desc": "发帖含\"赌博\"敏感词应被拦截 (400)",
+      "ok": true,
+      "detail": "状态=400 body={\"code\":400,\"message\":\"帖子内容包含违规内容，请修改后重试\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/posts\",\"timestamp\":\"2026-07-",
+      "skipped": false
+    },
+    {
+      "id": "V1.post.clean",
+      "desc": "正常发帖应通过",
+      "ok": false,
+      "detail": "状态=429",
+      "skipped": false
+    },
+    {
+      "id": "V2.locked",
+      "desc": "5+ 次错误后 429 锁定",
+      "ok": true,
+      "detail": "状态=429 body={\"code\":429,\"message\":\"密码错误次数过多，请 15 分钟后再试\",\"data\":null,\"error\":\"Internal Server Error\",\"path\":\"/api",
+      "skipped": false
+    },
+    {
+      "id": "V3.before",
+      "desc": "Ban 前 token 有效",
+      "ok": true,
+      "detail": "状态=200",
+      "skipped": false
+    },
+    {
+      "id": "V3.ban",
+      "desc": "Admin ban 用户",
+      "ok": true,
+      "detail": "状态=201",
+      "skipped": false
+    },
+    {
+      "id": "V3.killed",
+      "desc": "Ban 后旧 token 立即失效 (401)",
+      "ok": true,
+      "detail": "状态=401 (期望 401)",
+      "skipped": false
+    },
+    {
+      "id": "V4.restore",
+      "desc": "Restore 软删帖",
+      "ok": true,
+      "detail": "状态=201",
+      "skipped": false
+    },
+    {
+      "id": "V4.hidden",
+      "desc": "Restore 后公开列表不可见 (auditStatus=pending)",
+      "ok": true,
+      "detail": "inList=false",
+      "skipped": false
+    },
+    {
+      "id": "V5.public",
+      "desc": "公开列表 (6 条) 全部 auditStatus=passed",
+      "ok": true,
+      "detail": "全部 passed=true",
+      "skipped": false
+    },
+    {
+      "id": "V6.apply",
+      "desc": "投递请求 (状态=400, 不应为 500)",
+      "ok": false,
+      "detail": "body={\"code\":400,\"message\":\"该职位不可投递\",\"data\":null,\"error\":\"Bad Request\",\"path\":\"/api/v1/applications\",\"tim",
+      "skipped": false
+    },
+    {
+      "id": "V6.duplicate",
+      "desc": "重复投递 409",
+      "ok": false,
+      "detail": "状态=400",
+      "skipped": false
+    },
+    {
+      "id": "V7.recall",
+      "desc": "撤回未读消息",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"5\",\"recalled\":true,\"hardDeleted\":true},\"timestamp\":\"2026-07-0",
+      "skipped": false
+    },
+    {
+      "id": "V7.remove",
+      "desc": "删除消息",
+      "ok": true,
+      "detail": "状态=200 body={\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"6\",\"hidden\":true},\"timestamp\":\"2026-07-07T13:19:40.146Z\"}",
+      "skipped": false
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passed": 11,
+    "failed": 3
+  }
+}

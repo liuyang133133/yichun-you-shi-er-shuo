@@ -11,6 +11,7 @@ import {
   DefaultValuePipe,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
@@ -62,12 +63,26 @@ export class UserController {
   }
 
   /**
+   * 当前登录用户信息（推荐用这个, 客户端拿到自己的 user 资料）
+   * [BB-003 Fix] 之前 GET /users/me 落到 :id → BigInt('me') SyntaxError → 500
+   */
+  @Get('me')
+  @ApiOperation({ summary: '当前登录用户信息 (JWT)' })
+  async me(@CurrentUser() user: JwtPayload) {
+    return this.userService.findOnePublic(BigInt(user.sub));
+  }
+
+  /**
    * 公开用户详情（脱敏 phone）
    */
   @Public()
   @Get(':id')
   @ApiOperation({ summary: '用户详情（脱敏）' })
   findOne(@Param('id') id: string) {
+    // [BB-003 Fix] 防御: 非数字 id 直接返回 400, 避免 BigInt 抛 500
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException(`Invalid user id: ${id}`);
+    }
     return this.userService.findOnePublic(BigInt(id));
   }
 
@@ -91,7 +106,11 @@ export class UserController {
     if (!isSelf && !isAdmin) {
       throw new ForbiddenException('只能修改自己的资料');
     }
-    return this.userService.update(targetId, dto);
+    // [A-P0-03] P0 修复: 透传 operator 用于审计
+    return this.userService.update(targetId, dto, {
+      sub: user.sub,
+      role: user.role,
+    });
   }
 
   /**

@@ -1,19 +1,27 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { SensitiveWordService } from '../../common/filters/sensitive-word.filter';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MessageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // P0-Fix (D-P0-02): 注入敏感词服务
+    private readonly sensitiveWord: SensitiveWordService,
+  ) {}
 
   /**
    * 发送站内信
    * - 不能给自己发
    * - 收件人必须存在
-   * - 集成敏感词过滤（生产：应通过 Module 注入 SensitiveWordService）
+   * - 集成敏感词过滤 (P0-Fix D-P0-02)
    */
   async send(senderId: bigint, dto: SendMessageDto) {
+    // ===== [D-P0-02] P0 修复: 敏感词同步拦截 =====
+    await this.sensitiveWord.assertClean(dto.content, '消息内容');
+
     if (BigInt(dto.receiverId) === senderId) {
       throw new BadRequestException('不能给自己发消息');
     }
@@ -153,5 +161,53 @@ export class MessageService {
       where: { receiverId: userId, isRead: 0 },
     });
     return { count };
+  }
+
+  // ============== [D-P0-03] P0 修复: 撤回 + 隐藏 ==============
+
+  /**
+   * 撤回消息 (发送方, 5 分钟内)
+   * - 未读: 硬删 (对方收件箱直接消失)
+   * - 已读: 软删 (deletedAt, Prisma 中间件隐藏)
+   */
+  async recall(userId: bigint, messageId: bigint) {
+    const msg = await this.prisma.message.findUnique({ where: { id: messageId } });
+    if (!msg) throw new NotFoundException('消息不存在');
+    if (msg.senderId !== userId) {
+      throw new ForbiddenException('只能撤回自己发送的消息');
+    }
+    const ageMin = (Date.now() - msg.createdAt.getTime()) / 60_000;
+    if (ageMin > 5) {
+      throw new BadRequestException('超过 5 分钟无法撤回');
+    }
+    if (msg.isRead === 0) {
+      // 未读: 硬删
+      await this.prisma.message.delete({ where: { id: messageId } });
+      return { id: messageId.toString(), recalled: true, hardDeleted: true };
+    }
+    // 已读: 软删 (Prisma 中间件自动隐藏)
+    await this.prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date(), deletedBy: userId },
+    });
+    return { id: messageId.toString(), recalled: true, hardDeleted: false };
+  }
+
+  /**
+   * 隐藏消息 (收发双方可调用, 仅影响自己视角)
+   * 注: 当前 Prisma 中间件不分 sender/receiver, 软删后双方都看不到
+   *   改进方案: 新建 MessageHide 表 (留 V1.1)
+   */
+  async remove(userId: bigint, messageId: bigint) {
+    const msg = await this.prisma.message.findUnique({ where: { id: messageId } });
+    if (!msg) throw new NotFoundException('消息不存在');
+    if (msg.senderId !== userId && msg.receiverId !== userId) {
+      throw new ForbiddenException('无权操作此消息');
+    }
+    await this.prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date(), deletedBy: userId },
+    });
+    return { id: messageId.toString(), hidden: true };
   }
 }

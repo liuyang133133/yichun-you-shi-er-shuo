@@ -173,6 +173,12 @@ async function bootstrap() {
   });
 
   // 7. 全局验证管道
+  // [P0-fix] body-parser 上限提到 1MB, 避免 70k+ 描述被 413 拦在 DTO 之前
+  // 旧默认 100KB 太严, 实际业务有长 description/图片列表场景
+  const express = require('express');
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

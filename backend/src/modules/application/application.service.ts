@@ -55,7 +55,20 @@ export class ApplicationService {
       throw new ConflictException('已经投递过该职位');
     }
 
-    // 4. 创建投递记录
+    // 4. [D-P0-01] P0 修复: 招满拦截 — 活跃投递数 >= recruitCount 即拒
+    const activeCount = await this.prisma.jobApplication.count({
+      where: {
+        postJobId,
+        status: { in: ['已投递', '已查看', '已回复'] },
+      },
+    });
+    if (activeCount >= postJob.recruitCount) {
+      throw new ConflictException(
+        `该职位已招满（${activeCount}/${postJob.recruitCount}），无法投递`,
+      );
+    }
+
+    // 5. 创建投递记录
     return this.prisma.jobApplication.create({
       data: {
         postJobId,

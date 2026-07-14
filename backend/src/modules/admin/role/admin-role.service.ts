@@ -88,6 +88,10 @@ export class AdminRoleService {
   /**
    * DELETE /api/v1/admin/roles/:id
    * 软删角色（系统预置不可删）
+   * [F-P1-04] P1 修复: 级联软删 userRole / rolePermission 关联表
+   * 原: 仅软删 role 表, userRole/rolePermission 行通过中间件 default 过滤(deletedAt:null),
+   *    但若 role 被 restore, 关联表仍 deletedAt=null → 重复关联
+   * 修复: 同事务级联软删, 恢复时同事务恢复
    */
   async remove(adminId: bigint, id: bigint) {
     const role = await this.prisma.role.findUnique({
@@ -97,9 +101,51 @@ export class AdminRoleService {
     if (role.isSystem) {
       throw new BadRequestException('系统预置角色不可删除');
     }
-    return this.prisma.role.update({
-      where: { id },
-      data: { deletedAt: new Date(), deletedBy: adminId, updatedBy: adminId, status: 0 },
+    const now = new Date();
+    // 同事务: role 软删 + userRole 软删 + rolePermission 软删
+    return this.prisma.$transaction(async (tx) => {
+      const r = await tx.role.update({
+        where: { id },
+        data: { deletedAt: now, deletedBy: adminId, updatedBy: adminId, status: 0 },
+      });
+      await tx.userRole.updateMany({
+        where: { roleId: id, deletedAt: null },
+        data: { deletedAt: now, deletedBy: adminId, updatedBy: adminId },
+      });
+      await tx.rolePermission.updateMany({
+        where: { roleId: id, deletedAt: null },
+        data: { deletedAt: now, deletedBy: adminId, updatedBy: adminId },
+      });
+      return r;
+    });
+  }
+
+  /**
+   * [F-P1-04] P1 修复: 恢复软删的角色, 并复活被级联软删的 userRole/rolePermission
+   * 注意: 这是额外端点, 当前 admin/roles 路由未暴露, 留接口文档备用
+   */
+  async restore(adminId: bigint, id: bigint) {
+    const role = await this.prisma.role.findUnique({
+      where: { id, includeDeleted: true } as any,
+    });
+    if (!role) throw new NotFoundException(`角色 ${id} 不存在`);
+    if (!role.deletedAt) {
+      return { id: id.toString(), alreadyActive: true };
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const r = await tx.role.update({
+        where: { id },
+        data: { deletedAt: null, deletedBy: null, updatedBy: adminId, status: 1 },
+      });
+      await tx.userRole.updateMany({
+        where: { roleId: id, deletedBy: adminId, deletedAt: { not: null } },
+        data: { deletedAt: null, deletedBy: null, updatedBy: adminId },
+      });
+      await tx.rolePermission.updateMany({
+        where: { roleId: id, deletedBy: adminId, deletedAt: { not: null } },
+        data: { deletedAt: null, deletedBy: null, updatedBy: adminId },
+      });
+      return r;
     });
   }
 }

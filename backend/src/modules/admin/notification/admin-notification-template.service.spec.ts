@@ -27,7 +27,7 @@ describe('AdminNotificationTemplateService (T-009)', () => {
   beforeAll(async () => {
     prisma = new PrismaService();
     await prisma.$connect();
-    notificationService = new NotificationService(prisma);
+    notificationService = new NotificationService(prisma, { sendToUser: jest.fn().mockResolvedValue(undefined) } as any);
     service = new AdminNotificationTemplateService(prisma, notificationService);
 
     const admin = await prisma.user.findFirst({ where: { role: 'admin' } });

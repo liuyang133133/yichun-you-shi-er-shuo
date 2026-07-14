@@ -1,0 +1,65 @@
+[
+  {
+    "method": "POST",
+    "path": "/admin/ai/regenerate-seo/999999999",
+    "dim": 1,
+    "testName": "正常参数",
+    "outcome": "FAIL",
+    "severity": "P0",
+    "actualStatus": 500,
+    "expected": [
+      200,
+      201,
+      204,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "note": "server bug: 5xx on input",
+    "latencyMs": 12
+  },
+  {
+    "method": "POST",
+    "path": "/admin/ai/regenerate-seo-batch",
+    "dim": 1,
+    "testName": "正常参数",
+    "outcome": "FAIL",
+    "severity": "P2",
+    "actualStatus": 0,
+    "expected": [
+      200,
+      201,
+      204,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "note": "connection failed",
+    "latencyMs": 30023
+  },
+  {
+    "method": "POST",
+    "path": "/admin/seo/push-baidu",
+    "dim": 1,
+    "testName": "正常参数",
+    "outcome": "FAIL",
+    "severity": "P0",
+    "actualStatus": 500,
+    "expected": [
+      200,
+      201,
+      204,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "note": "server bug: 5xx on input",
+    "latencyMs": 14
+  }
+]

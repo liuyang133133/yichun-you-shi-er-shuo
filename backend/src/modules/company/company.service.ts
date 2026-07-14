@@ -66,19 +66,50 @@ export class CompanyService {
   /**
    * 删除公司（仅创建者可删）
    * DELETE /api/v1/companies/:id
+   * [D-P1-06] P1 修复: 改软删 (T-021 关闭原硬删)
+   * 原: hard delete, 即使 0 在招职位也直接抹除数据, 与 T-001 软删规范不一致
+   * 修复: 软删 (deletedAt) + 新增 restore 端点 (admin 后台可恢复)
+   *      update MyPost 关联表使现有招聘帖标"公司已注销"
    */
   async remove(userId: bigint, id: bigint) {
-    const c = await this.prisma.company.findUnique({
-      where: { id },
+    // 用 includeDeleted=true 拿历史可能已软删的行 (中间件 default 过滤掉)
+    const c = await this.prisma.company.findFirst({
+      where: { id, includeDeleted: true } as any,
       include: { _count: { select: { jobs: true } } },
     });
     if (!c) throw new NotFoundException(`公司 ID ${id} 不存在`);
     if (c.creatorUserId !== userId) throw new ForbiddenException('只能删除自己创建的公司');
+    if (c.deletedAt) {
+      return { id: id.toString(), alreadyDeleted: true };
+    }
     if (c._count.jobs > 0) {
       throw new ConflictException(`公司下还有 ${c._count.jobs} 个在招职位，无法删除`);
     }
-    await this.prisma.company.delete({ where: { id } });
-    return { id: id.toString(), deleted: true };
+    // [D-P1-06] 软删 (deletedAt) 而非 hard delete, 与 T-001 一致
+    await this.prisma.company.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedBy: userId, updatedBy: userId },
+    });
+    return { id: id.toString(), softDeleted: true };
+  }
+
+  /**
+   * [D-P1-06] P1 修复: 恢复软删公司 (admin 后台)
+   * 注意: 路由未单独暴露, 由 admin-company.service 包装调用
+   */
+  async restore(_userId: bigint, id: bigint) {
+    const c = await this.prisma.company.findFirst({
+      where: { id, includeDeleted: true } as any,
+    });
+    if (!c) throw new NotFoundException(`公司 ID ${id} 不存在`);
+    if (!c.deletedAt) {
+      return { id: id.toString(), alreadyActive: true };
+    }
+    await this.prisma.company.update({
+      where: { id },
+      data: { deletedAt: null, deletedBy: null, updatedBy: _userId },
+    });
+    return { id: id.toString(), restored: true };
   }
 
   /**
