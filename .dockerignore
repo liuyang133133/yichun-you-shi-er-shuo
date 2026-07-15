@@ -1,0 +1,61 @@
+# ==========================================
+# 根 .dockerignore
+# 当前 docker-compose.yml 各 service 已显式指定 build context (./backend / ./frontend / ./admin),
+# 各自有独立的 .dockerignore. 此文件作为 compose 从根目录 build 时 (如有) 的兜底保护.
+# ==========================================
+
+# Version control
+.git
+.gitignore
+.github
+
+# IDE / OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets (禁止任何 .env 泄露进 image)
+.env
+.env.*
+.env.local
+.env.*.local
+.env.prod
+!env.example  # 示例放行
+# 但保留所有 .example 模板
+*.example
+
+# Logs / Coverage
+*.log
+logs
+coverage
+*.lcov
+
+# Build artifacts (任何子项目产物都不该进根镜像)
+node_modules
+dist
+build
+.next
+out
+*.tsbuildinfo
+
+# Docker 自引用 (避免嵌套 copy)
+docker-compose.override.yml
+.dockerignore
+Dockerfile*
+
+# Docs / Scripts / Agents (不进 image)
+docs
+scripts
+.claude
+.codegraph
+.codex
+.hermes
+.workbuddy
+.worktrees
+.pm-tmp
+.pm-ttmp-shots
+test-results

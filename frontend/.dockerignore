@@ -1,7 +1,6 @@
 # ==========================================
-# Next.js 15 admin .dockerignore
+# Next.js 15 frontend .dockerignore
 # 阻止构建上下文的无关文件进 image,提高构建速度 + 减少 image 体积
-# 注: .npmrc 必须保留 (Dockerfile 需要 legacy-peer-deps=true)
 # ==========================================
 
 # Version control
@@ -27,6 +26,7 @@ coverage
 test-results
 playwright-report
 playwright/.cache
+tests
 e2e
 
 # Environment files

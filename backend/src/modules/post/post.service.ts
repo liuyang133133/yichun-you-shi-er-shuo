@@ -875,6 +875,11 @@ export class PostService {
       throw new ForbiddenException('只能删除自己的信息');
     }
     // [P1-018] 事务：主表软删 + 4 个子表全部硬删 + 图片
+    // [P1-9 2026-07-15] 同步软删 Comment/Favorite, 防止:
+    //  1. /me/favorites 列表的 post=null 外键 (软删后 post 已过滤, list 中会显示空)
+    //  2. /me/comments 的 "评论" 计数对不上 (已删帖子的评论不再有效)
+    //  3. Comment/Favorite 行留在 DB 浪费空间, 且无法被 soft-delete 中间件过滤 (因为 post 已 deleted)
+    // 修复: 软删关联 Comment/Favorite (保留 deletedAt 审计), 不需要 decrement 计数 (post.commentCount 字段不再被查询, 因 post 已软删)
     await this.prisma.$transaction([
       this.prisma.post.update({
         where: { id },
@@ -890,6 +895,16 @@ export class PostService {
       this.prisma.postJob.deleteMany({ where: { postId: id } }),
       this.prisma.postLifebiz.deleteMany({ where: { postId: id } }),
       this.prisma.postImage.deleteMany({ where: { postId: id } }),
+      // [P1-9 2026-07-15] 软删 Comment/Favorite (走软删中间件 + deletedAt)
+      // 注意: 这里直接 updateMany 写 deletedAt 字段, 绕开中间件, 因为我们就是要标 deleted
+      this.prisma.comment.updateMany({
+        where: { postId: id, deletedAt: null },
+        data: { deletedAt: new Date(), deletedBy: userId },
+      }),
+      this.prisma.favorite.updateMany({
+        where: { postId: id, deletedAt: null },
+        data: { deletedAt: new Date(), deletedBy: userId },
+      }),
     ]);
     // SHOULD-7: 写操作清列表缓存
     this.redis.invalidatePattern('cache:posts:*').catch((e) =>

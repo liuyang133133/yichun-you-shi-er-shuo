@@ -27,6 +27,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    # [P1-AUDIT-2026-07-15] P1-20: dev compose 资源限制 (避免 frontend OOM)
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: "1.0"
     networks:
       - yichun-network
 
@@ -46,6 +50,16 @@ services:
       - sh
       - -c
       - 'redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru'
+    # [P1-AUDIT-2026-07-15] P1-19: redis healthcheck (PONG 验证 + auth 通过)
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping 2>&1 | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # [P1-AUDIT-2026-07-15] P1-20: dev compose 资源限制
+    mem_limit: 256M
+    mem_reservation: 128M
+    cpus: "0.5"
     networks:
       - yichun-network
 
@@ -79,11 +93,19 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+      # [P1-AUDIT-2026-07-15] P1-21: 持久化 uploads 目录 (dev 环境).
+      # container 用 process.cwd() + 'uploads' = /app/uploads.
+      # 生产环境应迁 S3/OSS,此为开发期临时方案.
+      - ./backend/uploads:/app/uploads
     command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+    # [P1-AUDIT-2026-07-15] P1-20: dev compose 资源限制
+    mem_limit: 1G
+    mem_reservation: 512M
+    cpus: "2.0"
     networks:
       - yichun-network
 
@@ -109,6 +131,17 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
     command: npm run dev
+    # [P1-AUDIT-2026-07-15] P1-19: frontend healthcheck (Next.js /api/health 路由)
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # [P1-AUDIT-2026-07-15] P1-20: dev compose 资源限制 (实测 979M, 上限 768M)
+    mem_limit: 768M
+    mem_reservation: 384M
+    cpus: "1.0"
     networks:
       - yichun-network
 
@@ -134,6 +167,17 @@ services:
       - ./admin/src:/app/src
       - ./admin/public:/app/public
     command: npm run dev
+    # [P1-AUDIT-2026-07-15] P1-19: admin healthcheck (Next.js /login 路由, /api/health 不存在)
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/login || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # [P1-AUDIT-2026-07-15] P1-20: dev compose 资源限制
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: "1.0"
     networks:
       - yichun-network
 

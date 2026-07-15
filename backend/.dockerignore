@@ -1,0 +1,66 @@
+# ==========================================
+# NestJS backend .dockerignore
+# 阻止构建上下文的无关文件进 image,提高构建速度 + 减少 image 体积
+# ==========================================
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (Dockerfile 里重新 npm install,不进 build context)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Build artifacts (production stage 自己 npm run build)
+dist
+*.tsbuildinfo
+
+# Test
+coverage
+*.lcov
+test-results
+
+# Environment files (绝对不进 image)
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma 生成的 client (开发期有,production 里 prisma generate 会重新生成)
+src/generated
+
+# 上传文件 (runtime 写入不进 image,dev 走 volume mount 见 docker-compose.yml)
+uploads
+
+# E2E / Playwright (不进 image)
+test
+e2e
+
+# Scripts (开发期工具,production 不需要)
+scripts
+
+# Docker 自引用
+Dockerfile
+.dockerignore
+
+# 验证脚本和调试文件
+*.cjs
+get-sms-code.ts
+err.log
