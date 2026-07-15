@@ -64,7 +64,16 @@ export function getStoredUser(): AuthUser | null {
   }
 }
 
+/**
+ * 广播: 用户信息变更 (头像/昵称 等)
+ * Header 等组件监听此事件后立即从 localStorage 重读,实现跨组件同步
+ * (Header 默认只在 pathname 变化时刷新,改资料不切路径所以需要主动通知)
+ */
+export const AUTH_USER_CHANGED_EVENT = 'auth-user-changed';
+
 export function setStoredUser(user: AuthUser): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(USER_INFO_KEY, JSON.stringify(user));
+  // 通知同窗口的订阅者 (Header 等) 重新读取
+  window.dispatchEvent(new CustomEvent(AUTH_USER_CHANGED_EVENT, { detail: user }));
 }
