@@ -37,10 +37,15 @@ export class CompanyService {
   /**
    * 公司详情
    * GET /api/v1/companies/:id
+   *
+   * [P1-11 2026-07-15] 修复: 用 findFirst + deletedAt: null 过滤软删公司
+   * findUnique 中间件自动加 deletedAt:null (Prisma 软删中间件),
+   * 但为了与其他 service 行为一致, 显式查询更稳
+   * (admin 后台要看软删公司通过 includeDeleted=true 走单独的 admin-company.service)
    */
   async findOne(id: bigint) {
-    const c = await this.prisma.company.findUnique({
-      where: { id },
+    const c = await this.prisma.company.findFirst({
+      where: { id, deletedAt: null },
       include: {
         creator: { select: { id: true, nickname: true, avatar: true } },
         _count: { select: { jobs: true } },
@@ -115,10 +120,15 @@ export class CompanyService {
   /**
    * 公司列表（公开）
    * GET /api/v1/companies
+   *
+   * [P1-11 2026-07-15] 修复: where 强制 deletedAt: null,
+   * 之前软删的公司仍出现在公开列表 (Prisma 中间件自动加 deletedAt:null 给 findMany 应该已过滤,
+   * 但 findUnique/findFirst 不会, 而且 P1-11 audit 现场验证确认有 bug)
+   * 修复: 显式 where: { deletedAt: null } 兜底
    */
   async findAll(query: { keyword?: string; industry?: string; page?: number; pageSize?: number } = {}) {
     const { keyword, industry, page = 1, pageSize = 20 } = query;
-    const where: Prisma.CompanyWhereInput = {};
+    const where: Prisma.CompanyWhereInput = { deletedAt: null };
     if (keyword) {
       where.OR = [
         { name: { contains: keyword } },

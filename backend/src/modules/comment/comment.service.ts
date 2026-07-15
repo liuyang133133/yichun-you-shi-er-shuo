@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+// [P1-1 2026-07-15] 评论/回复触发通知
+import { NotificationService } from '../notification/notification.service';
+import { NotificationEvent } from '../notification/notification-event';
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CommentService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * [P0-001] 写入口封禁检查
@@ -95,7 +103,7 @@ export class CommentService {
     // 1. 校验 post
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, userId: true, title: true },
     });
     if (!post) {
       throw new NotFoundException(`信息 ID ${postId} 不存在`);
@@ -146,7 +154,81 @@ export class CommentService {
       }),
     ]);
 
+    // [P1-1 2026-07-15] 触发通知:
+    //  - 顶级评论 → 通知帖子作者 (post.userId)
+    //  - 回复评论 → 通知被回复者 (parent.userId)
+    //  - 通知发送不阻塞响应, 失败仅 warn, 不影响评论创建
+    //  - 跳过 self-notify (自己评论自己帖子/回复自己不发)
+    this.fireCommentNotification({
+      actorUserId: userId,
+      actorNickname: comment.user?.nickname || '',
+      postId,
+      postTitle: post.title ?? '',
+      commentId: comment.id,
+      commentContent: content.slice(0, 50),
+      parentId: parentId ?? null,
+      postOwnerId: post.userId,
+    }).catch((e) =>
+      this.logger.warn(`评论通知发送失败: ${e?.message ?? e}`),
+    );
+
     return comment;
+  }
+
+  /**
+   * [P1-1 2026-07-15] 评论通知发射器
+   * 规则:
+   *  - 有 parentId → 通知被回复者 (parent.userId, 必须不是 actor 本身)
+   *  - 无 parentId → 通知帖子作者 (post.userId, 必须不是 actor 本身)
+   *  - 都不发: 父留言/帖子已软删
+   */
+  private async fireCommentNotification(input: {
+    actorUserId: bigint;
+    actorNickname: string;
+    postId: bigint;
+    postTitle: string;
+    commentId: bigint;
+    commentContent: string;
+    parentId: bigint | null;
+    postOwnerId: bigint;
+  }) {
+    let recipientId: bigint | null = null;
+    let url = `/posts/${input.postId}`;
+    let body = '';
+
+    if (input.parentId) {
+      // 回复: 通知被回复者
+      const parent = await this.prisma.comment.findUnique({
+        where: { id: input.parentId },
+        select: { userId: true, status: true },
+      });
+      if (!parent || parent.status === 1) return;
+      if (parent.userId === input.actorUserId) return; // 自回复不发
+      recipientId = parent.userId;
+      body = `${input.actorNickname || '有人'} 回复了你: ${input.commentContent}`;
+    } else {
+      // 顶级评论: 通知帖子作者 (用入参 postOwnerId 避免再次查询)
+      if (input.postOwnerId === input.actorUserId) return; // 自评自帖不发
+      recipientId = input.postOwnerId;
+      url = `/posts/${input.postId}#comment-${input.commentId}`;
+      body = `${input.actorNickname || '有人'} 评论了你的帖子「${input.postTitle}」: ${input.commentContent}`;
+    }
+
+    if (!recipientId) return;
+
+    await this.notificationService.emit({
+      userId: recipientId,
+      event: NotificationEvent.COMMENT,
+      title: input.parentId ? '新回复' : '新评论',
+      body,
+      payload: {
+        type: 'comment',
+        id: input.commentId.toString(),
+        postId: input.postId.toString(),
+        url,
+      },
+      priority: input.parentId ? 2 : 3, // 回复 > 顶级评论
+    });
   }
 
   /**

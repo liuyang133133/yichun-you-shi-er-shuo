@@ -33,7 +33,7 @@ export class FavoriteService {
     // 1. 校验 post 存在且未删除
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, userId: true },
     });
     if (!post) {
       throw new NotFoundException(`信息 ID ${postId} 不存在`);
@@ -41,10 +41,19 @@ export class FavoriteService {
     if (post.status === 'deleted') {
       throw new BadRequestException('不能收藏已删除的信息');
     }
+    // [P1-8 2026-07-15] 禁止自收藏: 避免自己刷数据/排行榜作弊
+    if (post.userId === userId) {
+      throw new BadRequestException('不能收藏自己发布的信息');
+    }
 
     // 2. 检查是否已收藏（活跃行 — 中间件自动过滤 deletedAt:null）
-    const existing = await this.prisma.favorite.findUnique({
-      where: { userId_postId: { userId, postId } },
+    // [P0-AUDIT-2026-07-15] 改用 findFirst + 显式 userId/postId 过滤
+    // 原因: findUnique({ where: { userId_postId: {...} } }) 不能加 deletedAt: null
+    //       即使软删中间件把 action 改写为 findFirst, where.userId_postId
+    //       (compound unique input) 在 findFirst 上下文里也不合法 (Prisma 报 Unknown argument)
+    //       解决: 直接用 findFirst + userId/postId 普通过滤, 跟软删中间件配合
+    const existing = await this.prisma.favorite.findFirst({
+      where: { userId, postId },
     });
     if (existing) {
       return { postId: postId.toString(), alreadyFavorited: true };
@@ -85,16 +94,15 @@ export class FavoriteService {
   /**
    * 取消收藏
    * [C-P1-06] P1 修复: 改为软删, 保留行供后续 add() 复活
-   * - 中间件默认查询 deletedAt:null, 因此 findUnique 时只能拿到活跃行
-   * - 改为 soft delete 后, 用户再次收藏走 add() 的"复活"路径, favoriteCount 保持一致
+   * [P0-AUDIT-2026-07-15] 同步改用 findFirst (与 add() 保持一致)
    */
   async remove(userId: bigint, postId: bigint) {
     // ===== [P0-001] 封禁检查 =====
     await this.assertUserNotBanned(userId);
 
     // 1. 查活跃行（中间件自动加 deletedAt:null）
-    const existing = await this.prisma.favorite.findUnique({
-      where: { userId_postId: { userId, postId } },
+    const existing = await this.prisma.favorite.findFirst({
+      where: { userId, postId },
     });
     if (!existing) {
       return { postId: postId.toString(), alreadyRemoved: true };
@@ -117,14 +125,21 @@ export class FavoriteService {
 
   /**
    * 我的收藏（分页 + 含 post 信息）
+   *
+   * [P1-7 2026-07-15] 修复: where 增加 post 状态过滤, 排除已删/已拒帖子
+   * 之前: 收藏的 post 即使被 admin 软删/审核拒绝, 仍会出现在 /me/favorites 列表
+   * 修复: 只展示 post.status='active' && post.auditStatus='passed' 的收藏
+   *       type 过滤 (如 'house') 合并到 post 子查询, 不冲突
+   *       total 用同样的过滤, 与列表条目数一致
    */
   async findMyFavorites(
     userId: bigint,
     options: { page?: number; pageSize?: number; type?: string } = {},
   ) {
     const { page = 1, pageSize = 20, type } = options;
-    const where: Prisma.FavoriteWhereInput = { userId };
-    if (type) where.post = { type };
+    const postFilter: any = { status: 'active', auditStatus: 'passed' };
+    if (type) postFilter.type = type;
+    const where: Prisma.FavoriteWhereInput = { userId, post: postFilter };
 
     const skip = (page - 1) * pageSize;
     const [list, total] = await Promise.all([
@@ -151,10 +166,11 @@ export class FavoriteService {
 
   /**
    * 检查当前用户是否收藏了指定 post（用于详情页）
+   * [P0-AUDIT-2026-07-15] 改用 findFirst (与 add()/remove() 保持一致)
    */
   async isFavorited(userId: bigint, postId: bigint): Promise<boolean> {
-    const f = await this.prisma.favorite.findUnique({
-      where: { userId_postId: { userId, postId } },
+    const f = await this.prisma.favorite.findFirst({
+      where: { userId, postId },
       select: { id: true },
     });
     return !!f;
@@ -162,8 +178,16 @@ export class FavoriteService {
 
   /**
    * 我的收藏数量
+   *
+   * [P1-7 2026-07-15] 修复: 与 findMyFavorites 保持一致, 只统计活跃帖子
+   * 否则 /me 页 "收藏:N" 包含已删帖, 与 /me/favorites 列表条目数对不上
    */
   async countMyFavorites(userId: bigint) {
-    return this.prisma.favorite.count({ where: { userId } });
+    return this.prisma.favorite.count({
+      where: {
+        userId,
+        post: { status: 'active', auditStatus: 'passed' },
+      },
+    });
   }
 }

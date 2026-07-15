@@ -118,6 +118,11 @@ describe('PostService.findOne - tags include (T-013b)', () => {
         findUnique: jest.fn().mockResolvedValue({
           id: 1n,
           title: '房源',
+          // [P0-AUDIT-2026-07-15] P0-4: findOne 加了 status/auditStatus 过滤,
+          // mock 必须有这两个字段且值通过, 否则 404
+          status: 'active',
+          auditStatus: 'passed',
+          userId: 999n, // 跟 viewer 不同, isOwner=false
           postTags: [
             { tag: { id: 1n, slug: 'shanye', name: '山野菜' } },
             { tag: { id: 2n, slug: 'bentechan', name: '本地特产' } },

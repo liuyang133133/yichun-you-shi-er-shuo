@@ -13,6 +13,8 @@ import { NotFoundException } from '@nestjs/common';
 describe('CommentService.findByPost - [P2-06] post 存在性校验', () => {
   let service: CommentService;
   let mockPrisma: any;
+  // [P1-1 2026-07-15] NotificationService 注入 (本测试不直接验证, 用 mock stub)
+  const mockNotification = { emit: jest.fn().mockResolvedValue(null) };
 
   beforeEach(() => {
     mockPrisma = {
@@ -24,7 +26,7 @@ describe('CommentService.findByPost - [P2-06] post 存在性校验', () => {
         count: jest.fn(),
       },
     };
-    service = new CommentService(mockPrisma);
+    service = new CommentService(mockPrisma, mockNotification as any);
   });
 
   it('1. post 不存在 → 抛 NotFoundException(404)', async () => {
