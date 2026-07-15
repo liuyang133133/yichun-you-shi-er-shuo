@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+// [P1-14 2026-07-15] alert() → toast (避免冻主线程)
+import { toast } from '@/components/toast/toaster';
 
 interface Props {
   postId: number;
@@ -47,12 +49,12 @@ export function BoostCta({ postId, qualityScore }: Props) {
               credentials: 'include',
             });
             if (r.status === 503) {
-              alert('加急置顶功能即将上线, 请期待 Phase 1.5 商业化模块');
+              toast.info('加急置顶功能即将上线, 请期待 Phase 1.5 商业化模块');
             } else {
-              alert('加急置顶成功!');
+              toast.success('加急置顶成功!');
             }
           } catch (e) {
-            alert('调用失败, 请重试');
+            toast.error('调用失败, 请重试');
           } finally {
             setBoosting(false);
             setVisible(false);

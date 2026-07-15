@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { messagesApi, usersApi, type MessageItem } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { formatDateTime } from '@/lib/date';
+// [P1-14 2026-07-15] alert() 会冻主线程, 改用 toast (与全站一致)
+import { toast } from '@/components/toast/toaster';
 import { ArrowLeft, Mail, Inbox, Send, CheckCheck, MessageSquare } from 'lucide-react';
 
 type Message = MessageItem;
@@ -84,7 +86,7 @@ function MyMessagesContent() {
 
   async function sendMessage() {
     if (!receiverPhone.trim() || !content.trim()) {
-      alert('请填写收件人手机号和内容');
+      toast.error('请填写收件人手机号和内容');
       return;
     }
     setSending(true);
@@ -95,7 +97,7 @@ function MyMessagesContent() {
         (u: any) => u.phone === receiverPhone.trim(),
       );
       if (!target) {
-        alert('收件人不存在或手机号错误');
+        toast.error('收件人不存在或手机号错误');
         return;
       }
       // 发消息
@@ -105,7 +107,7 @@ function MyMessagesContent() {
       setContent('');
       setTab('outbox');
     } catch (e: any) {
-      alert('发送失败：' + (e?.message || '请稍后再试'));
+      toast.error('发送失败：' + (e?.message || '请稍后再试'));
     } finally {
       setSending(false);
     }

@@ -14,6 +14,8 @@ import { Bell, Settings, ArrowLeft, Clock, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { notificationsApi, type NotificationSetting, type NotificationEvent } from '@/lib/notifications';
+// [P1-14 2026-07-15] alert() → toast (避免冻主线程)
+import { toast } from '@/components/toast/toaster';
 import { clsx } from 'clsx';
 
 const EVENT_LABELS: Record<NotificationEvent, { label: string; emoji: string; description: string }> = {
@@ -57,7 +59,7 @@ export default function NotificationSettingsPage() {
       await notificationsApi.upsertSetting(event, { enabled });
       setSettings((s: NotificationSetting[]) => s.map((x) => (x.event === event ? { ...x, enabled } : x)));
     } catch (e) {
-      alert('保存失败');
+      toast.error('保存失败');
     } finally {
       setSaving(null);
     }
@@ -71,7 +73,7 @@ export default function NotificationSettingsPage() {
         s.map((x) => (x.event === event ? { ...x, quietHours } : x)),
       );
     } catch (e) {
-      alert('保存失败');
+      toast.error('保存失败');
     } finally {
       setSaving(null);
     }
@@ -90,7 +92,7 @@ export default function NotificationSettingsPage() {
       );
       setSettings((s) => s.map((x) => ({ ...x, enabled: newState })));
     } catch (e) {
-      alert('保存失败');
+      toast.error('保存失败');
       setGlobalEnabled(!newState);
     } finally {
       setSaving(null);
