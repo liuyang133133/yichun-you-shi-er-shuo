@@ -177,10 +177,11 @@ export class AdminNotificationTemplateService {
       priority: data.priority ?? 3,
     }));
     const results = await this.notificationService.emitBatch(inputs);
-    const sent = results.filter((r) => r !== null).length;
+    // [P1-6 2026-07-15] emitBatch 现在返 { total, succeeded, failed, errors }, 不是数组
+    const sent = results.succeeded;
 
     this.logger.log(
-      `群发 ${data.event} 通知：admin=${adminId} target=${targetUsers.length} sent=${sent}`,
+      `群发 ${data.event} 通知：admin=${adminId} target=${targetUsers.length} sent=${sent} failed=${results.failed}`,
     );
 
     return { sent, target: targetUsers.length };

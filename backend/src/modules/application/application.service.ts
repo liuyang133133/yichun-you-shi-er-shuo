@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+// [P1-2 2026-07-15] 投递/状态变更触发通知
+import { NotificationService } from '../notification/notification.service';
+import { NotificationEvent } from '../notification/notification-event';
 
 @Injectable()
 export class ApplicationService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ApplicationService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * [P0-001] 写入口封禁检查
@@ -31,7 +39,7 @@ export class ApplicationService {
     // 1. 校验 post_job 存在
     const postJob = await this.prisma.postJob.findUnique({
       where: { id: postJobId },
-      include: { post: { select: { id: true, userId: true, status: true, type: true } } },
+      include: { post: { select: { id: true, userId: true, status: true, type: true, title: true } } },
     });
     if (!postJob) throw new NotFoundException(`职位 ID ${postJobId} 不存在`);
     if (postJob.post.type !== 'job' || postJob.post.status !== 'active') {
@@ -69,7 +77,7 @@ export class ApplicationService {
     }
 
     // 5. 创建投递记录
-    return this.prisma.jobApplication.create({
+    const application = await this.prisma.jobApplication.create({
       data: {
         postJobId,
         resumeId: resume.id,
@@ -82,6 +90,20 @@ export class ApplicationService {
         resume: { select: { id: true, name: true, expectedPosition: true } },
       },
     });
+
+    // [P1-2 2026-07-15] 通知职位发布者
+    this.fireApplicationNotification({
+      recipientId: postJob.post.userId,
+      type: 'received',
+      postId: postJob.post.id,
+      postTitle: postJob.post.title,
+      applicationId: application.id,
+      applicantName: resume.name || '求职者',
+    }).catch((e) =>
+      this.logger.warn(`投递通知发送失败: ${e?.message ?? e}`),
+    );
+
+    return application;
   }
 
   /**
@@ -135,6 +157,7 @@ export class ApplicationService {
   /**
    * 标记投递状态（已查看/已回复）— HR 端
    * PATCH /api/v1/applications/:id/status
+   * [P1-2 2026-07-15] 状态变更后通知投递者
    */
   async updateStatus(userId: bigint, id: bigint, status: '已查看' | '已回复') {
     // ===== [P0-001] 封禁检查 =====
@@ -142,12 +165,69 @@ export class ApplicationService {
 
     const app = await this.prisma.jobApplication.findUnique({
       where: { id },
-      include: { postJob: { include: { post: { select: { userId: true } } } } },
+      include: { postJob: { include: { post: { select: { id: true, title: true, userId: true } } } } },
     });
     if (!app) throw new NotFoundException(`投递 ID ${id} 不存在`);
     if (app.postJob.post.userId !== userId) {
       throw new BadRequestException('只有发布该职位的用户可修改投递状态');
     }
-    return this.prisma.jobApplication.update({ where: { id }, data: { status } });
+    const updated = await this.prisma.jobApplication.update({ where: { id }, data: { status } });
+
+    // [P1-2 2026-07-15] 通知投递者
+    this.fireApplicationNotification({
+      recipientId: app.userId,
+      type: 'status_changed',
+      postId: app.postJob.post.id,
+      postTitle: app.postJob.post.title,
+      applicationId: id,
+      newStatus: status,
+    }).catch((e) =>
+      this.logger.warn(`投递状态通知发送失败: ${e?.message ?? e}`),
+    );
+
+    return updated;
+  }
+
+  /**
+   * [P1-2 2026-07-15] 投递相关通知发射器
+   * - type=received → 通知 HR (有人投递了)
+   * - type=status_changed → 通知求职者 (HR 已查看/已回复)
+   */
+  private async fireApplicationNotification(input: {
+    recipientId: bigint;
+    type: 'received' | 'status_changed';
+    postId: bigint;
+    postTitle: string;
+    applicationId: bigint;
+    applicantName?: string;
+    newStatus?: '已查看' | '已回复';
+  }) {
+    let title = '';
+    let body = '';
+    let priority = 3;
+
+    if (input.type === 'received') {
+      title = '收到新简历';
+      body = `${input.applicantName || '求职者'} 投递了「${input.postTitle}」`;
+      priority = 3;
+    } else {
+      title = input.newStatus === '已回复' ? 'HR 已回复' : 'HR 已查看';
+      body = `你投递的「${input.postTitle}」状态变更为 ${input.newStatus}`;
+      priority = input.newStatus === '已回复' ? 2 : 4; // 已回复 > 已查看
+    }
+
+    await this.notificationService.emit({
+      userId: input.recipientId,
+      event: NotificationEvent.ORDER, // 复用 order 事件码 (业务上"订单状态变化"语义相近)
+      title,
+      body,
+      payload: {
+        type: 'application',
+        id: input.applicationId.toString(),
+        postId: input.postId.toString(),
+        url: `/applications/me`,
+      },
+      priority,
+    });
   }
 }

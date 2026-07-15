@@ -3,6 +3,9 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { RedisService } from '../../../redis/redis.service';
 // [A-P0-02] P0 修复: 注入 AuthService 做 JWT Kill Switch
 import { AuthService } from '../../auth/auth.service';
+// [P1-3 2026-07-15] 注入 NotificationService 做封禁/解封通知
+import { NotificationService } from '../../notification/notification.service';
+import { NotificationEvent } from '../../notification/notification-event';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -17,6 +20,8 @@ export class AdminUserService {
     private readonly redis: RedisService,
     // [A-P0-02] P0 修复: 注入 AuthService 触发 JWT Kill Switch
     private readonly authService: AuthService,
+    // [P1-3 2026-07-15] 封禁/解封通知
+    private readonly notificationService: NotificationService,
   ) {}
 
   /**
@@ -130,11 +135,21 @@ export class AdminUserService {
         `[A-P0-02] revokeAllTokensForUser failed for userId=${userId}: ${(e as Error).message}`,
       );
     }
+    // [P1-3 2026-07-15] 通知被封禁用户
+    this.notificationService.emit({
+      userId,
+      event: NotificationEvent.AUTH,
+      title: '账号已被封禁',
+      body: `您的账号因违反平台规则已被封禁。${reason ? `原因：${reason}` : '如有疑问请联系客服。'}`,
+      payload: { type: 'ban', id: userId.toString() },
+      priority: 1, // 最高优先级
+    }).catch((e) => this.logger.warn(`封禁通知发送失败: ${(e as Error).message}`));
     return updated;
   }
 
   /**
    * 解封 — [P2-005] 写 AuditLog
+   * [P1-3 2026-07-15] 通知用户账号已恢复
    */
   async unban(adminId: bigint, userId: bigint) {
     const u = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -158,6 +173,15 @@ export class AdminUserService {
     });
     // SHOULD-38: 失效鉴权缓存
     await this.invalidateAuthCache(userId);
+    // [P1-3 2026-07-15] 通知用户账号已恢复
+    this.notificationService.emit({
+      userId,
+      event: NotificationEvent.AUTH,
+      title: '账号已恢复',
+      body: '您的账号已恢复正常使用，欢迎回来。',
+      payload: { type: 'unban', id: userId.toString() },
+      priority: 2,
+    }).catch((e) => this.logger.warn(`解封通知发送失败: ${(e as Error).message}`));
     return updated;
   }
 

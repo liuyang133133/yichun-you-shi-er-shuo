@@ -81,9 +81,33 @@ export class NotificationService {
 
   /**
    * 批量发送（如群发公告）
+   * [P1-6 2026-07-15] 修复: 用 Promise.allSettled 做错误隔离
+   * 之前用 Promise.all, 任何一条失败 (例 ws 推送异常/DB 写失败) 会让整个 batch 抛出,
+   *   → admin 群发公告时如果有一个用户已注销, 后续 999 个用户都收不到
+   * 修复: allSettled 隔离单条失败, 统计成功/失败数, 失败仅 warn 不抛出
    */
   async emitBatch(inputs: EmitInput[]) {
-    return Promise.all(inputs.map((i) => this.emit(i)));
+    const results = await Promise.allSettled(inputs.map((i) => this.emit(i)));
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.length - succeeded;
+    if (failed > 0) {
+      this.logger.warn(
+        `emitBatch: ${succeeded} 成功, ${failed} 失败 (总计 ${results.length})`,
+      );
+    }
+    return {
+      total: results.length,
+      succeeded,
+      failed,
+      // 让 admin 端能看到具体哪些失败 (含 reason)
+      errors: results
+        .map((r, idx) =>
+          r.status === 'rejected'
+            ? { index: idx, reason: (r.reason as Error)?.message ?? String(r.reason) }
+            : null,
+        )
+        .filter(Boolean),
+    };
   }
 
   /**

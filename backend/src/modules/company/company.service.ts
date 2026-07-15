@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
+// [P1-4 2026-07-15] 删/恢复公司通知
+import { NotificationService } from '../notification/notification.service';
+import { NotificationEvent } from '../notification/notification-event';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CompanyService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CompanyService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * 创建公司（当前用户为创建者）
@@ -75,6 +83,7 @@ export class CompanyService {
    * 原: hard delete, 即使 0 在招职位也直接抹除数据, 与 T-001 软删规范不一致
    * 修复: 软删 (deletedAt) + 新增 restore 端点 (admin 后台可恢复)
    *      update MyPost 关联表使现有招聘帖标"公司已注销"
+   * [P1-4 2026-07-15] 删除后通知创建者 (admin 删除走 admin-company.service, 不走此)
    */
   async remove(userId: bigint, id: bigint) {
     // 用 includeDeleted=true 拿历史可能已软删的行 (中间件 default 过滤掉)
@@ -88,19 +97,31 @@ export class CompanyService {
       return { id: id.toString(), alreadyDeleted: true };
     }
     if (c._count.jobs > 0) {
-      throw new ConflictException(`公司下还有 ${c._count.jobs} 个在招职位，无法删除`);
+      throw new ConflictException(
+        `公司下还有 ${c._count.jobs} 个在招职位，无法删除。请先下架/删除这些职位。`,
+      );
     }
     // [D-P1-06] 软删 (deletedAt) 而非 hard delete, 与 T-001 一致
     await this.prisma.company.update({
       where: { id },
       data: { deletedAt: new Date(), deletedBy: userId, updatedBy: userId },
     });
+    // [P1-4 2026-07-15] 通知创建者 (公司删除记录)
+    this.notificationService.emit({
+      userId,
+      event: NotificationEvent.SYSTEM,
+      title: '公司已删除',
+      body: `你创建的公司「${c.name}」已删除，可联系客服恢复。`,
+      payload: { type: 'company_removed', id: id.toString(), name: c.name },
+      priority: 2,
+    }).catch((e) => this.logger.warn(`公司删除通知失败: ${(e as Error).message}`));
     return { id: id.toString(), softDeleted: true };
   }
 
   /**
    * [D-P1-06] P1 修复: 恢复软删公司 (admin 后台)
    * 注意: 路由未单独暴露, 由 admin-company.service 包装调用
+   * [P1-4 2026-07-15] 恢复后通知创建者
    */
   async restore(_userId: bigint, id: bigint) {
     const c = await this.prisma.company.findFirst({
@@ -114,6 +135,15 @@ export class CompanyService {
       where: { id },
       data: { deletedAt: null, deletedBy: null, updatedBy: _userId },
     });
+    // [P1-4 2026-07-15] 通知创建者
+    this.notificationService.emit({
+      userId: c.creatorUserId,
+      event: NotificationEvent.SYSTEM,
+      title: '公司已恢复',
+      body: `你创建的公司「${c.name}」已恢复正常。`,
+      payload: { type: 'company_restored', id: id.toString(), name: c.name },
+      priority: 2,
+    }).catch((e) => this.logger.warn(`公司恢复通知失败: ${(e as Error).message}`));
     return { id: id.toString(), restored: true };
   }
 
