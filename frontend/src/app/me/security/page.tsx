@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/toast/toaster';
-import { authApi, passwordApi, type MeDetail } from '@/lib/api';
+import { meApi, passwordApi, type MeDetail } from '@/lib/api';
 import { clearAuth, getAccessToken, getStoredUser, type AuthUser } from '@/components/../lib/auth';
 import {
   ArrowLeft, User2, Shield, Eye, EyeOff, Loader2, CheckCircle2, Smartphone,
@@ -52,7 +52,8 @@ export default function MeSecurityPage() {
     setUser(u);
     setReady(true);
 
-    authApi.me()
+    // [P1-13 2026-07-15] 统一用 meApi.detail() 入口
+    meApi.detail()
       .then((data) => {
         setMeDetail(data);
       })

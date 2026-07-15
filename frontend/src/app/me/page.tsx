@@ -72,13 +72,14 @@ export default function MePage() {
     }
     setUser(u);
     setReady(true);
+    // [P1-13 2026-07-15] 用 meApi.detail() 替代 authApi.me() 散落调用
     // [P1-01] V1.0 验收修复: /auth/me 失败时不再立即踢回登录页
     // 业务背景: 登录后立即访问 /me,后端 /auth/me 偶发 5xx/网络抖动
     // 旧逻辑: 失败 → clearAuth() + router.replace('/login') → 用户被踢
     // 新逻辑: 用 localStorage 数据继续渲染;失败时静默记录到 meDetail 为 null
     //        统计接口也用 allSettled, 失败填 0, 不影响页面
     // 只有明确 401 (token 失效) 才走 handle401 → /login
-    authApi.me()
+    meApi.detail()
       .then((data) => setMeDetail(data))
       .catch((e) => {
         // 仅 token 失效 (401) 才清登录态;其它错误 (5xx/网络) 保留登录态
@@ -97,8 +98,8 @@ export default function MePage() {
     if (!ready) return;
     function onFocus() {
       refreshStats();
-      // 头像/昵称也可能更新了,顺便刷一下
-      authApi.me().then(setMeDetail).catch(() => {});
+      // [P1-13 2026-07-15] 头像/昵称也可能更新了,顺便刷一下
+      meApi.detail().then(setMeDetail).catch(() => {});
     }
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);

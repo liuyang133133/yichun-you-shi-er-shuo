@@ -364,12 +364,41 @@ export const authApi = {
   /** 登出 */
   logout: () => api.post<{ ok: boolean }>('/auth/logout', {}),
 
-  /** 当前用户 */
+  /** [P1-13 2026-07-15] @deprecated — use meApi.detail() instead
+   * 保留以兼容外部调用方, 内部业务代码已全部迁移
+   */
   me: () => api.get<MeDetail>('/auth/me'),
+};
+
+/**
+ * [P1-13 2026-07-15] 密码相关 API 入口（me/security 页面使用）
+ * 后端实际端点: /auth/reset-code (发验证码) / /auth/reset (重置密码)
+ *              /users/me/password (已登录用户改密码, AuthGuard)
+ * 之前: /me/security/page.tsx 直接 import passwordApi 但 api.ts 没导出
+ *       → 编译失败, 页面永远跑不起来
+ * 修复: 加 passwordApi 入口, 让 me/security 通过类型校验
+ * 注: 后端对应端点是 V1.1b 注册登录体系引入的, 应都已就绪
+ */
+export const passwordApi = {
+  /** 已登录用户改密码 (需要旧密码) */
+  change: (oldPassword: string, newPassword: string) =>
+    api.post<{ ok: boolean }>('/users/me/password', { oldPassword, newPassword }),
+  /** 发送重置密码验证码 (未登录态) */
+  sendResetCode: (phone: string) =>
+    api.post<{ ok: boolean }>('/auth/reset-code', { phone }),
+  /** 重置密码 (验证码 + 新密码) */
+  reset: (phone: string, code: string, newPassword: string) =>
+    api.post<{ ok: boolean }>('/auth/reset', { phone, code, newPassword }),
 };
 
 // 我的（统计 / 资料）
 export const meApi = {
+  /** [P1-13 2026-07-15] 当前登录用户完整资料（替代散落的 authApi.me() 调用）
+   * 后端 /auth/me 在 T-XXX-AVATAR 修复后已返完整 user 字段 (id/phone/nickname/avatar/role)
+   * 之前各模块独立调 authApi.me() 行为不一致
+   * 统一通过 meApi.detail() 入口, 未来扩展 (例缓存/dedupe) 只需改一处
+   */
+  detail: () => api.get<MeDetail>('/auth/me'),
   /** 我的发布数（用 /posts/me 拿 total） */
   postsCount: async (): Promise<number> => {
     const r = await api.get<{ list: any[]; total: number }>('/posts/me', { page: 1, pageSize: 1 });

@@ -4,14 +4,15 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as React from 'react';
 import userEvent from '@testing-library/user-event';
 import { EditProfileSheet } from './edit-profile-sheet';
-import { authApi, userApi, type MeDetail } from '@/lib/api';
+// [P1-13 2026-07-15] 改用 meApi 统一入口
+import { meApi, userApi, type MeDetail } from '@/lib/api';
 import { uploadApi } from '@/lib/api-upload';
 import { clearAuth } from '@/lib/auth';
 
 // Mock api 模块
 vi.mock('@/lib/api', () => ({
-  authApi: {
-    me: vi.fn().mockResolvedValue({
+  meApi: {
+    detail: vi.fn().mockResolvedValue({
       sub: '1',
       phone: '13800000000',
       role: 'user',
@@ -126,7 +127,7 @@ describe('头像上传', () => {
       uploadedBy: '1',
     });
     (userApi.updateMe as any).mockResolvedValue({ ...meDetail, avatar: uploadedUrl });
-    (authApi.me as any).mockResolvedValue({ ...meDetail, avatar: authoritativeUrl });
+    (meApi.detail as any).mockResolvedValue({ ...meDetail, avatar: authoritativeUrl });
 
     render(<EditProfileSheet open meDetail={meDetail} onClose={vi.fn()} onSaved={onSaved} />);
     const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
@@ -137,7 +138,7 @@ describe('头像上传', () => {
     });
     await waitFor(() => {
       expect(userApi.updateMe).toHaveBeenCalledWith({ avatar: uploadedUrl });
-      expect(authApi.me).toHaveBeenCalledOnce();
+      expect(meApi.detail).toHaveBeenCalledOnce();
     });
     expect(screen.getByRole('img')).toHaveAttribute('src', authoritativeUrl);
     expect(onSaved).toHaveBeenCalledWith(
@@ -222,7 +223,7 @@ describe('保存链路', () => {
       resolveUpdate = resolve;
     });
     (userApi.updateMe as any).mockReturnValue(updatePromise);
-    (authApi.me as any).mockResolvedValue({
+    (meApi.detail as any).mockResolvedValue({
       ...meDetail,
       nickname: '服务端昵称',
       avatar: 'https://cdn.example.com/avatar.webp',
@@ -253,7 +254,7 @@ describe('保存链路', () => {
 
     resolveUpdate({ ...meDetail, nickname: '新昵称' });
     await waitFor(() => {
-      expect(authApi.me).toHaveBeenCalledOnce();
+      expect(meApi.detail).toHaveBeenCalledOnce();
       expect(toastMock.success).toHaveBeenCalledWith('资料已保存');
       expect(onClose).toHaveBeenCalledOnce();
     });

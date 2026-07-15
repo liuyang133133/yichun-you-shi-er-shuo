@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar } from '@/components/patterns/avatar';
 import { toast } from '@/components/toast/toaster';
 import { GENDER_OPTIONS, isValidGender, type GenderValue } from '@/lib/constants/gender';
-import { authApi, userApi, type MeDetail } from '@/lib/api';
+import { meApi, userApi, type MeDetail } from '@/lib/api';
 import { uploadApi } from '@/lib/api-upload';
 import { setStoredUser, getStoredUser, clearAuth } from '@/lib/auth';
 import {
@@ -87,7 +87,8 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
     try {
       const { url } = await uploadApi.uploadImage(file);
       const updated = await userApi.updateMe({ avatar: url });
-      const fresh = await authApi.me().catch(() => null);
+      // [P1-13 2026-07-15] 统一用 meApi.detail() 替代散落的 authApi.me()
+      const fresh = await meApi.detail().catch(() => null);
       const nextAvatar = fresh?.avatar ?? updated.avatar ?? url;
       const nextNickname = fresh?.nickname ?? updated.nickname ?? meDetail?.nickname;
       setAvatar(nextAvatar);
@@ -121,7 +122,8 @@ export function EditProfileSheet({ open, meDetail, onClose, onSaved }: EditProfi
     setSaving(true);
     try {
       const updated = await userApi.updateMe({ nickname: trimmed, gender, bio });
-      const fresh = await authApi.me().catch(() => null);
+      // [P1-13 2026-07-15] 统一用 meApi.detail() 替代散落的 authApi.me()
+      const fresh = await meApi.detail().catch(() => null);
       const nextNickname = fresh?.nickname ?? updated.nickname ?? trimmed;
       const nextAvatar = fresh?.avatar ?? updated.avatar ?? avatar;
       onSaved({ ...meDetail!, nickname: nextNickname, gender, bio, avatar: nextAvatar });
