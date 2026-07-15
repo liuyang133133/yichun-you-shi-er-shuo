@@ -15,7 +15,7 @@ export interface TDK {
 
 export const DEFAULT_TDK: TDK = {
   title: '伊春有事儿说 - 小兴安岭本地生活信息平台',
-  description: '伊春本地房屋出租、二手交易、招聘求职、便民信息。',
+  description: '伊春本地房屋租售、二手交易、招聘求职、便民信息。',
   keywords: ['伊春', '伊春有事儿说', '伊春本地信息'],
 };
 

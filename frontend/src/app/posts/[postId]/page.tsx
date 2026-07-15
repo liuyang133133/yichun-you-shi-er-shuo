@@ -51,12 +51,34 @@ async function fetchTdk(path: string): Promise<{ title: string; description: str
  * F-3 V2: URL segment 解析
  * - "/posts/123"           → { id: "123", slug: "" }
  * - "/posts/123-my-slug"   → { id: "123", slug: "my-slug" }
+ *
+ * [2026-07-14 fix] Next.js 15 params.postId 返回 URL-encoded 形式
+ * (中文 slug "法师打发斯蒂芬-zopv" 拿到的是 "%E6%B3%95%E5%B8%88..."),
+ * 与后端返回的 decoded post.slug 永远不等,导致 redirect 死循环 → 空白页
+ * 修复: 在 parseSegment 里统一 decode,跟 post.slug (已 decoded) 对齐
  */
 function parseSegment(segment: string): { id: string; slug: string } {
   if (!segment) return { id: '', slug: '' };
-  const idx = segment.indexOf('-');
-  if (idx === -1) return { id: segment, slug: '' };
-  return { id: segment.slice(0, idx), slug: segment.slice(idx + 1) };
+  // 整体 decode 一次即可,Next.js 15 不会自动 decode path segment
+  const decoded = safeDecode(segment);
+  const idx = decoded.indexOf('-');
+  if (idx === -1) return { id: decoded, slug: '' };
+  return { id: decoded.slice(0, idx), slug: decoded.slice(idx + 1) };
+}
+
+/**
+ * 安全 decode: 处理单边编码或编码异常的输入
+ * - 正常 UTF-8 序列: decodeURIComponent 还原
+ * - 已经是解码的 (含中文字符): decodeURIComponent 会抛 URIError, 这种情况直接返回原文
+ */
+function safeDecode(s: string): string {
+  try {
+    // 快速检测: 包含 % 字符才尝试 decode,否则跳过
+    if (!s.includes('%')) return s;
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 
 export async function generateMetadata({

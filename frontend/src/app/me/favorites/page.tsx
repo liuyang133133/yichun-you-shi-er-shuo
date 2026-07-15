@@ -26,6 +26,7 @@ export default function MyFavoritesPage() {
 function MyFavoritesContent() {
   const router = useRouter();
   const [list, setList] = useState<PostCardData[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
 
@@ -38,11 +39,22 @@ function MyFavoritesContent() {
     favoriteApi
       .list()
       .then((r: any) => {
-        const data = r?.data || r || [];
-        const posts = Array.isArray(data) ? data.map((f: any) => f.post || f) : [];
-        setList(posts.filter((p: any) => p && p.id));
+        // 后端返回 { list: [{ post }, ...], total, page, pageSize }
+        // 之前 r?.data || r 取到的是分页对象不是数组,导致 Array.isArray(...) === false → 永远 0 条
+        // 与 /me 页"收藏:N" 计数也对不上
+        const rawList = Array.isArray(r?.list) ? r.list : Array.isArray(r) ? r : [];
+        const posts = rawList
+          .map((f: any) => f?.post || f)
+          .filter((p: any) => p && p.id);
+        setList(posts);
+        // 用后端权威 total (与 /me /favorites/count 同源),而不是 list.length
+        // 避免客户端分页导致与 /me 页"收藏"计数对不上
+        setTotal(typeof r?.total === 'number' ? r.total : posts.length);
       })
-      .catch(() => setList([]))
+      .catch(() => {
+        setList([]);
+        setTotal(0);
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -69,7 +81,7 @@ function MyFavoritesContent() {
           我的收藏
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          你收藏的房屋 / 二手 / 招聘 / 便民信息（共 {list.length} 条）
+          你收藏的房屋 / 二手 / 招聘 / 便民信息（共 {total} 条）
         </p>
       </header>
 

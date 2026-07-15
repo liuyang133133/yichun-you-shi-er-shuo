@@ -2,6 +2,7 @@ import { Body, Controller, Get, Headers, HttpCode, Post, Req } from '@nestjs/com
 import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { UserService } from '../user/user.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import {
@@ -14,7 +15,10 @@ import {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
 
   /**
    * POST /auth/sms-code
@@ -98,14 +102,19 @@ export class AuthController {
 
   /**
    * GET /auth/me
-   * 返回当前登录用户信息
+   * 返回当前登录用户信息（昵称/头像/性别/简介/角色/手机号）
    * 需要登录
+   *
+   * [T-XXX-AVATAR 2026-07-14] 修复: 之前直接 return JWT payload,
+   * payload 里只有 sub/phone/role, 缺 nickname/avatar/gender/bio,
+   * 前端 /me 页面头像永远走 fallback (显示手机号首位).
+   * 修复: 用 payload.sub (userId) 查 userService.findOne 拿完整用户.
    */
   @ApiBearerAuth('JWT')
   @Get('me')
   @ApiOperation({ summary: '当前登录用户信息' })
   async me(@CurrentUser() user: JwtPayload) {
-    return user;
+    return this.userService.findOne(BigInt(user.sub));
   }
 
   /**

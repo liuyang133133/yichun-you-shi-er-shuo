@@ -34,7 +34,7 @@ export const MODULES: ModuleMeta[] = [
     code: 'house',
     title: '房屋租售',
     subtitle: 'House Rental & Sale',
-    desc: '整租 / 合租 / 短租 / 商铺',
+    desc: '出售 / 整租 / 合租 / 短租 / 商铺',
     icon: Home,
     gradient: 'from-blue-500 via-blue-600 to-indigo-700',
     emoji: '🏠',

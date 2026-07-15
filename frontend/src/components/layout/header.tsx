@@ -6,7 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/patterns/avatar';
 import { authApi } from '@/lib/api';
-import { clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
+import { clearAuth, getStoredUser, AUTH_USER_CHANGED_EVENT, type AuthUser } from '@/lib/auth';
 import {
   LogOut, Plus, ChevronDown, Search, Menu, X, Home, FileText, Heart, MessageCircle, Bell,
 } from 'lucide-react';
@@ -28,6 +28,16 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  // 监听"用户信息变更"事件 — 改头像/昵称后 Header 立即同步刷新
+  // (否则需要切页面才更新,体验割裂)
+  useEffect(() => {
+    function refreshFromStorage() {
+      setUser(getStoredUser());
+    }
+    window.addEventListener(AUTH_USER_CHANGED_EVENT, refreshFromStorage);
+    return () => window.removeEventListener(AUTH_USER_CHANGED_EVENT, refreshFromStorage);
+  }, []);
+
   function submitQuickSearch(e: React.FormEvent) {
     e.preventDefault();
     const q = quickQ.trim();
@@ -46,7 +56,7 @@ export function Header() {
   }
 
   const navItems = [
-    { type: 'house', label: '房屋出租', emoji: '🏠' },
+    { type: 'house', label: '房屋租售', emoji: '🏠' },
     { type: 'secondhand', label: '二手交易', emoji: '🛍️' },
     { type: 'job', label: '招聘求职', emoji: '💼' },
     { type: 'lifebiz', label: '便民信息', emoji: '📌' },
@@ -146,6 +156,7 @@ export function Header() {
                     className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-full hover:bg-secondary/60 transition-colors"
                   >
                     <Avatar
+                      src={user.avatar}
                       name={user.nickname || user.phone}
                       fallback={user.phone?.[0] || 'U'}
                       size="sm"
@@ -211,6 +222,7 @@ export function Header() {
               {user ? (
                 <div className="flex items-center gap-2.5">
                   <Avatar
+                    src={user.avatar}
                     name={user.nickname || user.phone}
                     fallback={user.phone?.[0] || 'U'}
                     size="md"

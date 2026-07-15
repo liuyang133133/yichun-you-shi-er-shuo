@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -45,6 +46,23 @@ export default function MePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [stats, setStats] = useState({ posts: 0, favorites: 0, comments: 0, unread: 0 });
 
+  // 拉取个人中心聚合统计 — 单独提取以便初次加载 + 窗口焦点回来时复用
+  const refreshStats = React.useCallback(() => {
+    Promise.allSettled([
+      meApi.postsCount(),
+      meApi.favoritesCount(),
+      meApi.commentsCount(),
+      messagesApi.inbox({ page: 1, pageSize: 1 }).catch(() => ({ unreadCount: 0 })),
+    ]).then(([p, f, c, m]: any) => {
+      setStats({
+        posts: p.status === 'fulfilled' ? p.value : 0,
+        favorites: f.status === 'fulfilled' ? f.value : 0,
+        comments: c.status === 'fulfilled' ? c.value : 0,
+        unread: m.status === 'fulfilled' ? (m.value?.unreadCount || 0) : 0,
+      });
+    });
+  }, []);
+
   useEffect(() => {
     const token = getAccessToken();
     const u = getStoredUser();
@@ -71,21 +89,20 @@ export default function MePage() {
         // 否则: token 仍有效,保留 localStorage 数据继续展示
       });
 
-    // 并行拉统计
-    Promise.allSettled([
-      meApi.postsCount(),
-      meApi.favoritesCount(),
-      meApi.commentsCount(),
-      messagesApi.inbox({ page: 1, pageSize: 1 }).catch(() => ({ unreadCount: 0 })),
-    ]).then(([p, f, c, m]: any) => {
-      setStats({
-        posts: p.status === 'fulfilled' ? p.value : 0,
-        favorites: f.status === 'fulfilled' ? f.value : 0,
-        comments: c.status === 'fulfilled' ? c.value : 0,
-        unread: m.status === 'fulfilled' ? (m.value?.unreadCount || 0) : 0,
-      });
-    });
-  }, [router]);
+    refreshStats();
+  }, [router, refreshStats]);
+
+  // 窗口重新获得焦点时刷新统计 — 用户从 /posts/publish 或 /me/posts 等回来时数字不滞后
+  useEffect(() => {
+    if (!ready) return;
+    function onFocus() {
+      refreshStats();
+      // 头像/昵称也可能更新了,顺便刷一下
+      authApi.me().then(setMeDetail).catch(() => {});
+    }
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [ready, refreshStats]);
 
   async function handleLogout() {
     try { await authApi.logout(); } catch {}

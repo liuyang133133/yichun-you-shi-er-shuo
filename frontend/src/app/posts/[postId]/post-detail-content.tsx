@@ -375,7 +375,7 @@ function PostDetailContent() {
             <div className="rounded-2xl border bg-card p-6 shadow-soft">
               <h2 className="font-display text-lg font-bold mb-4">房屋信息</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {post.house.rentalType && <Field label="租赁方式" value={post.house.rentalType} />}
+                {post.house.rentalType && <Field label="租售方式" value={post.house.rentalType} />}
                 {post.house.propertyType && <Field label="物业类型" value={post.house.propertyType} />}
                 {post.house.decoration && <Field label="装修" value={post.house.decoration} />}
                 {post.house.areaSqm && <Field label="面积" value={`${post.house.areaSqm} ㎡`} />}

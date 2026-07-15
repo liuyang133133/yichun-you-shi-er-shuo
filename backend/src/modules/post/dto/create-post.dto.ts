@@ -55,8 +55,8 @@ export class PostDetailDto {
   // ===== house =====
   @IsOptional()
   @IsString()
-  @IsIn(['整租', '合租', '短租', '日租'])
-  rentalType?: '整租' | '合租' | '短租' | '日租';
+  @IsIn(['出售', '整租', '合租', '短租', '日租'])
+  rentalType?: '出售' | '整租' | '合租' | '短租' | '日租';
 
   @IsOptional()
   @IsString()

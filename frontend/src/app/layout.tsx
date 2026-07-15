@@ -11,8 +11,8 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '伊春有事儿说 | 本地生活信息平台',
-  description: '面向伊春本地居民的信息发布平台 — 房屋出租 · 二手交易 · 招聘求职 · 便民信息',
-  keywords: ['伊春', '本地信息', '分类信息', '房屋出租', '二手交易', '招聘', '便民', '小兴安岭'],
+  description: '面向伊春本地居民的信息发布平台 — 房屋租售 · 二手交易 · 招聘求职 · 便民信息',
+  keywords: ['伊春', '本地信息', '分类信息', '房屋租售', '二手交易', '招聘', '便民', '小兴安岭'],
   authors: [{ name: 'Yichun Team' }],
   openGraph: {
     title: '伊春有事儿说',

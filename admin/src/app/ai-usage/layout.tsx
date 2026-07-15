@@ -1,6 +1,6 @@
-import { AdminShell } from '@/components/layout/admin-shell';
-
+// V1.0 页面合理性修复: AdminShell 已在 admin/src/app/layout.tsx (根) 统一包装
+// 此处原 AdminShell 重复包装导致侧边栏菜单显示 2 份
+// 改为透传 children (保留 layout 文件占位)
 export default function AiUsageLayout({ children }: { children: React.ReactNode }) {
-  // [P2-006] 补齐 admin shell，与其他管理页保持一致的鉴权 / 导航 / 主题
-  return <AdminShell>{children}</AdminShell>;
+  return <>{children}</>;
 }

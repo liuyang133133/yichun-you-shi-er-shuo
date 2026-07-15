@@ -49,10 +49,11 @@ function MyPostsContent() {
       return;
     }
     setLoading(true);
+    // [V1.2 隐私修复 + 计数对齐] 用 myPosts (走 /posts/me 按 userId 过滤),
+    // 之前用 postApi.list (公开 /posts) 会把全平台活跃帖都展示出来,与 /me 页"发布:N"计数也对不上
     postApi
-      .list({ type: activeTab || undefined, pageSize: 50 })
+      .myPosts({ type: activeTab || undefined, pageSize: 50 })
       .then((r: any) => {
-        // 后端 /posts/me 返回自己的全部 posts
         setList(r?.list || []);
         setTotal(r?.total || 0);
       })
