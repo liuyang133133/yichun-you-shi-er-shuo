@@ -56,6 +56,10 @@ services:
       target: development
     container_name: yichun-backend
     restart: unless-stopped
+    # [P0-AUDIT-2026-07-14] P0-8: 配合 main.ts graceful shutdown, 给 docker stop 留 30s
+    # 让 in-flight HTTP 请求跑完 + Prisma 事务 commit + Redis token 黑名单写入.
+    # docker compose stop 默认 10s 后 SIGKILL, 配 stop_grace_period: 30s 避免硬杀.
+    stop_grace_period: 30s
     ports:
       - "3001:3001"
     environment:

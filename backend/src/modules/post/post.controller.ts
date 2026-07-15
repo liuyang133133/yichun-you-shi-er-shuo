@@ -64,6 +64,20 @@ export class PostController {
   }
 
   /**
+   * GET /api/v1/posts/me/stats
+   * 我的发布统计 (帖子数 + 收到的评论数)
+   *
+   * [P0-AUDIT-2026-07-14] P0-6: 路由之前漏注册, 端到端 404.
+   * service.getMyStats() 写好但 controller 没暴露.
+   * 路由必须放在 'me' 之前, 否则 'me/stats' 会被 ':id' 当成 id="me".
+   */
+  @Get('me/stats')
+  @ApiOperation({ summary: '我的发布统计' })
+  myStats(@CurrentUser() user: JwtPayload) {
+    return this.postService.getMyStats(BigInt(user.sub));
+  }
+
+  /**
    * GET /api/v1/posts/me
    * 我的发布（需登录）
    */

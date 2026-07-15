@@ -108,8 +108,12 @@ export class AuthService {
 
     this.logger.log(`用户登录: ${phone} -> id=${user!.id} (新注册: ${!existing})`);
 
-    if (user!.status === 1) {
-      throw new UnauthorizedException('账号已被封禁');
+    // [P0-AUDIT-2026-07-14] P0-7: 之前只拦 status=1 (封禁), status=2 (软删) 用户
+    // 可以登录 + 7 天 JWT 通行. 修复: 任何 status !== 0 都拒绝 (封禁 + 软删).
+    if (user!.status !== 0) {
+      throw new UnauthorizedException(
+        user!.status === 1 ? '账号已被封禁' : '账号已被注销',
+      );
     }
 
     return this.buildTokenPair(user!.id, user!.phone, user!.role);
@@ -146,8 +150,11 @@ export class AuthService {
       const remain = Math.max(0, this.LOGIN_MAX_ATTEMPTS - n);
       throw new UnauthorizedException(`手机号或密码错误（还剩 ${remain} 次尝试机会）`);
     }
-    if (user.status === 1) {
-      throw new UnauthorizedException('账号已被封禁');
+    // [P0-AUDIT-2026-07-14] P0-7: status !== 0 一律拒绝 (封禁/软删都不能登录).
+    if (user.status !== 0) {
+      throw new UnauthorizedException(
+        user.status === 1 ? '账号已被封禁' : '账号已被注销',
+      );
     }
 
     // 成功清空计数

@@ -61,3 +61,7 @@ admin/.next/
 # Git worktrees (isolation)
 .worktrees/
 test-results/
+
+# [P0-AUDIT-2026-07-14] P0-D2: docker-compose.override.yml 是开发者本地定制端口用,
+# 不应该误 commit 到主干 (Windows 端口覆盖方案 memory).
+docker-compose.override.yml

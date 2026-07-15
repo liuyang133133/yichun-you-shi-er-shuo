@@ -25,6 +25,7 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { TagService } from './tag.service';
 import { Public } from '../../common/decorators/public.decorator';
@@ -37,6 +38,11 @@ import {
   MergeTagDto,
 } from './dto/tag.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+// [P0-AUDIT-2026-07-14] P0-1: /admin/tags 之前只靠 @Roles('admin') 装饰,
+// 但 NestJS 的 @Roles 是 metadata, 真正的角色校验在 AdminGuard 里.
+// 缺 @UseGuards(AdminGuard) 等于 AdminGuard 根本不执行, 任何登录用户都能调.
+// 修复: 加 UseGuards(AdminGuard), 强制角色校验.
+import { AdminGuard } from '../admin/guards/admin-auth.guard';
 
 @Controller('tags')
 export class TagController {
@@ -86,6 +92,7 @@ export class TagController {
 }
 
 @Controller('admin/tags')
+@UseGuards(AdminGuard)
 @Roles('admin')
 export class AdminTagController {
   constructor(private readonly tagService: TagService) {}

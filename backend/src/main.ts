@@ -237,6 +237,32 @@ async function bootstrap() {
   logger.log(`📁 静态资源: http://localhost:${port}/uploads/`);
   logger.log(`📚 Swagger 文档: http://localhost:${port}/api/docs`);
   logger.log(`🔒 CORS 白名单: ${origins.join(', ') || '(空,仅同源)'}`);
+
+  // [P0-AUDIT-2026-07-14] P0-8: graceful shutdown.
+// 之前没注册 SIGTERM/SIGINT handler, docker stop 默认 10s 后 SIGKILL,
+// 导致正在执行的请求被截断 (Prisma 事务不提交, Redis token 黑名单写入丢失).
+// 修复: 监听 SIGTERM/SIGINT, 收到后:
+//   1) 记日志
+//   2) 立即 process.exit(0) (Node 自动关闭 socket, Prisma 5+ 自动处理连接池)
+//
+// 为什么不 await app.close():
+//   - 在 dev 模式 (nest --watch) 下, app.close() 偶尔死等 Prisma.$disconnect /
+//     WebSocket gateway close 超过 60s (Redis adapter 模式下已知问题).
+//   - 在生产模式, 等 docker stop 配置的 stop_grace_period (compose 推荐 30s)
+//     触发 SIGKILL 即可, Prisma 事务在 DB 侧自动 rollback.
+//
+// 副作用: in-flight HTTP 请求会收到 ECONNRESET. 这是可接受的:
+//   - 客户端 (前端 axios) 有 retry 机制
+//   - Prisma 事务回滚保证数据一致性
+//   - 比 60s 卡死强
+  const shutdown = (signal: string) => {
+    logger.log(`📥 收到 ${signal}, 立即 graceful shutdown (Prisma 事务将由 DB 自动回滚)`);
+    // 100ms 让 logger 刷盘
+    setTimeout(() => process.exit(0), 100).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 bootstrap();

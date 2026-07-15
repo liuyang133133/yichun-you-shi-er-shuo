@@ -283,7 +283,7 @@ export class PostService {
     const post = await this.prisma.post.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, nickname: true, avatar: true } },
+        user: { select: { id: true, nickname: true, avatar: true, role: true } },
         category: { select: { id: true, name: true, code: true } },
         area: { select: { id: true, name: true, level: true } },
         images: { orderBy: { sortOrder: 'asc' } },
@@ -296,6 +296,25 @@ export class PostService {
       },
     });
     if (!post) {
+      throw new NotFoundException(`信息 ID ${id} 不存在`);
+    }
+
+    // [P0-AUDIT-2026-07-14] P0-4: findOne 之前不过滤 status/auditStatus,
+// pending/rejected/deleted 帖子凭 ID 可被任何人读出来 (绕过审核 + 看已删内容).
+// 修复: 仅当 auditStatus='passed' 且 status='active' 时公开可读;
+// 否则仅 owner 或 admin/super_admin 可读, 其他访问者 404 (不暴露存在性).
+    const isOwner = viewer?.userId != null && post.userId === viewer.userId;
+    let viewerIsAdmin = false;
+    if (viewer?.userId != null && !isOwner) {
+      const u = await this.prisma.user.findUnique({
+        where: { id: viewer.userId },
+        select: { role: true },
+      });
+      viewerIsAdmin = ['admin', 'super_admin'].includes(u?.role || 'user');
+    }
+
+    const isPubliclyVisible = post.auditStatus === 'passed' && post.status === 'active';
+    if (!isPubliclyVisible && !isOwner && !viewerIsAdmin) {
       throw new NotFoundException(`信息 ID ${id} 不存在`);
     }
 
@@ -405,9 +424,23 @@ export class PostService {
     if (!category) {
       throw new BadRequestException(`分类 ID ${dto.categoryId} 不存在`);
     }
-    if (category.code !== dto.type) {
+    // [2026-07-14] Bug fix: 之前直接对比 category.code 与 dto.type,
+    // 但前端发的是 SUBCATEGORY(例 house-second-hand),父才是顶级分类(house)。
+    // 修复:如果 category 有 parentId,向上找父分类再对比 code。
+    // 顶级分类(无 parent)则仍用原逻辑(向后兼容)。
+    let effectiveCode = category.code;
+    if (category.parentId) {
+      const parent = await this.prisma.category.findUnique({
+        where: { id: category.parentId },
+      });
+      if (!parent) {
+        throw new BadRequestException(`分类 ${category.code} 的父分类不存在`);
+      }
+      effectiveCode = parent.code;
+    }
+    if (effectiveCode !== dto.type) {
       throw new BadRequestException(
-        `分类 code (${category.code}) 与 type (${dto.type}) 不一致`,
+        `分类 code (${effectiveCode}) 与 type (${dto.type}) 不一致`,
       );
     }
     if (dto.areaId) {
@@ -512,6 +545,10 @@ export class PostService {
       //   3) 用户刷新页面 → "我的发布"有 13 但"首页"无 13, 体验割裂
       // 修复: 默认 active + passed (与 seed 一致);admin 后续可下架/reject
       // 保留 auditStatus 字段供后续接 AI/人工审核 (V1.1)
+      // [2026-07-14] PM 决策: 重启审核工作流(撤 V1.0 P1-02 修复)
+      // 新发布帖默认 pending,前端 toast 提示 "已提交,待管理员审核通过后发布",
+      // 跳转 /me/posts,用户在列表看到"待审核"角标;admin 端通过 /admin/posts 审核通过后才展示。
+      // 业务背景: 避免垃圾/违规信息直接公开展示,保护平台内容质量。
       const created = await tx.post.create({
         data: {
           userId,
@@ -525,9 +562,9 @@ export class PostService {
           contactName: dto.contactName,
           contactPhone: dto.contactPhone,
           contactWechat: dto.contactWechat,
-          // [P1-02] V1.0: 默认 active + passed (V1.0 无审核工作流,需保持可见)
-          status: 'active',
-          auditStatus: 'passed',
+          // [2026-07-14] 重启审核: 默认 pending,等 admin 审核通过后 public 才可见
+          status: 'pending',
+          auditStatus: 'pending',
           // F-3: URL slug
           slug,
         },
@@ -793,6 +830,15 @@ export class PostService {
     // F-3: title 改了 → 重新生成 slug（排除自己当前 slug 避免误冲突）
     if (dto.title && dto.title !== post.title) {
       data.slug = await this.resolveSlugConflict(dto.title, post.id);
+    }
+
+    // [P0-AUDIT-2026-07-14] P0-3: 编辑已通过的帖子必须重置 auditStatus='pending',
+    // 否则用户可以绕过审核 (改一下标题/价格/描述就生效, 审核形同虚设).
+    // 已有 pending/rejected 状态保持 pending.
+    if (post.auditStatus === 'passed') {
+      data.auditStatus = 'pending';
+      // 同时清空审核意见, 重新审核时 auditService 会重写
+      data.auditReason = null;
     }
 
     return this.prisma.post.update({

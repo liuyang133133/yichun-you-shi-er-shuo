@@ -59,8 +59,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const user = await this.loadUserCached(BigInt(payload.sub));
-    if (user.status === 1) {
-      throw new UnauthorizedException('账号已被封禁');
+    // [P0-AUDIT-2026-07-14] P0-7: status !== 0 一律拒绝 (封禁/软删).
+    // 软删用户即使已签发 token, 后续每个请求也都会被拦, 不留 7 天窗口.
+    if (user.status !== 0) {
+      throw new UnauthorizedException(
+        user.status === 1 ? '账号已被封禁' : '账号已被注销',
+      );
     }
 
     return {

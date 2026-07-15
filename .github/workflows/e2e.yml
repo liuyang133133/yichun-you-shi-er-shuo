@@ -1,0 +1,79 @@
+name: E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/src/**'
+      - 'frontend/tests/e2e/**'
+      - 'docker-compose.yml'
+      - 'docker/**'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  e2e:
+    name: E2E against local docker stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # 起 docker compose 全栈 (mysql + redis + backend + frontend + admin),
+      # 然后跑仓库已有的 cjs 端到端脚本.
+      # 之所以走 docker 而不是单进程: 跟生产环境 1:1 (Dockerfile + compose 配置),
+      # 真正发现 binding/seed/migration 这些只在容器里出现的坑 (P0 2026-07-06 教训).
+      - name: Create .env from example
+        run: |
+          cp .env.example .env 2>/dev/null || cp .env.sample .env 2>/dev/null || true
+          if [ ! -f .env ]; then
+            echo "MYSQL_ROOT_PASSWORD=ci_root_pwd_$(openssl rand -hex 8)" >> .env
+            echo "MYSQL_DATABASE=yichun_db" >> .env
+            echo "MYSQL_USER=yichun" >> .env
+            echo "MYSQL_PASSWORD=ci_user_pwd_$(openssl rand -hex 8)" >> .env
+            echo "REDIS_PASSWORD=ci_redis_pwd_$(openssl rand -hex 8)" >> .env
+            echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+          fi
+          cat .env
+
+      - name: Bring up stack
+        run: docker compose up -d --build
+        timeout-minutes: 15
+
+      - name: Wait for backend healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:3001/api/v1/health 2>/dev/null; then
+              echo "Backend healthy after ${i}s"; break
+            fi
+            sleep 2
+          done
+
+      - name: Wait for frontend healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:3000/ 2>/dev/null; then
+              echo "Frontend healthy after ${i}s"; break
+            fi
+            sleep 2
+          done
+
+      - name: Run v1-acceptance (62 case smoke)
+        working-directory: frontend
+        run: node tests/e2e/v1-acceptance.cjs
+        timeout-minutes: 10
+
+      - name: Upload backend logs on failure
+        if: failure()
+        run: |
+          docker compose logs backend --tail 200 > /tmp/backend.log 2>&1 || true
+          echo "=== /tmp/backend.log ===" >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/backend.log >> "$GITHUB_STEP_SUMMARY" || true
+          docker compose logs frontend --tail 100 > /tmp/frontend.log 2>&1 || true
+          echo "=== /tmp/frontend.log ===" >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/frontend.log >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v || true

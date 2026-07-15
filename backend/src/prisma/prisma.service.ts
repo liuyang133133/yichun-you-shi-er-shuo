@@ -73,8 +73,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    // [P0-AUDIT-2026-07-14] P0-D3: 之前所有环境都开 query log,
+    // 生产环境每个 SELECT/INSERT/UPDATE 都进 stdout, 日志量翻倍,
+    // 也会把敏感字段 (contact_phone/contact_wechat) 间接泄露到日志.
+    // 修复: 仅在 NODE_ENV !== 'production' 时开 query log;
+    //       生产环境只保留 warn/error; 也可以用 PRISMA_LOG_QUERY=1 强制开 (调试用).
+    const isProd = process.env.NODE_ENV === 'production';
+    const forceQueryLog = process.env.PRISMA_LOG_QUERY === '1';
     super({
-      log: ['query', 'info', 'warn', 'error'],
+      log: forceQueryLog
+        ? ['query', 'info', 'warn', 'error']
+        : isProd
+          ? ['warn', 'error']
+          : ['query', 'info', 'warn', 'error'],
     });
 
     // T-001: 软删除中间件

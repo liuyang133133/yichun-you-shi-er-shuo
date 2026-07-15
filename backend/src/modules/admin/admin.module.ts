@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AdminPostController } from './post/admin-post.controller';
 import { AdminPostService } from './post/admin-post.service';
 import { AdminUserController } from './user/admin-user.controller';
@@ -10,6 +10,8 @@ import { AdminDashboardService } from './dashboard/admin-dashboard.service';
 import { AdminCategoryController } from './category/admin-category.controller';
 import { AdminCompanyController } from './company/admin-company.controller';
 import { AdminCompanyService } from './company/admin-company.service';
+// [P0-AUDIT-2026-07-14] P0-2: CategoryModule 现在也 imports: [AdminModule] (拿 AdminGuard),
+// 形成双向依赖, AdminModule 这边必须 forwardRef.
 import { CategoryModule } from '../category/category.module';
 import { AdminGuard } from './guards/admin-auth.guard';
 import { AiUsageModule } from './ai-usage/ai-usage.module';
@@ -28,7 +30,8 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    CategoryModule, AiUsageModule,
+    forwardRef(() => CategoryModule), // [P0-2] 双向依赖, forwardRef
+    AiUsageModule,
     AdminRoleModule, AdminPermissionModule,
     AdminAuditLogModule, // T-005
     AdminLoginLogModule, // T-006
