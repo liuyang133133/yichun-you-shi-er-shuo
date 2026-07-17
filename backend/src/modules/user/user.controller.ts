@@ -6,17 +6,22 @@ import {
   Patch,
   Param,
   Delete,
+  Inject,
   Query,
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
   ForbiddenException,
   BadRequestException,
+  HttpCode,
+  forwardRef,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
+import { AuthService } from '../auth/auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from '../auth/dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AdminGuard } from '../admin/guards/admin-auth.guard';
@@ -26,7 +31,11 @@ import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.de
 @ApiBearerAuth('JWT')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
+  ) {}
 
   /**
    * 创建用户（注册）
@@ -87,6 +96,43 @@ export class UserController {
   }
 
   /**
+   * [T-024-b 2026-07-15] 修改自己的资料 (路由别名, 避开 :id BigInt 炸)
+   * 前端 usersApi.updateMe 调的就是这个 → 之前落到 @Patch(':id') 走 BigInt('me') SyntaxError 500
+   * 跟 GET /users/me 是同模式坑
+   */
+  @Patch('me')
+  @ApiOperation({ summary: '修改自己的资料 (JWT 自动取 sub)' })
+  updateMe(
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.userService.update(BigInt(user.sub), dto, {
+      sub: user.sub,
+      role: user.role,
+    });
+  }
+
+  /**
+   * [T-024-o 2026-07-16] 修改自己密码 (需登录 + 旧密码)
+   * PATCH /users/me/password
+   * - 旧密码校验 → 设新密码 → 撤销该 user 所有 token (强制重新登录)
+   * - 跟 /auth/reset 区别: 这里必须已设过密码; 没设密码的用户走 reset 流程
+   */
+  @HttpCode(200)
+  @Patch('me/password')
+  @ApiOperation({ summary: '修改自己密码 (需登录, 旧密码)' })
+  async changeMyPassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.authService.changePassword(
+      BigInt(user.sub),
+      dto.oldPassword,
+      dto.newPassword,
+    );
+  }
+
+  /**
    * 修改用户
    * F-6 修复:普通用户改自己 OR admin 改任意人都允许
    * - UpdateUserDto 已排除 phone/password/role/status(只允许 nickname/avatar/bio/gender)
@@ -99,6 +145,11 @@ export class UserController {
     @Body() dto: UpdateUserDto,
     @CurrentUser() user: JwtPayload,
   ) {
+    // [T-024-b 防御] 非数字 id 直接返回 400, 避免 BigInt 抛 500
+    // (避免有人手动 PUT /users/me -> 500; GET :id 已有相同防护, 跟它对齐)
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException(`Invalid user id: ${id}`);
+    }
     // 鉴权: 自己 OR admin
     const targetId = BigInt(id);
     const isSelf = String(targetId) === String(user.sub);
