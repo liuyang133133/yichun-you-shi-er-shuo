@@ -191,80 +191,162 @@ export default function MeSecurityPage() {
         </CardContent>
       </Card>
 
-      {/* 改密码 */}
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <h2 className="font-bold">登录密码</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            修改后,所有已登录设备都会自动退出,需要用新密码重新登录
-          </p>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="oldPwd">当前密码</Label>
-            <div className="relative">
-              <Input
-                id="oldPwd"
-                type={showPwd ? 'text' : 'password'}
-                value={oldPwd}
-                onChange={(e) => setOldPwd(e.target.value)}
-                placeholder="当前登录密码"
-                autoComplete="current-password"
-                className="pr-10 h-11"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPwd(!showPwd)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPwd ? '隐藏密码' : '显示密码'}
-              >
-                {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+      {/* 改密码 — 按 meDetail.hasPassword 分支:
+            - true: 必须填旧密码 (change 流程)
+            - false: 没设过密码, 用 SMS 码设置初始密码 (reset 流程, V1.1b 砍注册设密环节) */}
+      {meDetail?.hasPassword ? (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h2 className="font-bold">登录密码</h2>
             </div>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              修改后,所有已登录设备都会自动退出,需要用新密码重新登录
+            </p>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="newPwd">新密码</Label>
-            <Input
-              id="newPwd"
-              type={showPwd ? 'text' : 'password'}
-              value={newPwd}
-              onChange={(e) => setNewPwd(e.target.value)}
-              placeholder="至少 6 位"
-              autoComplete="new-password"
-              className="h-11"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="oldPwd">当前密码</Label>
+              <div className="relative">
+                <Input
+                  id="oldPwd"
+                  type={showPwd ? 'text' : 'password'}
+                  value={oldPwd}
+                  onChange={(e) => setOldPwd(e.target.value)}
+                  placeholder="当前登录密码"
+                  autoComplete="current-password"
+                  className="pr-10 h-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPwd ? '隐藏密码' : '显示密码'}
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="confirmPwd">确认新密码</Label>
-            <Input
-              id="confirmPwd"
-              type={showPwd ? 'text' : 'password'}
-              value={confirmPwd}
-              onChange={(e) => setConfirmPwd(e.target.value)}
-              placeholder="再输入一次"
-              autoComplete="new-password"
-              className="h-11"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="newPwd">新密码</Label>
+              <Input
+                id="newPwd"
+                type={showPwd ? 'text' : 'password'}
+                value={newPwd}
+                onChange={(e) => setNewPwd(e.target.value)}
+                placeholder="至少 6 位"
+                autoComplete="new-password"
+                className="h-11"
+              />
+            </div>
 
-          <Button
-            type="button"
-            onClick={changePassword}
-            disabled={savingPwd || !oldPwd || !newPwd || !confirmPwd}
-            className="h-10 rounded-full bg-gradient-to-r from-primary to-emerald-600"
-          >
-            {savingPwd ? (
-              <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />修改中…</>
-            ) : (
-              <><Shield className="mr-1.5 h-4 w-4" />修改密码</>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPwd">确认新密码</Label>
+              <Input
+                id="confirmPwd"
+                type={showPwd ? 'text' : 'password'}
+                value={confirmPwd}
+                onChange={(e) => setConfirmPwd(e.target.value)}
+                placeholder="再输入一次"
+                autoComplete="new-password"
+                className="h-11"
+              />
+            </div>
+
+            <Button
+              type="button"
+              onClick={changePassword}
+              disabled={savingPwd || !oldPwd || !newPwd || !confirmPwd}
+              className="h-10 rounded-full bg-gradient-to-r from-primary to-emerald-600"
+            >
+              {savingPwd ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />修改中…</>
+              ) : (
+                <><Shield className="mr-1.5 h-4 w-4" />修改密码</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        /* 没设过密码 — 设初始密码 (走 SMS + reset, V1.1b 砍注册设密环节后才有这条路径) */
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h2 className="font-bold">设置登录密码</h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              你目前用短信验证码登录,未设置密码。在此处设置后,也可以用「手机号 + 密码」登录
+            </p>
+
+            {/* 验证码 + 新密码 + 确认密码 */}
+            <div className="space-y-1.5">
+              <Label htmlFor="setCode">短信验证码</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="setCode"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={setCode}
+                  onChange={(e) => setSetCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="6 位验证码"
+                  className="h-11"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={sendSetCode}
+                  disabled={setCooldown > 0 || setSending}
+                  className="shrink-0 h-11 px-4 whitespace-nowrap"
+                >
+                  {setSending ? '发送中…' : setCooldown > 0 ? `${setCooldown}s 后重试` : '获取验证码'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="newPwd2">新密码</Label>
+              <Input
+                id="newPwd2"
+                type={showPwd ? 'text' : 'password'}
+                value={newPwd}
+                onChange={(e) => setNewPwd(e.target.value)}
+                placeholder="至少 6 位"
+                autoComplete="new-password"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPwd2">确认新密码</Label>
+              <Input
+                id="confirmPwd2"
+                type={showPwd ? 'text' : 'password'}
+                value={confirmPwd}
+                onChange={(e) => setConfirmPwd(e.target.value)}
+                placeholder="再输入一次"
+                autoComplete="new-password"
+                className="h-11"
+              />
+            </div>
+
+            <Button
+              type="button"
+              onClick={setInitialPassword}
+              disabled={settingPwd || !setCode || !newPwd || !confirmPwd}
+              className="h-10 rounded-full bg-gradient-to-r from-primary to-emerald-600"
+            >
+              {settingPwd ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />设置中…</>
+              ) : (
+                <><Shield className="mr-1.5 h-4 w-4" />设置密码</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 忘记密码引导 */}
       <Card className="border-dashed">
