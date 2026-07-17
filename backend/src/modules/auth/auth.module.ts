@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -29,7 +29,7 @@ import { CaptchaModule } from '../captcha/captcha.module';
         };
       },
     }),
-    UserModule,
+    forwardRef(() => UserModule),
     SmsModule,
     // SHOULD-9: 人机验证 + 注册限频
     CaptchaModule,
