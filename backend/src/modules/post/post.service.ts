@@ -16,6 +16,7 @@ import { TagService } from '../tag/tag.service';
 import { generateSlug } from '../../common/utils/slug.util';
 // P0-Fix (B-P0-01): 敏感词过滤
 import { SensitiveWordService } from '../../common/filters/sensitive-word.filter';
+import { SmsService } from '../sms/sms.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -33,6 +34,8 @@ export class PostService {
     private readonly tagService: TagService,
     // P0-Fix (B-P0-01): 敏感词过滤
     private readonly sensitiveWord: SensitiveWordService,
+    // [T-024-q 2026-07-16] 代发 SMS 验证码
+    private readonly smsService: SmsService,
   ) {}
 
   /** 列表缓存 TTL：5 分钟 */
@@ -256,7 +259,14 @@ export class PostService {
     }
     // ===== Phase 2.2a end =====
 
-    const result = { list, total, page, pageSize };
+    // [T-024-p 2026-07-16] map images[0].url -> coverImage 字段
+    // PostCard (frontend) 期望 coverImage 字段; 否则永远走 emoji 占位
+    // 不直接修改 prisma 返回 (避免破坏 include 链)
+    const listWithCover = (list as any[]).map((p) => ({
+      ...p,
+      coverImage: Array.isArray(p.images) && p.images.length > 0 ? p.images[0].url : null,
+    }));
+    const result = { list: listWithCover, total, page, pageSize };
     // 写缓存（异步，不阻塞返回）— 响应侧由 TransformInterceptor 把 BigInt → string；
     // 缓存侧用 replacer 同步处理，保证 JSON.stringify 不抛错
     this.redis
@@ -400,6 +410,26 @@ export class PostService {
   async create(userId: bigint, dto: CreatePostDto) {
     // ===== [P0-001] 封禁检查（写入口必须） =====
     await this.assertUserNotBanned(userId);
+
+    // ===== [T-024-q 2026-07-16] 代发 SMS 校验 =====
+    // contactPhone == 用户自己手机号 → 免校验 (常见情况, 99% 用户走默认流程)
+    // contactPhone != 用户自己手机号 → 必须传 smsCode (代发场景, 需要机主同意)
+    if (dto.contactPhone) {
+      const me = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { phone: true },
+      });
+      const isSelfPhone = me?.phone === dto.contactPhone;
+      if (!isSelfPhone) {
+        if (!dto.smsCode) {
+          throw new BadRequestException(
+            '联系人手机号与当前账号不一致, 代发需先发送验证码到该手机号并输入',
+          );
+        }
+        // 验证 6 位验证码确实发到了 contactPhone
+        await this.smsService.verifyCode(dto.contactPhone, dto.smsCode);
+      }
+    }
 
     // ===== [B-P0-01] P0 修复: 敏感词同步拦截 =====
     // 发布前同步过滤 title/description/contactName (含敏感词直接 400)
