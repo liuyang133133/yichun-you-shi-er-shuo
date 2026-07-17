@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Patch, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -6,9 +6,12 @@ import { UserService } from '../user/user.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import {
+  ChangePasswordDto,
   LoginByPasswordDto,
   LoginBySmsDto,
   RefreshTokenDto,
+  ResetCodeDto,
+  ResetPasswordDto,
   SmsCodeDto,
 } from './dto/auth.dto';
 
@@ -98,6 +101,33 @@ export class AuthController {
   ) {
     const token = authorization?.replace(/^Bearer\s+/i, '') || '';
     return this.authService.logout(token);
+  }
+
+  /**
+   * POST /auth/reset-code
+   * [T-024-o 2026-07-16] 发送密码重置验证码 (公开)
+   * 公开端点, 用于: 忘记密码 (登录页) + 设置初始密码 (/me/security 已登录用户)
+   * 限频交给 smsService.sendLoginCode 内部
+   */
+  @Public()
+  @Post('reset-code')
+  @ApiOperation({ summary: '发送密码重置验证码 (公开)' })
+  async resetCode(@Body() dto: ResetCodeDto, @Req() req: Request) {
+    const ip = this.getClientIp(req);
+    return this.authService.sendResetCode(dto.phone, ip);
+  }
+
+  /**
+   * POST /auth/reset
+   * [T-024-o 2026-07-16] 重置/设置密码 (公开, 短信码 + 新密码)
+   * 成功后撤销该 user 所有 token, 强制重新登录
+   */
+  @Public()
+  @HttpCode(200)
+  @Post('reset')
+  @ApiOperation({ summary: '重置/设置密码 (公开, 短信码 + 新密码)' })
+  async reset(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.phone, dto.code, dto.newPassword);
   }
 
   /**

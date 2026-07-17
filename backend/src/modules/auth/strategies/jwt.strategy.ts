@@ -2,10 +2,37 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Request } from 'express';
 import { UserService } from '../../user/user.service';
 import { AuthService } from '../auth.service';
 import { RedisService } from '../../../redis/redis.service';
 import { JwtPayload } from '../../../common/decorators/current-user.decorator';
+
+/**
+ * 手动从 Cookie 头解析指定字段 (不依赖 cookie-parser 中间件)
+ * - SSR 转发 cookie: access_token=xxx 时使用
+ * - 客户端 fetch 自带 Authorization bearer, 这个 extractor 不会被触发
+ */
+function fromCookie(name: string) {
+  return (req: Request | undefined): string | null => {
+    if (!req) return null;
+    const header = req.headers?.cookie;
+    if (!header) return null;
+    for (const part of header.split(';')) {
+      const eq = part.indexOf('=');
+      if (eq < 0) continue;
+      const k = part.slice(0, eq).trim();
+      if (k === name) {
+        try {
+          return decodeURIComponent(part.slice(eq + 1));
+        } catch {
+          return part.slice(eq + 1);
+        }
+      }
+    }
+    return null;
+  };
+}
 
 /**
  * JWT 鉴权策略
@@ -32,7 +59,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET is not configured');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // [T-024-f 2026-07-15] 同时支持两种 token 来源:
+      // 1. Authorization: Bearer xxx (浏览器 fetch / Postman)
+      // 2. Cookie: access_token=xxx (Next.js SSR fetch 转发浏览器 cookie)
+      // 之前只支持 #1, SSR 转发 cookie 后 strategy 找不到 token → viewer.userId=undefined
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        fromCookie('access_token'),
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret,
     });

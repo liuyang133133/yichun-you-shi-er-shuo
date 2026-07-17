@@ -320,6 +320,17 @@ export class CreatePostDto {
   })
   contactPhone?: string;
 
+  /**
+   * [T-024-q 2026-07-16] 代发 SMS 验证码 (可选)
+   * - 默认流程 contactPhone = 当前登录用户手机号 → 不需要验证码, 此字段可省
+   * - 代发流程 contactPhone ≠ 当前登录用户手机号 → 必须传此验证码 (已通过 SMS 验证机主同意)
+   * - 后端在 service.create 里走 smsService.verifyCode(contactPhone, smsCode)
+   */
+  @IsOptional()
+  @IsString()
+  @Length(6, 6, { message: '验证码必须是 6 位' })
+  smsCode?: string;
+
   // [G-P1-02] P1 修复: 微信号格式校验 (字母开头 6-20 位字母数字_-)
   @IsOptional()
   @IsString()

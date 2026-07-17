@@ -15,6 +15,8 @@ import { AiModule } from '../ai/ai.module';
 import { SeoModule } from '../seo/seo.module';
 // T-013: 标签系统（PostService.create/update 同步 PostTag）
 import { TagModule } from '../tag/tag.module';
+// [T-024-q 2026-07-16] 代发 SMS 验证码
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { TagModule } from '../tag/tag.module';
     AiModule,
     SeoModule,
     TagModule, // T-013: 注入 TagService.attachToPost/detachFromPost
+    SmsModule, // [T-024-q] 代发场景需要 smsService.verifyCode
   ],
   controllers: [PostController, PostBoostController],
   providers: [PostService, PostBoostService],

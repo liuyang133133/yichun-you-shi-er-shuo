@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
   HttpException,
   HttpStatus,
   Logger,
@@ -221,6 +222,108 @@ export class AuthService {
   async isTokenBlacklisted(jti: string): Promise<boolean> {
     const v = await this.redis.get(`auth:blacklist:${jti}`);
     return v === '1';
+  }
+
+  // ============== [T-024-o 2026-07-16] 密码重置/改密 ==============
+
+  /**
+   * 发送密码重置验证码 (公开, 用于忘记密码 + /me/security 设置初始密码)
+   * 复用 smsService.sendLoginCode (同一个限频 + 验证码生命周期)
+   */
+  async sendResetCode(phone: string, ip: string) {
+    return this.smsService.sendLoginCode(phone, ip);
+  }
+
+  /**
+   * 重置/设置密码 (公开): 短信码 + 新密码
+   * 成功后会撤销该 user 所有 token (强制重新登录)
+   */
+  async resetPassword(phone: string, code: string, newPassword: string) {
+    // 1. captcha 验证码校验
+    await this.smsService.verifyCode(phone, code);
+
+    // 2. 找用户
+    const user = await this.userService.findByPhone(phone);
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    if (user.status !== 0) {
+      throw new BadRequestException(
+        user.status === 1 ? '账号已被封禁' : '账号已被注销',
+      );
+    }
+
+    // 3. 设密码 + 撤销所有 token
+    await this.userService.setPassword(user.id, newPassword);
+    await this.revokeAllUserTokens(user.id);
+
+    return { ok: true, userId: user.id.toString() };
+  }
+
+  /**
+   * 已登录用户改密: 旧密码校验 + 设新密码 + 撤销所有 token
+   */
+  async changePassword(
+    userId: bigint,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    if (user.status !== 0) {
+      throw new BadRequestException(
+        user.status === 1 ? '账号已被封禁' : '账号已被注销',
+      );
+    }
+
+    // 必须已设过密码 (无密码的用户走 reset 流程)
+    const u = await this.userService.findByPhone(user.phone);
+    if (!u || !u.password) {
+      throw new BadRequestException('您尚未设置密码,请用「短信验证码」方式设置');
+    }
+    const ok = await bcrypt.compare(oldPassword, u.password);
+    if (!ok) {
+      throw new BadRequestException('旧密码错误');
+    }
+    if (oldPassword === newPassword) {
+      throw new BadRequestException('新密码不能与旧密码相同');
+    }
+
+    await this.userService.setPassword(userId, newPassword);
+    await this.revokeAllUserTokens(userId);
+
+    return { ok: true, userId: userId.toString() };
+  }
+
+  /**
+   * [T-024-o] 撤销用户所有 token (改密/重置后):
+   *   - 清 auth:user-tokens:<userId> 集合 (策略 validate 时发现 jti 不在集合里 → 拒绝)
+   *   - 写一个标记 auth:pwd-changed:<userId> 时间戳供策略级检查 (V1.x 简化: 用 set 实际存在)
+   * NOTE: 简化版, 不做精细时间戳比对 (JwtStrategy 改造在本任务之外)
+   */
+  async revokeAllUserTokens(userId: bigint): Promise<void> {
+    try {
+      const key = `auth:user-tokens:${userId}`;
+      const all = await this.redis.smembers(key);
+      for (const jti of all) {
+        await this.redis.setEx(`auth:blacklist:${jti}`, '1', 7 * 24 * 3600);
+      }
+      await this.redis.del(key);
+      // 标记 pwd-changed: 简化方案: 写一个长 ttl 时间戳, 策略层应该 verify token.iat > pwd-changed
+      // 当前 JwtStrategy 不检查这个, 所以本字段是标注用, 不是强约束
+      const now = Math.floor(Date.now() / 1000);
+      await this.redis.setEx(
+        `auth:pwd-changed:${userId}`,
+        now.toString(),
+        30 * 24 * 3600,
+      );
+    } catch (e) {
+      this.logger.warn(
+        `撤销 user ${userId} 所有 token 失败 (非阻塞): ${e?.message ?? e}`,
+      );
+    }
   }
 
   // ============== [A-P0-01] P0 修复: 密码登录失败计数 ==============

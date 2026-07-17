@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs } from '@/components/ui/tabs';
 import { toast } from '@/components/toast/toaster';
-import { authApi } from '@/lib/api';
+import { authApi, meApi } from '@/lib/api';
 import { setAccessToken, setStoredUser } from '@/lib/auth';
 import { Smartphone, Lock, ArrowRight, Sparkles, Shield } from 'lucide-react';
 
@@ -84,10 +84,22 @@ export default function LoginPage() {
         res = await authApi.loginByPassword(phone, password);
       }
       setAccessToken(res.accessToken);
-      setStoredUser({
-        id: res.user?.phone || phone,
-        phone: res.user?.phone || phone,
-      });
+      // [T-024 2026-07-15] 登录成功后立刻调 /auth/me 拿完整 user (含 avatar/nickname/id)
+      // 之前只塞 id+phone → header Avatar 永远走 fallback 圆+首字母
+      const writeUser = (nickname?: string, avatar?: string | null) => {
+        setStoredUser({
+          id: res.user?.phone || phone,
+          phone: res.user?.phone || phone,
+          nickname: nickname ?? `用户${(res.user?.phone || phone).slice(-4)}`,
+          avatar: avatar ?? null,
+        });
+      };
+      writeUser();
+      // 异步拉一次 /auth/me 拿真实 nickname+avatar, 不阻塞跳转
+      meApi.detail()
+        .then((me) => writeUser(me?.nickname, me?.avatar))
+        .catch(() => {/* 401 不阻塞, fallback 兜底 */});
+
       toast.success(`欢迎回来，${res.user?.phone?.slice(-4) || '用户'}`, '登录成功');
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect') || params.get('next') || '/me';

@@ -73,15 +73,50 @@ export class CommentService {
             // [C-P1-05] 同时过滤 status=0 和 (中间件自动) deletedAt:null
             where: { status: 0 },
             orderBy: { createdAt: 'asc' },
-            include: {
-              user: { select: { id: true, nickname: true, avatar: true } },
-            },
           },
         },
       }),
       this.prisma.comment.count({ where }),
     ]);
+    return { list, total, page, pageSize };
+  }
 
+  /**
+   * [T-024-m 2026-07-16] 我的留言收件箱:
+   *   个人中心 "留言" tab 显示「我作为帖子主人收到的所有留言」
+   *   (语义跟 /posts/me/stats 的 commentsCount 一致)
+   *
+   *   - where: comment.status=0 AND post.userId = me (post 未硬/软删)
+   *   - include: 谁留言 (user) + 在哪个帖 (post)
+   *   - orderBy: 最新在前
+   *   - 默认不显示 children (为了简洁)
+   */
+  async findReceivedByMe(
+    userId: bigint,
+    options: { page?: number; pageSize?: number } = {},
+  ) {
+    const { page = 1, pageSize = 20 } = options;
+    const where = {
+      status: 0,
+      // post 中间件会自动加 deletedAt:null, 但显式加保险
+      post: { userId, deletedAt: null },
+    };
+    const skip = (page - 1) * pageSize;
+    const [list, total] = await Promise.all([
+      this.prisma.comment.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, nickname: true, avatar: true } },
+          post: {
+            select: { id: true, title: true, slug: true, type: true, status: true },
+          },
+        },
+      }),
+      this.prisma.comment.count({ where }),
+    ]);
     return { list, total, page, pageSize };
   }
 

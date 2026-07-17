@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { postApi, categoryApi, areaApi, uploadApi } from '@/lib/api';
+import { Checkbox } from '@/components/ui/checkbox';
+import { postApi, categoryApi, areaApi, uploadApi, authApi, meApi } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { toast } from '@/components/toast/toaster';
 import {
@@ -111,11 +112,18 @@ function PublishForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [priceUnit, setPriceUnit] = useState('元/月');
+  const [priceUnit, setPriceUnit] = useState('面议');
   const [categoryId, setCategoryId] = useState('');
   const [areaId, setAreaId] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+
+  // [T-024-q 2026-07-16] 代发 SMS 验证状态
+  const [proxyPublish, setProxyPublish] = useState(false);   // 是否为他人的发布
+  const [smsCode, setSmsCode] = useState('');               // 6 位验证码
+  const [smsCooldown, setSmsCooldown] = useState(0);        // 倒计时秒数
+  const [smsSending, setSmsSending] = useState(false);       // 发码中
+  const [myPhone, setMyPhone] = useState('');                // 当前登录用户的手机号 (用于默认预填 + 比对)
 
   // ====== house ======
   const [rentalType, setRentalType] = useState('出售');
@@ -195,8 +203,56 @@ function PublishForm() {
   }, [router]);
 
   useEffect(() => {
-    setPriceUnit(type === 'house' ? '元/月' : '元');
+    // [T-024-c 2026-07-15] 默认面议,用户主动改/切 type 时也回到面议
+    setPriceUnit('面议');
   }, [type]);
+
+  // [T-024-q 2026-07-16] 加载当前登录用户资料, 预填联系人/电话
+  useEffect(() => {
+    if (!getAccessToken()) return;
+    meApi.detail()
+      .then((me: any) => {
+        if (me?.nickname && !contactName) setContactName(me.nickname);
+        if (me?.phone && !contactPhone) {
+          setContactPhone(me.phone);
+          setMyPhone(me.phone);
+        }
+      })
+      .catch(() => {/* 静默吞, 用户能手动填 */});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // [T-024-q] 代发场景: 给 contactPhone 发验证码
+  async function sendProxyCode() {
+    if (!contactPhone.trim()) {
+      toast.warning('请先填写联系手机号');
+      return;
+    }
+    if (!/^1[3-9]\d{9}$/.test(contactPhone.trim())) {
+      toast.warning('请输入有效的 11 位手机号');
+      return;
+    }
+    if (contactPhone.trim() === myPhone) {
+      toast.warning('是您自己的手机号, 不需要验证码');
+      return;
+    }
+    setSmsSending(true);
+    try {
+      const r: any = await authApi.sendSmsCode(contactPhone.trim());
+      setSmsCooldown(r?.cooldown || 60);
+      const timer = setInterval(() => {
+        setSmsCooldown((s) => {
+          if (s <= 1) { clearInterval(timer); return 0; }
+          return s - 1;
+        });
+      }, 1000);
+      toast.success('验证码已发送至 ' + contactPhone.slice(0, 3) + '****' + contactPhone.slice(-4));
+    } catch (e: any) {
+      toast.error(e?.message || '发送失败');
+    } finally {
+      setSmsSending(false);
+    }
+  }
 
   // 当前 type 的元数据
   const currentTypeMeta = TYPE_OPTIONS.find((t) => t.code === type);
@@ -349,6 +405,8 @@ function PublishForm() {
         areaId: areaId ? Number(areaId) : undefined,
         contactName: contactName.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
+        // [T-024-q 2026-07-16] 代发 SMS 验证码 (仅当他发布且 contactPhone ≠ 自己手机号时传)
+        smsCode: (proxyPublish && smsCode) ? smsCode.trim() : undefined,
         detail,
         images: imageUrls.length > 0 ? imageUrls : undefined,
       } as any);
@@ -649,12 +707,12 @@ function PublishForm() {
                   className="h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
                   {type === 'house'
-                    ? ['元/月', '元/天', '元/时', '元', '面议'].map((x) => (
+                    ? ['元/年', '元/月', '元/天', '元/时', '元', '面议'].map((x) => (
                         <option key={x} value={x}>
                           {x}
                         </option>
                       ))
-                    : ['元', '面议', '元/天', '元/时'].map((x) => (
+                    : ['元', '面议', '元/年', '元/天', '元/时'].map((x) => (
                         <option key={x} value={x}>
                           {x}
                         </option>
@@ -965,7 +1023,7 @@ function PublishForm() {
         >
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-3">
-              <Field label="联系人" hint="选填,如 王先生">
+              <Field label="联系人" hint="默认填您的昵称,可在下方修改">
                 <Input
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
@@ -973,7 +1031,7 @@ function PublishForm() {
                   className="h-11"
                 />
               </Field>
-              <Field label="联系电话" required>
+              <Field label="联系电话" hint="默认填您的手机号" required>
                 <Input
                   value={contactPhone}
                   onChange={(e) => setContactPhone(e.target.value)}
@@ -981,9 +1039,60 @@ function PublishForm() {
                   inputMode="numeric"
                   maxLength={11}
                   className="h-11"
+                  // [T-024-q] 代发场景允许编辑 (但代理填非自己手机需 SMS 验证)
+                  disabled={!proxyPublish && !!myPhone && contactPhone === myPhone && false}
                 />
               </Field>
             </div>
+
+            {/* [T-024-q 2026-07-16] 代发声明 + SMS 验证码 */}
+            <label className="flex items-start gap-2 cursor-pointer rounded-lg p-2 hover:bg-secondary/30 transition-colors">
+              <input
+                type="checkbox"
+                checked={proxyPublish}
+                onChange={(e) => setProxyPublish(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-input text-primary focus:ring-primary"
+              />
+              <div className="flex-1 text-xs text-muted-foreground leading-relaxed">
+                <div className="font-medium text-foreground mb-0.5">
+                  我是在为他人代发,已获 [联系电话] 机主同意
+                </div>
+                <span className="text-muted-foreground/80">
+                  勾选后, 若 [联系电话] 与您账号手机号不一致,系统将向该号码发一条短信验证
+                </span>
+              </div>
+            </label>
+
+            {proxyPublish && (
+              <div className="rounded-lg bg-amber-50/50 border border-amber-200/80 p-3 space-y-2 animate-slide-up">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="smsCode" className="text-xs text-amber-900/80">
+                    验证码 (发送到 <span className="font-mono">{contactPhone || '______'}</span>)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={sendProxyCode}
+                    disabled={smsCooldown > 0 || smsSending || !contactPhone}
+                    className="h-8 text-xs shrink-0"
+                  >
+                    {smsSending ? '发送中…' : smsCooldown > 0 ? `${smsCooldown}s 后重试` : '获取验证码'}
+                  </Button>
+                </div>
+                <Input
+                  id="smsCode"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={smsCode}
+                  onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="6 位数字验证码"
+                  className="h-10 text-base tracking-[0.3em] font-mono text-center"
+                />
+              </div>
+            )}
+
             <div className="rounded-lg bg-amber-50/50 border border-amber-200/80 p-3 text-xs text-amber-900/80 leading-relaxed flex gap-2">
               <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>

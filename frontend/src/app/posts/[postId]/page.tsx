@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { PostDetailContent } from './post-detail-content';
 import { Breadcrumb } from '@/components/breadcrumb';
@@ -18,11 +19,37 @@ const TYPE_NAMES: Record<string, string> = {
 };
 
 /**
+ * SSR 阶段拿浏览器的 cookie 转发给后端 API
+ *
+ * [T-024-e 2026-07-15] 修复: 之前 SSR fetch 完全不带 cookie,
+ * 导致作者访问自己 pending 帖 / 私人帖时后端 viewer.userId=undefined,
+ * service.findOne isOwner 永远是 false → 抛 404 "信息不存在"
+ *
+ * 实现: 同时看 cookie (next/headers 拿浏览器 cookie)
+ *       和 Authorization header (SSR pass-through 场景).
+ */
+function getCookieHeader(): Record<string, string> {
+  const out: Record<string, string> = {};
+  try {
+    // Next.js 15: cookies() 是 async; 这里只读 cookie (Authorization 走 client 端 fetch)
+    const c = cookies();
+    const cookieStr = c.toString();
+    if (cookieStr) out.cookie = cookieStr;
+  } catch {
+    // 路由 handler / 部分场景可能抛错, 静默吞
+  }
+  return out;
+}
+
+/**
  * F-3 V2: 从后端拿 post（用于校验 slug + 生成 metadata + 面包屑数据）
  */
 async function fetchPost(id: string): Promise<any | null> {
   try {
-    const res = await fetch(`${API_URL}/posts/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/posts/${id}`, {
+      cache: 'no-store',
+      headers: getCookieHeader(),
+    });
     if (!res.ok) return null;
     const json = await res.json();
     return json?.data || null;
@@ -38,6 +65,7 @@ async function fetchTdk(path: string): Promise<{ title: string; description: str
   try {
     const res = await fetch(`${API_URL}/seo/tdk?path=${encodeURIComponent(path)}`, {
       cache: 'no-store',
+      headers: getCookieHeader(),
     });
     if (!res.ok) return null;
     const json = await res.json();

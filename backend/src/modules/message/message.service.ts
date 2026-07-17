@@ -17,20 +17,49 @@ export class MessageService {
    * - 不能给自己发
    * - 收件人必须存在
    * - 集成敏感词过滤 (P0-Fix D-P0-02)
+   *
+   * [T-024-h] 接收 receiverPhone 替代 receiverId, 走 phone 查询
+   * [T-024-i] DTO 兼容 receiverId (会话页已知道 otherId, 公开 /users/:id 脱敏拿不到完整 phone)
    */
   async send(senderId: bigint, dto: SendMessageDto) {
     // ===== [D-P0-02] P0 修复: 敏感词同步拦截 =====
     await this.sensitiveWord.assertClean(dto.content, '消息内容');
 
-    if (BigInt(dto.receiverId) === senderId) {
-      throw new BadRequestException('不能给自己发消息');
+    if (!dto.receiverPhone && !dto.receiverId) {
+      throw new BadRequestException('收件人信息不能为空');
     }
-    const receiver = await this.prisma.user.findUnique({
-      where: { id: BigInt(dto.receiverId) },
-      select: { id: true, status: true },
+
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: { phone: true, status: true, id: true },
     });
+    if (!sender) {
+      throw new BadRequestException('发送方账号异常');
+    }
+
+    // 按 phone 或 id 查 receiver
+    let receiver: { id: bigint; phone: string; status: number } | null = null;
+    if (dto.receiverPhone) {
+      // 不能给自己发 (按手机号比较)
+      if (dto.receiverPhone === sender.phone) {
+        throw new BadRequestException('不能给自己发消息');
+      }
+      receiver = await this.prisma.user.findUnique({
+        where: { phone: dto.receiverPhone },
+        select: { id: true, phone: true, status: true },
+      });
+    } else if (dto.receiverId !== undefined) {
+      if (BigInt(dto.receiverId) === sender.id) {
+        throw new BadRequestException('不能给自己发消息');
+      }
+      receiver = await this.prisma.user.findUnique({
+        where: { id: BigInt(dto.receiverId) },
+        select: { id: true, phone: true, status: true },
+      });
+    }
+
     if (!receiver) {
-      throw new NotFoundException('收件人不存在');
+      throw new NotFoundException('收件人不存在或手机号错误');
     }
     if (receiver.status === 1) {
       throw new BadRequestException('收件人已被封禁');
@@ -39,7 +68,7 @@ export class MessageService {
     return this.prisma.message.create({
       data: {
         senderId,
-        receiverId: BigInt(dto.receiverId),
+        receiverId: receiver.id,
         content: dto.content,
       },
     });

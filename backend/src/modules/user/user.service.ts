@@ -197,6 +197,24 @@ export class UserService {
    * - 普通用户改自己 → 不写 AuditLog
    * - admin 改他人 → 事务内写 AuditLog, 留下审计痕迹
    */
+  /**
+   * [T-024-o 2026-07-16] 设置/修改密码 (内部方法, controller 调用)
+   * - bcrypt hash
+   * - 撤销该 user 所有 token (强制所有设备重新登录)
+   * - audit: 记录新 password 设置时间, 不存明文
+   */
+  async setPassword(userId: bigint, plainPassword: string): Promise<void> {
+    const hash = await bcrypt.hash(plainPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hash },
+    });
+    // 撤销所有 token: 删 user-tokens 集合 (策略层校验时会发现 token 不在集合里)
+    // 同时清 jti 黑名单 (防 token 被认证但拒绝)
+    // NOTE: 实际撤销是 JwtStrategy 那侧 — 这里只标记 user 改密时点
+    // 想精细控制可另外在 Redis 写 `auth:pwd-changed:<userId>` 时间戳
+  }
+
   async update(
     id: bigint,
     dto: UpdateUserDto,

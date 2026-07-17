@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/patterns/avatar';
-import { authApi } from '@/lib/api';
-import { clearAuth, getStoredUser, AUTH_USER_CHANGED_EVENT, type AuthUser } from '@/lib/auth';
+import { authApi, meApi } from '@/lib/api';
+import { clearAuth, getStoredUser, getAccessToken, setStoredUser, AUTH_USER_CHANGED_EVENT, type AuthUser } from '@/lib/auth';
 import {
   LogOut, Plus, ChevronDown, Search, Menu, X, Home, FileText, Heart, MessageCircle, Bell,
 } from 'lucide-react';
@@ -37,6 +37,35 @@ export function Header() {
     window.addEventListener(AUTH_USER_CHANGED_EVENT, refreshFromStorage);
     return () => window.removeEventListener(AUTH_USER_CHANGED_EVENT, refreshFromStorage);
   }, []);
+
+  // [T-024 2026-07-15] 路由切换/挂载时拉一次 /auth/me 把头像拉回 localStorage
+  // 之前 header 只读 localStorage, 但 login 响应里只有 phone, ls 里 avatar 永远是 undefined
+  // → Avatar 组件永远走 fallback 渐变色圆 + 首字母
+  // 修复: 拿到 token 后调 meApi.detail, 把 nickname/avatar 写到 ls 触发 AUTH_USER_CHANGED_EVENT,
+  // 上面的 listener 自动 setUser 拿到完整 user
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    let cancelled = false;
+    meApi.detail()
+      .then((me) => {
+        if (cancelled) return;
+        const existing = getStoredUser();
+        // 只有真有 avatar/nickname 时才覆写, 避免把已有头像覆盖成 null
+        if (me?.avatar || me?.nickname) {
+          setStoredUser({
+            ...existing,
+            id: String(me.sub ?? existing?.id ?? me.phone),
+            phone: me.phone ?? existing?.phone,
+            nickname: me.nickname ?? existing?.nickname,
+            avatar: me.avatar ?? existing?.avatar ?? null,
+          });
+        }
+      })
+      .catch(() => {/* 401 忽略, Header 已能从现有 ls 渲染 */});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   function submitQuickSearch(e: React.FormEvent) {
     e.preventDefault();

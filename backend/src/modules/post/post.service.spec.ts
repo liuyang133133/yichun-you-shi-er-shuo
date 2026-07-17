@@ -63,6 +63,8 @@ describe('PostService.create - 重复检测', () => {
       { attachToPost: jest.fn().mockResolvedValue(undefined) } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -147,6 +149,8 @@ describe('PostService.findOne - tags include (T-013b)', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -199,6 +203,8 @@ describe('PostService.findAll - tags include (T-013b)', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -268,6 +274,8 @@ describe('PostService 写入口 - 封禁用户拦截 (P0-001)', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -378,6 +386,8 @@ describe('PostService F-3 - slug 生成', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -468,6 +478,8 @@ describe('PostService F-3 - getBreadcrumb', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 
@@ -525,6 +537,8 @@ describe('PostService F-3 - getRelated', () => {
       { attachToPost: jest.fn() } as any,
       // [B-P0-01] SensitiveWordService mock
       { assertClean: jest.fn().mockResolvedValue(undefined) } as any,
+      // [T-024-q] SmsService mock
+      { sendLoginCode: jest.fn(), verifyCode: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 

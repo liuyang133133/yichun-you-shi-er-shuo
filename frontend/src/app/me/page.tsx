@@ -34,7 +34,7 @@ const SETTINGS = [
 const STAT_TABS = [
   { key: 'posts', label: '发布', href: '/me/posts' },
   { key: 'favorites', label: '收藏', href: '/me/favorites' },
-  { key: 'comments', label: '留言', href: undefined },
+  { key: 'comments', label: '留言', href: '/me/comments' },
   { key: 'unread', label: '未读', href: '/me/messages' },
 ] as const;
 
