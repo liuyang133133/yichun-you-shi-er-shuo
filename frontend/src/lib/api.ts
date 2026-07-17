@@ -385,7 +385,7 @@ export const passwordApi = {
     api.post<{ ok: boolean }>('/users/me/password', { oldPassword, newPassword }),
   /** 发送重置密码验证码 (未登录态) */
   sendResetCode: (phone: string) =>
-    api.post<{ ok: boolean }>('/auth/reset-code', { phone }),
+    api.post<{ cooldown: number; ok?: boolean }>('/auth/reset-code', { phone }),
   /** 重置密码 (验证码 + 新密码) */
   reset: (phone: string, code: string, newPassword: string) =>
     api.post<{ ok: boolean }>('/auth/reset', { phone, code, newPassword }),
@@ -443,8 +443,11 @@ export const messagesApi = {
     api.get<MessageListResp>('/messages/inbox', params),
   outbox: (params?: { page?: number; pageSize?: number }) =>
     api.get<MessageListResp>('/messages/outbox', params),
-  send: (data: { receiverId: string | number; content: string }) =>
+  send: (data: { receiverId?: string | number; receiverPhone?: string; content: string }) =>
     api.post<MessageItem>('/messages', data),
+  /** [T-024-i 2026-07-16] 双人会话列表 (按用户对) — 自动 markRead */
+  conversation: (otherId: string | number, params?: { page?: number; pageSize?: number }) =>
+    api.get<MessageListResp>(`/messages/with/${otherId}`, params),
   readAll: () => api.post<{ ok: boolean }>('/messages/read-all', {}),
 };
 
@@ -568,6 +571,12 @@ export const commentApi = {
   create: (postId: string | number, data: { content: string; parentId?: string | number }) =>
     api.post<any>(`/posts/${postId}/comments`, data),
   remove: (commentId: string | number) => api.delete<any>(`/comments/${commentId}`),
+  /** [T-024-m 2026-07-16] 我作为帖子主人收到的留言 (个人中心 "留言" tab) */
+  receivedByMe: (params?: { page?: number; pageSize?: number }) =>
+    api.get<{ list: any[]; total: number; page: number; pageSize: number }>(
+      '/comments/me',
+      params,
+    ),
 };
 
 // 举报
