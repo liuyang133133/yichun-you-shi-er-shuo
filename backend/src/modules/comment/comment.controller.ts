@@ -70,4 +70,22 @@ export class CommentController {
   ) {
     return this.commentService.remove(BigInt(user.sub), BigInt(id));
   }
+
+  /**
+   * [T-024-m 2026-07-16] GET /api/v1/comments/me
+   * 我的留言收件箱: 我作为帖子主人收到的所有留言
+   * (语义跟 /posts/me/stats.commentsCount 同步, 个人中心 "留言" tab 用)
+   */
+  @Get('comments/me')
+  @ApiOperation({ summary: '我收到的留言（个人中心留言列表）' })
+  findReceivedByMe(
+    @CurrentUser() user: JwtPayload,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.commentService.findReceivedByMe(BigInt(user.sub), {
+      page: page ? parseInt(page, 10) : undefined,
+      pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+    });
+  }
 }
