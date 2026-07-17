@@ -91,17 +91,9 @@ function MyMessagesContent() {
     }
     setSending(true);
     try {
-      // 先查用户 ID（通过 phone）
-      const r = await usersApi.search(receiverPhone.trim());
-      const target = (r?.list || []).find(
-        (u: any) => u.phone === receiverPhone.trim(),
-      );
-      if (!target) {
-        toast.error('收件人不存在或手机号错误');
-        return;
-      }
-      // 发消息
-      await messagesApi.send({ receiverId: target.id, content: content.trim() });
+      // [T-024-h 2026-07-15] 修复: 后端 send-message DTO 改为 receiverPhone,
+      // 不再需要前端先 usersApi.search (走脱敏公开列表查不到完整手机号)
+      await messagesApi.send({ receiverPhone: receiverPhone.trim(), content: content.trim() } as any);
       setShowCompose(false);
       setReceiverPhone('');
       setContent('');
@@ -188,33 +180,48 @@ function MyMessagesContent() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {list.map((m) => (
-            <div
-              key={m.id}
-              className={`p-4 rounded-2xl border transition-colors ${
-                tab === 'inbox' && !m.isRead ? 'bg-blue-50/50 border-blue-200' : 'bg-card'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold flex-shrink-0">
-                  {(tab === 'inbox' ? m.sender?.nickname : m.receiver?.nickname)?.charAt(0) || '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-semibold text-sm truncate">
-                      {tab === 'inbox' ? m.sender?.nickname : `→ ${m.receiver?.nickname}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground flex-shrink-0">
-                      {formatDateTime(m.createdAt)}
-                    </div>
+          {list.map((m) => {
+            // [T-024-i 2026-07-16] 点击进双人会话页
+            // inbox 跳对方 = sender; outbox 跳对方 = receiver
+            const otherId = tab === 'inbox' ? m.sender?.id : m.receiver?.id;
+            return (
+              <div
+                key={m.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (otherId) router.push(`/me/messages/with/${otherId}`);
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && otherId) {
+                    router.push(`/me/messages/with/${otherId}`);
+                  }
+                }}
+                className={`p-4 rounded-2xl border transition-colors cursor-pointer hover:shadow-md hover:border-primary/40 ${
+                  tab === 'inbox' && !m.isRead ? 'bg-blue-50/50 border-blue-200' : 'bg-card'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {(tab === 'inbox' ? m.sender?.nickname : m.receiver?.nickname)?.charAt(0) || '?'}
                   </div>
-                  <div className="mt-1 text-sm text-foreground/90 leading-relaxed break-words whitespace-pre-wrap">
-                    {m.content}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-semibold text-sm truncate">
+                        {tab === 'inbox' ? m.sender?.nickname : `→ ${m.receiver?.nickname}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground flex-shrink-0">
+                        {formatDateTime(m.createdAt)}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-sm text-foreground/90 leading-relaxed break-words whitespace-pre-wrap">
+                      {m.content}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
